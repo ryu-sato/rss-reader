@@ -169,6 +169,17 @@ export function EntryModal({ entry, allTags }: EntryModalProps) {
 
         <h2 className="text-xl font-bold leading-snug mb-5 text-foreground">{entry.title}</h2>
 
+        {entry.imageUrl && (
+          <div className="mb-5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={entry.imageUrl}
+              alt=""
+              className="w-full rounded-lg object-cover max-h-64"
+            />
+          </div>
+        )}
+
         <div className="prose prose-sm max-w-none text-foreground leading-relaxed mb-6">
           <p className="whitespace-pre-wrap">{entry.content ?? entry.description ?? ''}</p>
         </div>
