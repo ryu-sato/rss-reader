@@ -75,7 +75,7 @@ TASK-0001 → TASK-0004（Phase 2へ）
 
 ### タスク一覧
 
-- [ ] [TASK-0004: EntryFetcher実装（lib/entry-fetcher.ts）](TASK-0004.md) - 8h (TDD) 🔵
+- [x] [TASK-0004: EntryFetcher実装（lib/entry-fetcher.ts）](TASK-0004.md) - 8h (TDD) 🔵
 - [ ] [TASK-0005: EntryService - 保存・重複排除・上限管理](TASK-0005.md) - 8h (TDD) 🔵
 - [ ] [TASK-0006: EntryService - 一覧取得・フィルター・ページネーション](TASK-0006.md) - 8h (TDD) 🔵
 - [ ] [TASK-0007: TagService実装（lib/tag-service.ts）](TASK-0007.md) - 6h (TDD) 🔵
