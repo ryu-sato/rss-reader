@@ -17,6 +17,7 @@ export interface Entry {
   link: string
   description: string | null
   content: string | null
+  imageUrl: string | null
   publishedAt: Date | null
   createdAt: Date
   updatedAt: Date
@@ -27,6 +28,7 @@ export interface EntryListItem {
   id: string
   title: string
   link: string
+  imageUrl: string | null
   publishedAt: Date | null
   createdAt: Date
   feed: {
@@ -147,6 +149,7 @@ export interface FetchedEntryData {
   link: string
   description: string | null
   content: string | null
+  imageUrl: string | null
   publishedAt: Date | null
 }
 

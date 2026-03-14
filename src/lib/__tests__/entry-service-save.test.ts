@@ -41,6 +41,7 @@ const sampleEntryData: FetchedEntryData[] = [
     link: 'https://example.com/1',
     description: 'Summary 1',
     content: 'Content 1',
+    imageUrl: null,
     publishedAt: new Date('2026-03-14'),
   },
   {
@@ -49,6 +50,7 @@ const sampleEntryData: FetchedEntryData[] = [
     link: 'https://example.com/2',
     description: null,
     content: null,
+    imageUrl: null,
     publishedAt: null,
   },
 ]

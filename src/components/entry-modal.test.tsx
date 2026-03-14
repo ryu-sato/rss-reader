@@ -15,6 +15,7 @@ const sampleEntry = {
   link: 'https://example.com/1',
   description: 'Summary text',
   content: 'Full content text',
+  imageUrl: null,
   publishedAt: new Date('2026-03-14T10:00:00Z'),
   createdAt: new Date('2026-03-14'),
   updatedAt: new Date('2026-03-14'),

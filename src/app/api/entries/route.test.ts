@@ -19,6 +19,7 @@ const sampleEntries = [
     link: 'https://example.com/1',
     description: null,
     content: null,
+    imageUrl: null,
     publishedAt: new Date('2026-03-14'),
     createdAt: new Date('2026-03-14'),
     updatedAt: new Date('2026-03-14'),

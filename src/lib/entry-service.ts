@@ -20,6 +20,7 @@ export async function saveEntries(feedId: string, entries: FetchedEntryData[]): 
         link: entry.link,
         description: entry.description,
         content: entry.content,
+        imageUrl: entry.imageUrl,
         publishedAt: entry.publishedAt,
       },
       update: {
@@ -27,6 +28,7 @@ export async function saveEntries(feedId: string, entries: FetchedEntryData[]): 
         link: entry.link,
         description: entry.description,
         content: entry.content,
+        imageUrl: entry.imageUrl,
         publishedAt: entry.publishedAt,
       },
     })
