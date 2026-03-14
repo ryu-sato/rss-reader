@@ -6,9 +6,34 @@ import { useState, useEffect } from 'react'
 import { Rss, Bookmark, ChevronDown, Plus, Settings, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+function FeedFavicon({ faviconUrl, feedUrl }: { faviconUrl: string | null; feedUrl: string }) {
+  const [index, setIndex] = useState(0)
+
+  const domainFavicon = (() => {
+    try { return new URL(feedUrl).origin + '/favicon.ico' } catch { return null }
+  })()
+
+  const candidates = [faviconUrl, domainFavicon].filter((u): u is string => !!u)
+  const src = candidates[index] ?? null
+
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt=""
+        className="h-3 w-3 shrink-0 rounded-sm object-contain"
+        onError={() => setIndex((i) => i + 1)}
+      />
+    )
+  }
+  return <Rss className="h-3 w-3 shrink-0 text-muted-foreground" />
+}
+
 interface Feed {
   id: string
   title: string
+  url: string
+  faviconUrl: string | null
 }
 
 interface TagItem {
@@ -109,7 +134,7 @@ export function Sidebar() {
                         : 'text-foreground hover:bg-accent cursor-pointer'
                     )}
                   >
-                    <Rss className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    <FeedFavicon faviconUrl={feed.faviconUrl} feedUrl={feed.url} />
                     <span className="truncate">{feed.title}</span>
                   </Link>
                 ))}

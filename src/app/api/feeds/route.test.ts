@@ -18,6 +18,7 @@ const sampleFeed = {
   url: 'https://example.com/feed.xml',
   title: 'Example Blog',
   description: 'Blog description',
+  faviconUrl: null,
   memo: null,
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),
@@ -30,7 +31,7 @@ beforeEach(() => {
 
 describe('GET /api/feeds', () => {
   it('returns 200 with feed list', async () => {
-    const feeds = [{ id: '1', title: 'Feed', url: 'https://a.com', createdAt: new Date(), updatedAt: new Date() }]
+    const feeds = [{ id: '1', title: 'Feed', url: 'https://a.com', faviconUrl: null, createdAt: new Date(), updatedAt: new Date() }]
     mockGetAllFeeds.mockResolvedValue(feeds)
 
     const response = await GET()

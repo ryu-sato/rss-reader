@@ -35,6 +35,7 @@ const sampleFeed = {
   url: 'https://example.com/feed.xml',
   title: 'Example Blog',
   description: 'Blog description',
+  faviconUrl: null,
   memo: null,
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),
@@ -52,6 +53,7 @@ describe('createFeed', () => {
     mockFetchFeed.mockResolvedValue({
       title: 'Example Blog',
       description: 'Blog description',
+      faviconUrl: null,
       lastFetchedAt: new Date(),
     })
     mockFeed.create.mockResolvedValue(sampleFeed)
@@ -86,7 +88,7 @@ describe('getAllFeeds', () => {
     expect(result).toEqual(feeds)
     expect(mockFeed.findMany).toHaveBeenCalledWith({
       orderBy: { createdAt: 'desc' },
-      select: { id: true, title: true, url: true, createdAt: true, updatedAt: true },
+      select: { id: true, title: true, url: true, faviconUrl: true, createdAt: true, updatedAt: true },
     })
   })
 })

@@ -39,6 +39,26 @@ function extractFirstImageUrl(html: string): string | null {
   return match?.[1] ?? null
 }
 
+async function fetchOgImage(url: string): Promise<string | null> {
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5_000)
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'RSSReader/1.0' },
+    })
+    clearTimeout(timeoutId)
+    if (!res.ok) return null
+    const html = await res.text()
+    const match =
+      html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ??
+      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
+    return match?.[1] ?? null
+  } catch {
+    return null
+  }
+}
+
 function extractImageUrl(item: RSSItem, rawContent: string | null, rawDescription: string | null): string | null {
   // 1. RSS 2.0 enclosure (most reliable)
   if (item.enclosure?.url && item.enclosure.type?.startsWith('image/')) {
@@ -98,7 +118,7 @@ export async function fetchEntries(feedUrl: string): Promise<FetchedEntryData[]>
   const text = await response.text()
   const feed = await parser.parseString(text)
 
-  return (feed.items ?? []).map((item) => {
+  const entries = (feed.items ?? []).map((item) => {
     const rawContent = item.contentEncoded ?? null
     const rawDescription = item.content ?? null
 
@@ -112,4 +132,19 @@ export async function fetchEntries(feedUrl: string): Promise<FetchedEntryData[]>
       publishedAt: item.pubDate ? new Date(item.pubDate) : null,
     }
   })
+
+  // Fetch OGP images for entries that have no image from the RSS feed
+  const noImageEntries = entries.filter((e) => !e.imageUrl && e.link)
+  const BATCH_SIZE = 5
+  for (let i = 0; i < noImageEntries.length; i += BATCH_SIZE) {
+    const batch = noImageEntries.slice(i, i + BATCH_SIZE)
+    const results = await Promise.allSettled(batch.map((e) => fetchOgImage(e.link)))
+    results.forEach((result, idx) => {
+      if (result.status === 'fulfilled' && result.value) {
+        noImageEntries[i + idx].imageUrl = result.value
+      }
+    })
+  }
+
+  return entries
 }

@@ -14,6 +14,7 @@ const sampleFeed: Feed = {
   url: 'https://example.com/feed.xml',
   title: 'Example Blog',
   description: 'Blog description',
+  faviconUrl: null,
   memo: 'My note',
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),

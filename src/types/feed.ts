@@ -11,6 +11,7 @@ export interface Feed {
   url: string
   title: string
   description: string | null
+  faviconUrl: string | null
   memo: string | null
   createdAt: Date
   updatedAt: Date
@@ -21,6 +22,7 @@ export interface FeedListItem {
   id: string
   title: string
   url: string
+  faviconUrl: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -102,6 +104,7 @@ export interface FeedFormState {
 export interface FetchedFeedInfo {
   title: string
   description: string | null
+  faviconUrl: string | null
   lastFetchedAt: Date
 }
 

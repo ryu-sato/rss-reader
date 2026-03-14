@@ -2,9 +2,25 @@
 
 import Link from 'next/link'
 import { Rss, CalendarDays, Pencil } from 'lucide-react'
+import { useState } from 'react'
 import type { FeedListItem } from '@/types/feed'
 import DeleteConfirmDialog from './delete-confirm-dialog'
 import { Button } from '@/components/ui/button'
+
+function FeedFavicon({ faviconUrl, title }: { faviconUrl: string | null; title: string }) {
+  const [error, setError] = useState(false)
+  if (faviconUrl && !error) {
+    return (
+      <img
+        src={faviconUrl}
+        alt={title}
+        className="h-4 w-4 object-contain"
+        onError={() => setError(true)}
+      />
+    )
+  }
+  return <Rss className="h-4 w-4 text-primary" />
+}
 
 interface FeedListProps {
   feeds: FeedListItem[]
@@ -36,8 +52,8 @@ export default function FeedList({ feeds }: FeedListProps) {
           className="group border rounded-xl p-4 flex justify-between items-center gap-4 hover:bg-muted/40 transition-colors"
         >
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="shrink-0 rounded-lg bg-primary/10 p-2.5">
-              <Rss className="h-4 w-4 text-primary" />
+            <div className="shrink-0 rounded-lg bg-primary/10 p-2.5 flex items-center justify-center">
+              <FeedFavicon faviconUrl={feed.faviconUrl} title={feed.title} />
             </div>
             <div className="min-w-0">
               <h2 className="font-medium truncate">{feed.title}</h2>

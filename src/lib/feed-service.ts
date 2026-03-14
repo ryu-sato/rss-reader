@@ -20,6 +20,7 @@ export async function createFeed(url: string): Promise<Feed> {
       url,
       title: feedInfo.title,
       description: feedInfo.description,
+      faviconUrl: feedInfo.faviconUrl,
       lastFetchedAt: feedInfo.lastFetchedAt,
     },
   })
@@ -28,7 +29,7 @@ export async function createFeed(url: string): Promise<Feed> {
 export async function getAllFeeds(): Promise<FeedListItem[]> {
   const feeds = await prisma.feed.findMany({
     orderBy: { createdAt: 'desc' },
-    select: { id: true, title: true, url: true, createdAt: true, updatedAt: true },
+    select: { id: true, title: true, url: true, faviconUrl: true, createdAt: true, updatedAt: true },
   })
   return feeds
 }

@@ -7,9 +7,9 @@ vi.mock('next/navigation', () => ({
 }))
 
 const sampleFeeds = [
-  { id: '1', title: 'Feed 1', url: 'https://a.com', createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-01-02') },
-  { id: '2', title: 'Feed 2', url: 'https://b.com', createdAt: new Date('2026-01-03'), updatedAt: new Date('2026-01-04') },
-  { id: '3', title: 'Feed 3', url: 'https://c.com', createdAt: new Date('2026-01-05'), updatedAt: new Date('2026-01-06') },
+  { id: '1', title: 'Feed 1', url: 'https://a.com', faviconUrl: null, createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-01-02') },
+  { id: '2', title: 'Feed 2', url: 'https://b.com', faviconUrl: null, createdAt: new Date('2026-01-03'), updatedAt: new Date('2026-01-04') },
+  { id: '3', title: 'Feed 3', url: 'https://c.com', faviconUrl: null, createdAt: new Date('2026-01-05'), updatedAt: new Date('2026-01-06') },
 ]
 
 describe('FeedList', () => {
