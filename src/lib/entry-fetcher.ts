@@ -39,30 +39,64 @@ function extractFirstImageUrl(html: string): string | null {
   return match?.[1] ?? null
 }
 
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+}
+
+function extractMetaContent(html: string, property: string): string | null {
+  // Match <meta property="..." content="..."> in either attribute order
+  const escaped = property.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/:/g, ':')
+  const patterns = [
+    new RegExp(`<meta[^>]+property=["']${escaped}["'][^>]+content=["']([^"']+)["']`, 'i'),
+    new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${escaped}["']`, 'i'),
+  ]
+  for (const pattern of patterns) {
+    const match = html.match(pattern)
+    if (match?.[1]) return decodeHtmlEntities(match[1])
+  }
+  return null
+}
+
 async function fetchOgImage(url: string): Promise<string | null> {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5_000)
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { 'User-Agent': 'RSSReader/1.0' },
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; RSSReader/1.0)',
+        Accept: 'text/html',
+      },
     })
     clearTimeout(timeoutId)
     if (!res.ok) return null
     const html = await res.text()
-    const match =
-      html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ??
-      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
-    return match?.[1] ?? null
+    return (
+      extractMetaContent(html, 'og:image') ??
+      extractMetaContent(html, 'og:image:url') ??
+      extractMetaContent(html, 'twitter:image') ??
+      extractMetaContent(html, 'twitter:image:src') ??
+      null
+    )
   } catch {
     return null
   }
 }
 
 function extractImageUrl(item: RSSItem, rawContent: string | null, rawDescription: string | null): string | null {
-  // 1. RSS 2.0 enclosure (most reliable)
-  if (item.enclosure?.url && item.enclosure.type?.startsWith('image/')) {
-    return item.enclosure.url
+  // 1. RSS 2.0 enclosure
+  if (item.enclosure?.url) {
+    const type = item.enclosure.type ?? ''
+    const url = item.enclosure.url
+    // Accept if type is image/* or if URL looks like an image
+    if (type.startsWith('image/') || /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(url)) {
+      return url
+    }
   }
 
   // 2. media:content (Media RSS)

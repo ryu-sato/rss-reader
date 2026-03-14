@@ -63,8 +63,8 @@ export function Sidebar() {
   const handleRefresh = async () => {
     setRefreshing(true)
     await fetch('/api/feeds/refresh', { method: 'POST' })
-    // Wait a bit for background processing to start, then briefly show done state
-    setTimeout(() => setRefreshing(false), 1500)
+    setRefreshing(false)
+    window.location.reload()
   }
 
   const currentFeedId = searchParams.get('feedId')

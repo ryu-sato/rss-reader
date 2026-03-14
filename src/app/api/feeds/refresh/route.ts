@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server'
 import { fetchAllFeedsEntries } from '@/lib/entry-service'
 
 export async function POST() {
-  // Run in background without blocking the response
-  fetchAllFeedsEntries().catch((err) =>
+  try {
+    await fetchAllFeedsEntries()
+    return NextResponse.json({ success: true })
+  } catch (err) {
     console.error('[Refresh] Feed refresh failed:', err)
-  )
-  return NextResponse.json({ success: true }, { status: 202 })
+    return NextResponse.json({ success: false }, { status: 500 })
+  }
 }
