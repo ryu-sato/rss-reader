@@ -42,3 +42,9 @@ next-env.d.ts
 
 # pnpm
 /.pnpm-store
+
+/src/generated/prisma
+
+# SQLite database
+prisma/dev.db
+prisma/dev.db-journal
