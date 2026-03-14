@@ -54,8 +54,8 @@
 ### タスク一覧
 
 - [x] [TASK-0001: Prismaスキーマ追加とマイグレーション](TASK-0001.md) - 4h (DIRECT) 🔵
-- [ ] [TASK-0002: エントリー型定義作成（src/types/entry.ts）](TASK-0002.md) - 4h (DIRECT) 🔵
-- [ ] [TASK-0003: node-cronパッケージ追加と基本設定](TASK-0003.md) - 4h (DIRECT) 🟡
+- [x] [TASK-0002: エントリー型定義作成（src/types/entry.ts）](TASK-0002.md) - 4h (DIRECT) 🔵
+- [x] [TASK-0003: node-cronパッケージ追加と基本設定](TASK-0003.md) - 4h (DIRECT) 🟡
 
 ### 依存関係
 
