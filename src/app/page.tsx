@@ -1,11 +1,8 @@
-import Link from 'next/link'
-import { Plus } from 'lucide-react'
 import { findManyEntries, getEntryById } from '@/lib/entry-service'
 import { getAllTags } from '@/lib/tag-service'
 import { EntryList } from '@/components/entry-list'
 import { EntryModal } from '@/components/entry-modal'
-import { EntryFilter } from '@/components/entry-filter'
-import { Button } from '@/components/ui/button'
+import { EmptyPanel } from '@/components/empty-panel'
 
 interface PageProps {
   searchParams: Promise<{
@@ -32,26 +29,27 @@ export default async function Home({ searchParams }: PageProps) {
   const selectedEntry = params.entryId ? await getEntryById(params.entryId) : null
 
   return (
-    <main className="py-8">
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">RSS Reader</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {pagination.total === 0 ? 'No entries yet' : `${pagination.total} entries`}
-          </p>
+    <div className="h-screen flex overflow-hidden">
+      {/* Article List Panel */}
+      <div className="w-72 shrink-0 border-r border-border flex flex-col overflow-hidden bg-background">
+        <div className="h-11 border-b border-border flex items-center px-4 shrink-0">
+          <span className="text-xs text-muted-foreground">
+            {pagination.total === 0 ? '記事なし' : `${pagination.total} 件`}
+          </span>
         </div>
-        <Link href="/feeds/new">
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Feed
-          </Button>
-        </Link>
+        <div className="overflow-y-auto flex-1">
+          <EntryList entries={entries} pagination={pagination} />
+        </div>
       </div>
 
-      <EntryFilter />
-      <EntryList entries={entries} pagination={pagination} />
-
-      {selectedEntry && <EntryModal entry={selectedEntry} allTags={allTags} />}
-    </main>
+      {/* Article Viewer Panel */}
+      <div className="flex-1 overflow-hidden min-w-0">
+        {selectedEntry ? (
+          <EntryModal entry={selectedEntry} allTags={allTags} />
+        ) : (
+          <EmptyPanel />
+        )}
+      </div>
+    </div>
   )
 }

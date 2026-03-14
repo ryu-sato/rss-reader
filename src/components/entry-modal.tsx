@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import { X, ChevronLeft, ChevronRight, Bookmark, ExternalLink } from 'lucide-react'
 import type { EntryDetail } from '@/types/entry'
 import { Button } from '@/components/ui/button'
 import { TagInput } from '@/components/tag-input'
@@ -89,75 +90,94 @@ export function EntryModal({ entry, allTags }: EntryModalProps) {
       role="dialog"
       aria-modal="true"
       aria-label={entry.title}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="h-full flex flex-col bg-background overflow-hidden"
     >
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={goToPrev}
-        aria-label="Previous entry"
-        className="absolute left-4 z-10"
-      >
-        ← Prev
-      </Button>
-
-      <div className="bg-background rounded-lg shadow-lg w-full max-w-2xl h-[80vh] flex flex-col p-6">
-        <div className="flex justify-end mb-4">
-          <Button variant="ghost" size="sm" onClick={closeModal} aria-label="Close modal">
-            ×
+      {/* Toolbar */}
+      <div className="h-11 border-b border-border flex items-center justify-between px-4 shrink-0 gap-2">
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={goToPrev}
+            aria-label="Previous entry"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={goToNext}
+            aria-label="Next entry"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+          >
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="overflow-y-auto flex-1">
-          <h2 className="text-xl font-bold mb-2">{entry.title}</h2>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-            <span>{entry.feed.title}</span>
-            {entry.publishedAt && (
-              <time dateTime={entry.publishedAt.toISOString()}>
-                {entry.publishedAt.toLocaleString()}
-              </time>
-            )}
-          </div>
-
-          <div className="flex gap-2 mb-4">
-            <a
-              href={entry.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-primary underline"
-            >
-              Read original article
-            </a>
-            <Button
-              variant={isReadLater ? 'default' : 'outline'}
-              size="sm"
-              onClick={toggleReadLater}
-              disabled={isUpdating}
-            >
-              {isReadLater ? 'Saved for later' : 'Read later'}
-            </Button>
-          </div>
-
-          <div className="prose prose-sm max-w-none mb-4">
-            <p className="whitespace-pre-wrap">{entry.content ?? entry.description ?? ''}</p>
-          </div>
-
-          <div className="border-t pt-4">
-            <h3 className="text-sm font-medium mb-2">Tags</h3>
-            <TagInput entryId={entry.id} initialTags={entryTags} allTags={allTags} />
-          </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant={isReadLater ? 'default' : 'ghost'}
+            size="sm"
+            onClick={toggleReadLater}
+            disabled={isUpdating}
+            className="h-7 gap-1.5 text-xs"
+          >
+            <Bookmark className="h-3.5 w-3.5" />
+            {isReadLater ? '保存済み' : 'あとで読む'}
+          </Button>
+          <a
+            href={entry.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Read original article"
+            className="inline-flex items-center justify-center h-7 w-7 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={closeModal}
+            aria-label="Close modal"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={goToNext}
-        aria-label="Next entry"
-        className="absolute right-4 z-10"
-      >
-        Next →
-      </Button>
+      {/* Content */}
+      <div className="overflow-y-auto flex-1 px-8 py-6 max-w-3xl mx-auto w-full">
+        <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-medium text-primary">{entry.feed.title}</span>
+          {entry.publishedAt && (
+            <>
+              <span>·</span>
+              <time dateTime={entry.publishedAt.toISOString()}>
+                {entry.publishedAt.toLocaleString('ja-JP', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </time>
+            </>
+          )}
+        </div>
+
+        <h2 className="text-xl font-bold leading-snug mb-5 text-foreground">{entry.title}</h2>
+
+        <div className="prose prose-sm max-w-none text-foreground leading-relaxed mb-6">
+          <p className="whitespace-pre-wrap">{entry.content ?? entry.description ?? ''}</p>
+        </div>
+
+        <div className="border-t border-border pt-4">
+          <p className="text-xs font-medium text-muted-foreground mb-2">タグ</p>
+          <TagInput entryId={entry.id} initialTags={entryTags} allTags={allTags} />
+        </div>
+      </div>
     </div>
   )
 }

@@ -1,0 +1,178 @@
+'use client'
+
+import Link from 'next/link'
+import { useSearchParams, usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { Rss, Bookmark, ChevronDown, Plus, Settings, Tag } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+interface Feed {
+  id: string
+  title: string
+}
+
+interface TagItem {
+  id: string
+  name: string
+}
+
+export function Sidebar() {
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
+  const [feeds, setFeeds] = useState<Feed[]>([])
+  const [tags, setTags] = useState<TagItem[]>([])
+  const [feedsOpen, setFeedsOpen] = useState(true)
+  const [tagsOpen, setTagsOpen] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/feeds').then((r) => r.json()),
+      fetch('/api/tags').then((r) => r.json()),
+    ]).then(([feedsRes, tagsRes]) => {
+      if (feedsRes.success) setFeeds(feedsRes.data)
+      if (tagsRes.success) setTags(tagsRes.data)
+    })
+  }, [])
+
+  const currentFeedId = searchParams.get('feedId')
+  const currentTagId = searchParams.get('tagId')
+
+  const isHome = pathname === '/' && !currentFeedId && !currentTagId
+  const isReadLater = pathname === '/read-later'
+
+  const makeFeedLink = (feedId: string) => `/?feedId=${feedId}`
+  const makeTagLink = (tagId: string) => `/?tagId=${tagId}`
+
+  return (
+    <aside className="w-56 shrink-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col overflow-hidden">
+      {/* Logo */}
+      <div className="h-11 flex items-center px-4 border-b border-sidebar-border shrink-0">
+        <Link href="/" className="flex items-center gap-2 font-bold text-foreground">
+          <Rss className="h-4 w-4 text-primary" />
+          <span className="text-sm font-semibold">RSS Reader</span>
+        </Link>
+      </div>
+
+      {/* Navigation */}
+      <nav className="overflow-y-auto flex-1 py-1.5">
+        <Link
+          href="/"
+          className={cn(
+            'flex items-center gap-2.5 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors',
+            isHome
+              ? 'bg-primary text-primary-foreground font-medium'
+              : 'text-foreground hover:bg-accent cursor-pointer'
+          )}
+        >
+          <Rss className="h-3.5 w-3.5 shrink-0" />
+          <span>全ての記事</span>
+        </Link>
+
+        <Link
+          href="/read-later"
+          className={cn(
+            'flex items-center gap-2.5 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors',
+            isReadLater
+              ? 'bg-primary text-primary-foreground font-medium'
+              : 'text-foreground hover:bg-accent cursor-pointer'
+          )}
+        >
+          <Bookmark className="h-3.5 w-3.5 shrink-0" />
+          <span>あとで読む</span>
+        </Link>
+
+        {/* Feeds section */}
+        {feeds.length > 0 && (
+          <div className="mt-3">
+            <button
+              onClick={() => setFeedsOpen(!feedsOpen)}
+              className="w-full flex items-center justify-between px-3 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+            >
+              <span>フィード</span>
+              <ChevronDown
+                className={cn(
+                  'h-3 w-3 transition-transform duration-150',
+                  feedsOpen ? '' : '-rotate-90'
+                )}
+              />
+            </button>
+            {feedsOpen && (
+              <div className="mt-0.5">
+                {feeds.map((feed) => (
+                  <Link
+                    key={feed.id}
+                    href={makeFeedLink(feed.id)}
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors truncate',
+                      currentFeedId === feed.id
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'text-foreground hover:bg-accent cursor-pointer'
+                    )}
+                  >
+                    <Rss className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{feed.title}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tags section */}
+        {tags.length > 0 && (
+          <div className="mt-3">
+            <button
+              onClick={() => setTagsOpen(!tagsOpen)}
+              className="w-full flex items-center justify-between px-3 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+            >
+              <span>タグ</span>
+              <ChevronDown
+                className={cn(
+                  'h-3 w-3 transition-transform duration-150',
+                  tagsOpen ? '' : '-rotate-90'
+                )}
+              />
+            </button>
+            {tagsOpen && (
+              <div className="mt-0.5">
+                {tags.map((tag) => (
+                  <Link
+                    key={tag.id}
+                    href={makeTagLink(tag.id)}
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors',
+                      currentTagId === tag.id
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'text-foreground hover:bg-accent cursor-pointer'
+                    )}
+                  >
+                    <Tag className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{tag.name}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </nav>
+
+      {/* Footer actions */}
+      <div className="border-t border-sidebar-border p-2 shrink-0 flex gap-1">
+        <Link
+          href="/feeds/new"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2.5 py-2 rounded hover:bg-accent flex-1"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          <span>追加</span>
+        </Link>
+        <Link
+          href="/feeds"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2.5 py-2 rounded hover:bg-accent flex-1"
+        >
+          <Settings className="h-3.5 w-3.5" />
+          <span>管理</span>
+        </Link>
+      </div>
+    </aside>
+  )
+}
