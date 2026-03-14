@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Link2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -54,26 +55,34 @@ export default function FeedForm({ redirectTo }: FeedFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="url">RSS Feed URL</Label>
-        <Input
-          id="url"
-          type="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://example.com/feed.xml"
-          required
-          disabled={isSubmitting}
-          className="mt-1"
-        />
+    <div className="rounded-xl border bg-card p-6">
+      <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+        <Link2 className="h-4 w-4 shrink-0" />
+        <p>Enter the URL of the RSS or Atom feed you want to subscribe to.</p>
       </div>
-      {error && (
-        <p role="alert" className="text-sm text-destructive">{error}</p>
-      )}
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? 'Registering...' : 'Register Feed'}
-      </Button>
-    </form>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="url">Feed URL</Label>
+          <Input
+            id="url"
+            type="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://example.com/feed.xml"
+            required
+            disabled={isSubmitting}
+          />
+        </div>
+        {error && (
+          <p role="alert" className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
+            {error}
+          </p>
+        )}
+        <Button type="submit" disabled={isSubmitting} className="gap-2">
+          {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isSubmitting ? 'Registering...' : 'Register Feed'}
+        </Button>
+      </form>
+    </div>
   )
 }

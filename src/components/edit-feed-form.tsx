@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -57,60 +58,77 @@ export default function EditFeedForm({ feed }: EditFeedFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="rounded-xl border bg-card p-6 space-y-6">
       <div>
-        <Label>URL (read-only)</Label>
-        <p className="mt-1 text-sm text-muted-foreground break-all">{feed.url}</p>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+          Feed URL
+        </p>
+        <p className="text-sm bg-muted rounded-lg px-3 py-2 break-all font-mono text-muted-foreground">
+          {feed.url}
+        </p>
       </div>
-      <div>
-        <Label htmlFor="title">Title</Label>
-        <Input
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-          disabled={isSubmitting}
-          className="mt-1"
-        />
-      </div>
-      <div>
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          disabled={isSubmitting}
-          maxLength={1000}
-          className="mt-1"
-        />
-      </div>
-      <div>
-        <Label htmlFor="memo">Memo</Label>
-        <Textarea
-          id="memo"
-          value={memo}
-          onChange={(e) => setMemo(e.target.value)}
-          disabled={isSubmitting}
-          maxLength={1000}
-          className="mt-1"
-        />
-      </div>
-      {error && (
-        <p role="alert" className="text-sm text-destructive">{error}</p>
-      )}
-      <div className="flex gap-4">
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : 'Save Changes'}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push('/')}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-      </div>
-    </form>
+
+      <div className="border-t" />
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="title">Title</Label>
+          <Input
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            disabled={isSubmitting}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center">
+            <Label htmlFor="description">Description</Label>
+            <span className="text-xs text-muted-foreground">{description.length}/1000</span>
+          </div>
+          <Textarea
+            id="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            disabled={isSubmitting}
+            maxLength={1000}
+            placeholder="Optional description for this feed"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center">
+            <Label htmlFor="memo">Memo</Label>
+            <span className="text-xs text-muted-foreground">{memo.length}/1000</span>
+          </div>
+          <Textarea
+            id="memo"
+            value={memo}
+            onChange={(e) => setMemo(e.target.value)}
+            disabled={isSubmitting}
+            maxLength={1000}
+            placeholder="Personal notes about this feed"
+          />
+        </div>
+        {error && (
+          <p role="alert" className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
+            {error}
+          </p>
+        )}
+        <div className="flex gap-3 pt-2">
+          <Button type="submit" disabled={isSubmitting} className="gap-2">
+            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isSubmitting ? 'Saving...' : 'Save Changes'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push('/')}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </div>
   )
 }

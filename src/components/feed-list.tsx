@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { Rss, CalendarDays, Pencil } from 'lucide-react'
 import type { FeedListItem } from '@/types/feed'
 import DeleteConfirmDialog from './delete-confirm-dialog'
 import { Button } from '@/components/ui/button'
@@ -12,31 +13,49 @@ interface FeedListProps {
 export default function FeedList({ feeds }: FeedListProps) {
   if (feeds.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        <p>No feeds registered yet. Add your first feed!</p>
-        <Link href="/feeds/new" className="mt-4 inline-block">
-          <Button className="mt-4">Add Feed</Button>
+      <div className="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-dashed">
+        <div className="rounded-full bg-muted p-4 mb-4">
+          <Rss className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="font-semibold text-lg mb-1">No feeds yet</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Add your first RSS feed to get started
+        </p>
+        <Link href="/feeds/new">
+          <Button size="sm">Add Feed</Button>
         </Link>
       </div>
     )
   }
 
   return (
-    <ul className="space-y-4">
+    <ul className="space-y-3">
       {feeds.map((feed) => (
-        <li key={feed.id} className="border rounded-lg p-4 flex justify-between items-start">
-          <div className="flex-1 min-w-0">
-            <h2 className="font-semibold">{feed.title}</h2>
-            <p className="text-sm text-muted-foreground truncate max-w-md">{feed.url}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Added: {new Date(feed.createdAt).toLocaleDateString()}
-              {' | '}
-              Updated: {new Date(feed.updatedAt).toLocaleDateString()}
-            </p>
+        <li
+          key={feed.id}
+          className="group border rounded-xl p-4 flex justify-between items-center gap-4 hover:bg-muted/40 transition-colors"
+        >
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="shrink-0 rounded-lg bg-primary/10 p-2.5">
+              <Rss className="h-4 w-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="font-medium truncate">{feed.title}</h2>
+              <p className="text-xs text-muted-foreground truncate mt-0.5 max-w-md">
+                {feed.url}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                <CalendarDays className="h-3 w-3" />
+                Added {new Date(feed.createdAt).toLocaleDateString('ja-JP')}
+              </p>
+            </div>
           </div>
-          <div className="flex gap-2 ml-4">
+          <div className="flex gap-2 shrink-0">
             <Link href={`/feeds/${feed.id}/edit`}>
-              <Button variant="outline" size="sm">Edit</Button>
+              <Button variant="ghost" size="sm" className="gap-1.5">
+                <Pencil className="h-3.5 w-3.5" />
+                Edit
+              </Button>
             </Link>
             <DeleteConfirmDialog feedId={feed.id} feedTitle={feed.title} />
           </div>
