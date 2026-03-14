@@ -15,22 +15,23 @@ interface Pagination {
 interface EntryListProps {
   entries: EntryListItem[]
   pagination: Pagination
+  basePath?: string
 }
 
-export function EntryList({ entries, pagination }: EntryListProps) {
+export function EntryList({ entries, pagination, basePath = '/' }: EntryListProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const openModal = (entryId: string) => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('entryId', entryId)
-    router.push(`/?${params.toString()}`)
+    router.push(`${basePath}?${params.toString()}`)
   }
 
   const goToPage = (page: number) => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('page', String(page))
-    router.push(`/?${params.toString()}`)
+    router.push(`${basePath}?${params.toString()}`)
   }
 
   if (entries.length === 0) {

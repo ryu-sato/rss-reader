@@ -81,6 +81,7 @@ export interface GetEntriesQuery {
   limit?: number
   afterId?: string
   beforeId?: string
+  isReadLater?: boolean
 }
 
 export interface GetEntriesResponse {

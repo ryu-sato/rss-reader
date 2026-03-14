@@ -74,12 +74,13 @@ export async function fetchAllFeedsEntries(): Promise<void> {
 // ========================================
 
 export async function findManyEntries(query: GetEntriesQuery) {
-  const { feedId, tagId, page = 1, limit = 20, afterId, beforeId } = query
+  const { feedId, tagId, page = 1, limit = 20, afterId, beforeId, isReadLater } = query
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: Record<string, any> = {}
   if (feedId) where.feedId = feedId
   if (tagId) where.tags = { some: { tagId } }
+  if (isReadLater) where.meta = { isReadLater: true }
 
   // カーソルベースの前後ナビ
   if (afterId) {
@@ -104,11 +105,15 @@ export async function findManyEntries(query: GetEntriesQuery) {
   }
 
   const skip = afterId || beforeId ? 0 : (page - 1) * limit
+  // beforeId の場合は昇順で取得し、直近の1件を確実に取る（逆順で最近傍エントリを得るため）
+  const orderBy = beforeId
+    ? [{ publishedAt: 'asc' as const }, { createdAt: 'asc' as const }]
+    : [{ publishedAt: 'desc' as const }, { createdAt: 'desc' as const }]
 
-  const [entries, total] = await Promise.all([
+  const [rawEntries, total] = await Promise.all([
     prisma.entry.findMany({
       where,
-      orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+      orderBy,
       take: limit,
       skip,
       include: {
@@ -119,6 +124,9 @@ export async function findManyEntries(query: GetEntriesQuery) {
     }),
     prisma.entry.count({ where }),
   ])
+
+  // beforeId で昇順取得した場合、返却時に降順に戻す
+  const entries = beforeId ? rawEntries.reverse() : rawEntries
 
   return {
     entries,

@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const limit = Number(searchParams.get('limit') ?? '20')
     const afterId = searchParams.get('afterId') ?? undefined
     const beforeId = searchParams.get('beforeId') ?? undefined
+    const isReadLater = searchParams.get('isReadLater') === 'true' ? true : undefined
 
     if (isNaN(page) || page < 1) {
       return NextResponse.json(
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const result = await findManyEntries({ feedId, tagId, page, limit, afterId, beforeId })
+    const result = await findManyEntries({ feedId, tagId, page, limit, afterId, beforeId, isReadLater })
     return NextResponse.json({ success: true, data: result.entries, pagination: result.pagination })
   } catch (error) {
     console.error('GET /api/entries error:', error)

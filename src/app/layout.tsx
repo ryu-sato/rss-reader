@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
-import { Rss } from "lucide-react";
+import { Rss, Bookmark } from "lucide-react";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -37,6 +37,13 @@ export default function RootLayout({
             >
               <Rss className="h-5 w-5 text-primary" />
               <span>RSS Reader</span>
+            </Link>
+            <Link
+              href="/read-later"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors ml-6"
+            >
+              <Bookmark className="h-4 w-4" />
+              <span>あとで読む</span>
             </Link>
           </div>
         </header>

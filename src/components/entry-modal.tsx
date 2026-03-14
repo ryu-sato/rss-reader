@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import type { EntryDetail } from '@/types/entry'
 import { Button } from '@/components/ui/button'
 import { TagInput } from '@/components/tag-input'
@@ -14,13 +14,14 @@ interface EntryModalProps {
 export function EntryModal({ entry, allTags }: EntryModalProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const pathname = usePathname()
   const [isReadLater, setIsReadLater] = useState(entry.meta?.isReadLater ?? false)
   const [isUpdating, setIsUpdating] = useState(false)
 
   const closeModal = () => {
     const params = new URLSearchParams(searchParams.toString())
     params.delete('entryId')
-    router.push(`/?${params.toString()}`)
+    router.push(`${pathname}?${params.toString()}`)
   }
 
   // Auto-mark as read on open (REQ-101)
@@ -61,7 +62,7 @@ export function EntryModal({ entry, allTags }: EntryModalProps) {
       if (data?.[0]) {
         const params = new URLSearchParams(searchParams.toString())
         params.set('entryId', data[0].id)
-        router.push(`/?${params.toString()}`)
+        router.push(`${pathname}?${params.toString()}`)
       }
     }
   }
@@ -73,7 +74,7 @@ export function EntryModal({ entry, allTags }: EntryModalProps) {
       if (data?.[0]) {
         const params = new URLSearchParams(searchParams.toString())
         params.set('entryId', data[0].id)
-        router.push(`/?${params.toString()}`)
+        router.push(`${pathname}?${params.toString()}`)
       }
     }
   }
@@ -87,16 +88,18 @@ export function EntryModal({ entry, allTags }: EntryModalProps) {
       aria-label={entry.title}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
     >
-      <div className="bg-background rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={goToPrev} aria-label="Previous entry">
-              ← Prev
-            </Button>
-            <Button variant="outline" size="sm" onClick={goToNext} aria-label="Next entry">
-              Next →
-            </Button>
-          </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={goToPrev}
+        aria-label="Previous entry"
+        className="absolute left-4 z-10"
+      >
+        ← Prev
+      </Button>
+
+      <div className="bg-background rounded-lg shadow-lg w-full max-w-2xl h-[80vh] flex flex-col p-6">
+        <div className="flex justify-end mb-4">
           <Button variant="ghost" size="sm" onClick={closeModal} aria-label="Close modal">
             ×
           </Button>
@@ -142,6 +145,16 @@ export function EntryModal({ entry, allTags }: EntryModalProps) {
           </div>
         </div>
       </div>
+
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={goToNext}
+        aria-label="Next entry"
+        className="absolute right-4 z-10"
+      >
+        Next →
+      </Button>
     </div>
   )
 }
