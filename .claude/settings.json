@@ -4,7 +4,21 @@
   },
   "permissions": {
     "allow": [
-      "Bash(*)"
+      "Bash(*)",
+      "Read(*)"
+    ],
+    "ask": [
+      "Write(.agents/*)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Write(.claude/*)",
+      "Write(.next/*)",
+      "Write(.pnpm-store/*)",
+      "Write(node_modules/*)",
+      "Write(.env)",
+      "Write(pnpm-lock.yaml)",
+      "Write(skills-lock.json)"
     ]
   }
 }
