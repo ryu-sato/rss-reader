@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useSearchParams, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { Rss, Bookmark, ChevronDown, Plus, Settings, Tag } from 'lucide-react'
+import { Rss, Bookmark, ChevronDown, Plus, Settings, Tag, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 function FeedFavicon({ faviconUrl, feedUrl }: { faviconUrl: string | null; feedUrl: string }) {
@@ -48,6 +48,7 @@ export function Sidebar() {
   const [tags, setTags] = useState<TagItem[]>([])
   const [feedsOpen, setFeedsOpen] = useState(true)
   const [tagsOpen, setTagsOpen] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -58,6 +59,13 @@ export function Sidebar() {
       if (tagsRes.success) setTags(tagsRes.data)
     })
   }, [])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await fetch('/api/feeds/refresh', { method: 'POST' })
+    // Wait a bit for background processing to start, then briefly show done state
+    setTimeout(() => setRefreshing(false), 1500)
+  }
 
   const currentFeedId = searchParams.get('feedId')
   const currentTagId = searchParams.get('tagId')
@@ -197,6 +205,14 @@ export function Sidebar() {
           <Settings className="h-3.5 w-3.5" />
           <span>管理</span>
         </Link>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2.5 py-2 rounded hover:bg-accent flex-1 disabled:opacity-50"
+        >
+          <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
+          <span>更新</span>
+        </button>
       </div>
     </aside>
   )
