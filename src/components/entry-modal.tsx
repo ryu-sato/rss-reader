@@ -55,8 +55,11 @@ export function EntryModal({ entry, allTags }: EntryModalProps) {
     }
   }
 
+  const isReadLaterPage = pathname === '/read-later'
+  const readLaterParam = isReadLaterPage ? '&isReadLater=true' : ''
+
   const goToPrev = async () => {
-    const res = await fetch(`/api/entries?beforeId=${entry.id}&limit=1`)
+    const res = await fetch(`/api/entries?beforeId=${entry.id}&limit=1${readLaterParam}`)
     if (res.ok) {
       const { data } = await res.json()
       if (data?.[0]) {
@@ -68,7 +71,7 @@ export function EntryModal({ entry, allTags }: EntryModalProps) {
   }
 
   const goToNext = async () => {
-    const res = await fetch(`/api/entries?afterId=${entry.id}&limit=1`)
+    const res = await fetch(`/api/entries?afterId=${entry.id}&limit=1${readLaterParam}`)
     if (res.ok) {
       const { data } = await res.json()
       if (data?.[0]) {
