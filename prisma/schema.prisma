@@ -20,5 +20,64 @@ model Feed {
   updatedAt     DateTime  @updatedAt
   lastFetchedAt DateTime?
 
+  entries       Entry[]
+
   @@map("feeds")
+}
+
+model Entry {
+  id          String     @id @default(uuid())
+  feedId      String
+  guid        String
+  title       String
+  link        String
+  description String?
+  content     String?
+  publishedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  feed        Feed       @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  meta        EntryMeta?
+  tags        EntryTag[]
+
+  @@unique([feedId, guid])
+  @@index([publishedAt(sort: Desc)])
+  @@index([feedId])
+  @@map("entries")
+}
+
+model EntryMeta {
+  id           String   @id @default(uuid())
+  entryId      String   @unique
+  isRead       Boolean  @default(false)
+  isReadLater  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  entry        Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@map("entry_metas")
+}
+
+model Tag {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+
+  entries   EntryTag[]
+
+  @@map("tags")
+}
+
+model EntryTag {
+  entryId String
+  tagId   String
+
+  entry   Entry  @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([entryId, tagId])
+  @@index([tagId])
+  @@map("entry_tags")
 }
