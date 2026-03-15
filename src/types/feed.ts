@@ -23,6 +23,7 @@ export interface FeedListItem {
   title: string
   url: string
   faviconUrl: string | null
+  unreadCount: number
   createdAt: Date
   updatedAt: Date
 }

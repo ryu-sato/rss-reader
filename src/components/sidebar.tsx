@@ -34,6 +34,7 @@ interface Feed {
   title: string
   url: string
   faviconUrl: string | null
+  unreadCount: number
 }
 
 interface TagItem {
@@ -59,6 +60,16 @@ export function Sidebar() {
       if (tagsRes.success) setTags(tagsRes.data)
     })
   }, [pathname])
+
+  useEffect(() => {
+    const handler = () => {
+      fetch('/api/feeds')
+        .then((r) => r.json())
+        .then((res) => { if (res.success) setFeeds(res.data) })
+    }
+    window.addEventListener('entry:read', handler)
+    return () => window.removeEventListener('entry:read', handler)
+  }, [])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -150,14 +161,19 @@ export function Sidebar() {
                     key={feed.id}
                     href={makeFeedLink(feed.id)}
                     className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors truncate',
+                      'flex items-center gap-2 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors min-w-0',
                       currentFeedId === feed.id
                         ? 'bg-primary/10 text-primary font-medium'
                         : 'text-foreground hover:bg-accent cursor-pointer'
                     )}
                   >
                     <FeedFavicon faviconUrl={feed.faviconUrl} feedUrl={feed.url} />
-                    <span className="truncate">{feed.title}</span>
+                    <span className="truncate flex-1">{feed.title}</span>
+                    {feed.unreadCount > 0 && (
+                      <span className="ml-1 shrink-0 text-[10px] font-medium tabular-nums text-muted-foreground">
+                        {feed.unreadCount}
+                      </span>
+                    )}
                   </Link>
                 ))}
               </div>

@@ -29,9 +29,23 @@ export async function createFeed(url: string): Promise<Feed> {
 export async function getAllFeeds(): Promise<FeedListItem[]> {
   const feeds = await prisma.feed.findMany({
     orderBy: { createdAt: 'desc' },
-    select: { id: true, title: true, url: true, faviconUrl: true, createdAt: true, updatedAt: true },
+    select: {
+      id: true,
+      title: true,
+      url: true,
+      faviconUrl: true,
+      createdAt: true,
+      updatedAt: true,
+      entries: {
+        where: { OR: [{ meta: null }, { meta: { isRead: false } }] },
+        select: { id: true },
+      },
+    },
   })
-  return feeds
+  return feeds.map(({ entries, ...feed }) => ({
+    ...feed,
+    unreadCount: entries.length,
+  }))
 }
 
 export async function getFeedById(id: string): Promise<Feed> {

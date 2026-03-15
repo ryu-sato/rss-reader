@@ -49,6 +49,8 @@ export function ArticleModal({
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isRead: true }),
+    }).then(() => {
+      window.dispatchEvent(new CustomEvent('entry:read', { detail: { feedId: entry.feed.id } }))
     })
   }, [entryId, entry])
 
