@@ -35,6 +35,21 @@ export async function getDigestById(id: string): Promise<Digest> {
   return digest
 }
 
+export async function updateDigest(
+  id: string,
+  data: { content?: string; title?: string | null }
+): Promise<Digest> {
+  await getDigestById(id)
+  const digest = await prisma.digest.update({
+    where: { id },
+    data: {
+      ...(data.content !== undefined && { content: data.content }),
+      ...(data.title !== undefined && { title: data.title }),
+    },
+  })
+  return digest
+}
+
 export async function deleteDigest(id: string): Promise<void> {
   await getDigestById(id)
   await prisma.digest.delete({ where: { id } })

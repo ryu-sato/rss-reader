@@ -71,6 +71,8 @@ export function Sidebar() {
     return () => window.removeEventListener('entry:read', handler)
   }, [])
 
+  const totalUnread = feeds.reduce((sum, f) => sum + f.unreadCount, 0)
+
   const handleRefresh = async () => {
     setRefreshing(true)
     await fetch('/api/feeds/refresh', { method: 'POST' })
@@ -110,7 +112,12 @@ export function Sidebar() {
           )}
         >
           <Rss className="h-3.5 w-3.5 shrink-0" />
-          <span>全ての記事</span>
+          <span className="flex-1">全ての記事</span>
+          {totalUnread > 0 && (
+            <span className="ml-1 shrink-0 text-[10px] font-medium tabular-nums opacity-70">
+              {totalUnread}
+            </span>
+          )}
         </Link>
 
         <Link

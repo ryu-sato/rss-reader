@@ -1,11 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDigestById, deleteDigest } from '@/lib/digest-service'
+import { getDigestById, updateDigest, deleteDigest } from '@/lib/digest-service'
 import { AppError } from '@/lib/errors'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const digest = await getDigestById(id)
+    return NextResponse.json({ success: true, data: digest })
+  } catch (error) {
+    return handleError(error)
+  }
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    const body = await request.json()
+    const { content, title } = body
+
+    if (content !== undefined && (typeof content !== 'string' || content.trim() === '')) {
+      return NextResponse.json(
+        { success: false, error: { code: 'VALIDATION_ERROR', message: 'content must be a non-empty string' } },
+        { status: 400 }
+      )
+    }
+
+    if (title !== undefined && title !== null && typeof title !== 'string') {
+      return NextResponse.json(
+        { success: false, error: { code: 'VALIDATION_ERROR', message: 'title must be a string or null' } },
+        { status: 400 }
+      )
+    }
+
+    const digest = await updateDigest(id, { content, title })
     return NextResponse.json({ success: true, data: digest })
   } catch (error) {
     return handleError(error)
