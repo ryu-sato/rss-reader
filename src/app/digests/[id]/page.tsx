@@ -34,29 +34,40 @@ export default async function DigestDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="h-11 border-b border-border flex items-center px-4 sticky top-0 bg-background/95 backdrop-blur z-10 gap-3">
+      {/* Sticky header */}
+      <div className="h-11 border-b border-border flex items-center px-4 sticky top-0 bg-background/95 backdrop-blur z-10">
         <Link
           href="/digests"
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
           <span>一覧へ</span>
         </Link>
-        <span className="text-xs text-muted-foreground flex-1">{formatDate(digest.createdAt)}</span>
-        <Link
-          href={`/digests/${id}/edit`}
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          <span>編集</span>
-        </Link>
-        <DeleteDigestButton digestId={id} />
+        <div className="flex items-center gap-3 ml-auto">
+          <Link
+            href={`/digests/${id}/edit`}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            <span>編集</span>
+          </Link>
+          <DeleteDigestButton digestId={id} />
+        </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 py-6">
+      {/* Content */}
+      <div className="px-8 py-8">
+        {/* Meta */}
+        <p className="text-xs text-muted-foreground mb-5">{formatDate(digest.createdAt)}</p>
+
+        {/* Title */}
         {digest.title && (
-          <h1 className="text-xl font-bold mb-4">{digest.title}</h1>
+          <h1 className="text-2xl font-bold leading-snug tracking-tight mb-7 pb-6 border-b border-border">
+            {digest.title}
+          </h1>
         )}
+
+        {/* Body */}
         <article className="prose prose-sm prose-neutral dark:prose-invert max-w-none">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{digest.content}</ReactMarkdown>
         </article>
