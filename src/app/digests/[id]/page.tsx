@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { getDigestById } from '@/lib/digest-service'
 import { AppError } from '@/lib/errors'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { ChevronLeft, Pencil } from 'lucide-react'
 import DeleteDigestButton from '@/components/delete-digest-button'
 
@@ -57,7 +58,7 @@ export default async function DigestDetailPage({ params }: { params: Promise<{ i
           <h1 className="text-xl font-bold mb-4">{digest.title}</h1>
         )}
         <article className="prose prose-sm prose-neutral dark:prose-invert max-w-none">
-          <ReactMarkdown>{digest.content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{digest.content}</ReactMarkdown>
         </article>
       </div>
     </div>
