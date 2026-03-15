@@ -76,13 +76,14 @@ export async function fetchAllFeedsEntries(): Promise<void> {
 // ========================================
 
 export async function findManyEntries(query: GetEntriesQuery) {
-  const { feedId, tagId, page = 1, limit = 20, afterId, beforeId, isReadLater } = query
+  const { feedId, tagId, page = 1, limit = 20, afterId, beforeId, isReadLater, isUnread } = query
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: Record<string, any> = {}
   if (feedId) where.feedId = feedId
   if (tagId) where.tags = { some: { tagId } }
   if (isReadLater) where.meta = { isReadLater: true }
+  if (isUnread) where.OR = [{ meta: null }, { meta: { isRead: false } }]
 
   // カーソルベースの前後ナビ
   if (afterId) {

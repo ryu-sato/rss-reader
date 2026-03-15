@@ -84,6 +84,7 @@ export interface GetEntriesQuery {
   afterId?: string
   beforeId?: string
   isReadLater?: boolean
+  isUnread?: boolean
 }
 
 export interface GetEntriesResponse {

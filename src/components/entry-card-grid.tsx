@@ -22,6 +22,7 @@ interface EntryCardGridProps {
   feedId?: string
   tagId?: string
   isReadLater?: boolean
+  isUnread?: boolean
   basePath?: string
   allTags: Array<{ id: string; name: string; createdAt: Date }>
 }
@@ -32,6 +33,7 @@ export function EntryCardGrid({
   feedId,
   tagId,
   isReadLater,
+  isUnread,
   basePath = '/',
   allTags,
 }: EntryCardGridProps) {
@@ -64,6 +66,7 @@ export function EntryCardGrid({
       if (feedId) params.set('feedId', feedId)
       if (tagId) params.set('tagId', tagId)
       if (isReadLater) params.set('isReadLater', 'true')
+      if (isUnread) params.set('isUnread', 'true')
 
       const res = await fetch(`/api/entries?${params.toString()}`)
       if (!res.ok) return
@@ -74,7 +77,7 @@ export function EntryCardGrid({
     } finally {
       setIsLoading(false)
     }
-  }, [isLoading, hasMore, page, feedId, tagId, isReadLater, initialPagination.limit])
+  }, [isLoading, hasMore, page, feedId, tagId, isReadLater, isUnread, initialPagination.limit])
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
@@ -132,7 +135,11 @@ export function EntryCardGrid({
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <Rss className="h-10 w-10 text-muted-foreground/20 mb-4" />
         <p className="text-sm text-muted-foreground mb-3">
-          {isReadLater ? '「あとで読む」に追加した記事はありません' : '記事がありません'}
+          {isReadLater
+            ? '「あとで読む」に追加した記事はありません'
+            : isUnread
+              ? '未読の記事はありません'
+              : '記事がありません'}
         </p>
         {!isReadLater && (
           <Link href="/feeds/new" className="text-xs text-primary hover:underline">
