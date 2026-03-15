@@ -6,6 +6,8 @@ import { getDigestById } from '@/lib/digest-service'
 import { AppError } from '@/lib/errors'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import rehypeRaw from 'rehype-raw'
+import rehypeSanitize from 'rehype-sanitize'
 import { ChevronLeft, Pencil } from 'lucide-react'
 import DeleteDigestButton from '@/components/delete-digest-button'
 
@@ -69,7 +71,7 @@ export default async function DigestDetailPage({ params }: { params: Promise<{ i
 
         {/* Body */}
         <article className="prose prose-sm prose-neutral dark:prose-invert max-w-none">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{digest.content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{digest.content}</ReactMarkdown>
         </article>
       </div>
     </div>
