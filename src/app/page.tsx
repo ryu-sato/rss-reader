@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { Suspense } from 'react'
 import { findManyEntries } from '@/lib/entry-service'
 import { getAllTags } from '@/lib/tag-service'
