@@ -86,6 +86,8 @@ export type ErrorCode =
   | 'INVALID_FEED_FORMAT'
   | 'VALIDATION_ERROR'
   | 'INTERNAL_SERVER_ERROR'
+  | 'ENTRY_NOT_FOUND'
+  | 'DIGEST_NOT_FOUND'
 
 // ========================================
 // フォーム状態

@@ -83,3 +83,13 @@ model EntryTag {
   @@index([tagId])
   @@map("entry_tags")
 }
+
+model Digest {
+  id        String   @id @default(uuid())
+  title     String?
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@map("digests")
+}

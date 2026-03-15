@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useSearchParams, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { Rss, Bookmark, ChevronDown, Plus, Settings, Tag, RefreshCw } from 'lucide-react'
+import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 function FeedFavicon({ faviconUrl, feedUrl }: { faviconUrl: string | null; feedUrl: string }) {
@@ -72,6 +72,7 @@ export function Sidebar() {
 
   const isHome = pathname === '/' && !currentFeedId && !currentTagId
   const isReadLater = pathname === '/read-later'
+  const isDigests = pathname.startsWith('/digests')
 
   const makeFeedLink = (feedId: string) => `/?feedId=${feedId}`
   const makeTagLink = (tagId: string) => `/?tagId=${tagId}`
@@ -112,6 +113,19 @@ export function Sidebar() {
         >
           <Bookmark className="h-3.5 w-3.5 shrink-0" />
           <span>あとで読む</span>
+        </Link>
+
+        <Link
+          href="/digests"
+          className={cn(
+            'flex items-center gap-2.5 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors',
+            isDigests
+              ? 'bg-primary text-primary-foreground font-medium'
+              : 'text-foreground hover:bg-accent cursor-pointer'
+          )}
+        >
+          <BookOpen className="h-3.5 w-3.5 shrink-0" />
+          <span>ダイジェスト</span>
         </Link>
 
         {/* Feeds section */}
