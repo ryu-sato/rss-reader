@@ -9,5 +9,19 @@ services:
       DATABASE_URL: "file:/app/data/db.sqlite"
     restart: unless-stopped
 
+  tunnel:
+    image: ngrok/ngrok:latest
+    entrypoint: ["/bin/sh"]
+    command: ["/scripts/ngrok-start.sh"]
+    volumes:
+      - ./docker/ngrok-start.sh:/scripts/ngrok-start.sh:ro
+    env_file:
+      - .env.docker-compose
+    depends_on:
+      - app
+    restart: unless-stopped
+    ports:
+      - "4040:4040"
+
 volumes:
   db-data:
