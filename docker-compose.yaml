@@ -1,0 +1,13 @@
+services:
+  app:
+    image: ghcr.io/ryu-sato/rss-reader
+    ports:
+      - "3000:3000"
+    volumes:
+      - db-data:/app/data
+    environment:
+      DATABASE_URL: "file:/app/data/db.sqlite"
+    restart: unless-stopped
+
+volumes:
+  db-data:
