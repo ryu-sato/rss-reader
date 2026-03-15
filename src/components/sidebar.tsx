@@ -58,7 +58,7 @@ export function Sidebar() {
       if (feedsRes.success) setFeeds(feedsRes.data)
       if (tagsRes.success) setTags(tagsRes.data)
     })
-  }, [])
+  }, [pathname])
 
   const handleRefresh = async () => {
     setRefreshing(true)
