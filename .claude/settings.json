@@ -11,7 +11,7 @@
       "Write(.agents/*)"
     ],
     "deny": [
-      "Read(.env)",
+      "Read(.env*)",
       "Write(.claude/*)",
       "Write(.next/*)",
       "Write(.pnpm-store/*)",
