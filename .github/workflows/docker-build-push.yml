@@ -8,6 +8,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  DIGEST_DIR: /tmp/digests
 
 jobs:
   build:
@@ -56,15 +57,15 @@ jobs:
 
       - name: Export digest
         run: |
-          mkdir -p /tmp/digests
+          mkdir -p ${{ env.DIGEST_DIR }}
           digest="${{ steps.build.outputs.digest }}"
-          touch "/tmp/digests/${digest#sha256:}"
+          touch "${{ env.DIGEST_DIR }}/${digest#sha256:}"
 
       - name: Upload digest
         uses: actions/upload-artifact@v4
         with:
           name: digests-${{ steps.platform.outputs.slug }}
-          path: /tmp/digests/*
+          path: ${{ env.DIGEST_DIR }}/*
           if-no-files-found: error
           retention-days: 1
 
@@ -79,7 +80,7 @@ jobs:
       - name: Download digests
         uses: actions/download-artifact@v4
         with:
-          path: /tmp/digests
+          path: ${{ env.DIGEST_DIR }}
           pattern: digests-*
           merge-multiple: true
 
@@ -89,9 +90,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Extract Docker metadata
         id: meta
@@ -103,7 +101,7 @@ jobs:
             type=raw,value=latest
 
       - name: Create manifest list and push
-        working-directory: /tmp/digests
+        working-directory: ${{ env.DIGEST_DIR }}
         run: |
           docker buildx imagetools create \
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
