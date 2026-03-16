@@ -53,7 +53,13 @@ COPY --chown=node:node --from=builder /app/entrypoint.js ./entrypoint.js
 COPY --chown=node:node --from=prisma-cli /prisma-cli/node_modules/ ./prisma-cli/node_modules/
 COPY --chown=node:node --from=prisma-cli /prisma-cli/prisma.config.mjs ./prisma-cli/prisma.config.mjs
 # プラットフォームの正しいlibsqlネイティブバイナリで上書き（arm64/amd64キャッシュ混在問題を修正）
-COPY --chown=node:node --from=native-deps /native/node_modules/@libsql/ /app/node_modules/.pnpm/libsql@0.5.22/node_modules/@libsql/
+# pnpm仮想ストア内のシンボリックリンクを回避するため、/tmpにコピー後にrm+cpで置き換える
+COPY --from=native-deps /native/node_modules/@libsql/ /tmp/libsql-native/
+RUN ARCH=$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/') && \
+    PNPM_LIBSQL="/app/node_modules/.pnpm/libsql@0.5.22/node_modules/@libsql" && \
+    rm -rf "${PNPM_LIBSQL}/linux-${ARCH}-gnu" && \
+    cp -r "/tmp/libsql-native/linux-${ARCH}-gnu" "${PNPM_LIBSQL}/linux-${ARCH}-gnu" && \
+    chown -R node:node "${PNPM_LIBSQL}/linux-${ARCH}-gnu"
 RUN mkdir -p /app/data && chown node:node /app/data
 
 USER node
