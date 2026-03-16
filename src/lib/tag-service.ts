@@ -28,3 +28,12 @@ export async function removeTagFromEntry(tagId: string, entryId: string): Promis
 export async function getAllTags(): Promise<Tag[]> {
   return prisma.tag.findMany({ orderBy: { name: 'asc' } })
 }
+
+export async function renameTag(tagId: string, newName: string): Promise<Tag> {
+  const normalizedName = newName.toLowerCase().trim()
+  return prisma.tag.update({ where: { id: tagId }, data: { name: normalizedName } })
+}
+
+export async function deleteTag(tagId: string): Promise<void> {
+  await prisma.tag.delete({ where: { id: tagId } })
+}

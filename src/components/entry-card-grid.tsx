@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Rss } from 'lucide-react'
+import { Rss, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import type { EntryListItem } from '@/types/entry'
 import { EntryCard } from '@/components/entry-card'
@@ -202,10 +202,22 @@ export function EntryCardGrid({
               ? '未読の記事はありません'
               : '記事がありません'}
         </p>
-        {!isReadLater && (
+        {!isReadLater && !tagId && (
           <Link href="/feeds/new" className="text-xs text-primary hover:underline">
             フィードを追加する
           </Link>
+        )}
+        {tagId && (
+          <button
+            onClick={async () => {
+              const res = await fetch(`/api/tags/${tagId}`, { method: 'DELETE' })
+              if (res.ok) router.push('/')
+            }}
+            className="flex items-center gap-1.5 text-xs text-destructive hover:underline mt-1"
+          >
+            <Trash2 className="h-3 w-3" />
+            このタグを削除する
+          </button>
         )}
       </div>
     )

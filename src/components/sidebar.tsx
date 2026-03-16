@@ -1,9 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useSearchParams, usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
-import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, ListFilter } from 'lucide-react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
+import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, ListFilter, Pencil, Trash2, Check, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 function FeedFavicon({ faviconUrl, feedUrl }: { faviconUrl: string | null; feedUrl: string }) {
@@ -43,6 +43,7 @@ interface TagItem {
 }
 
 export function Sidebar() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const [feeds, setFeeds] = useState<Feed[]>([])
@@ -51,6 +52,9 @@ export function Sidebar() {
   const [tagsOpen, setTagsOpen] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [readLaterUnreadCount, setReadLaterUnreadCount] = useState(0)
+  const [editingTagId, setEditingTagId] = useState<string | null>(null)
+  const [editingTagName, setEditingTagName] = useState('')
+  const editInputRef = useRef<HTMLInputElement>(null)
 
   const fetchReadLaterUnreadCount = () => {
     fetch('/api/entries/read-later-unread-count')
@@ -92,6 +96,30 @@ export function Sidebar() {
     await fetch('/api/feeds/refresh', { method: 'POST' })
     setRefreshing(false)
     window.location.reload()
+  }
+
+  const handleRenameTag = async (tagId: string) => {
+    const name = editingTagName.trim()
+    if (!name) return
+    const res = await fetch(`/api/tags/${tagId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    })
+    if (res.ok) {
+      const { data } = await res.json()
+      setTags((prev) => prev.map((t) => (t.id === tagId ? { ...t, name: data.name } : t)))
+    }
+    setEditingTagId(null)
+  }
+
+  const handleDeleteTag = async (tagId: string) => {
+    const res = await fetch(`/api/tags/${tagId}`, { method: 'DELETE' })
+    if (res.ok) {
+      setTags((prev) => prev.filter((t) => t.id !== tagId))
+      // If currently filtering by this tag, go back to home
+      if (currentTagId === tagId) router.push('/')
+    }
   }
 
   const currentFeedId = searchParams.get('feedId')
@@ -253,21 +281,73 @@ export function Sidebar() {
             </button>
             {tagsOpen && (
               <div className="mt-0.5">
-                {tags.map((tag) => (
-                  <Link
-                    key={tag.id}
-                    href={makeTagLink(tag.id)}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors',
-                      currentTagId === tag.id
-                        ? 'bg-primary/10 text-primary font-medium'
-                        : 'text-foreground hover:bg-accent cursor-pointer'
-                    )}
-                  >
-                    <Tag className="h-3 w-3 shrink-0 text-muted-foreground" />
-                    <span className="truncate">{tag.name}</span>
-                  </Link>
-                ))}
+                {tags.map((tag) =>
+                  editingTagId === tag.id ? (
+                    // Inline rename form
+                    <div key={tag.id} className="flex items-center gap-1 px-3 py-1 mx-1.5">
+                      <Tag className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      <input
+                        ref={editInputRef}
+                        value={editingTagName}
+                        onChange={(e) => setEditingTagName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleRenameTag(tag.id)
+                          if (e.key === 'Escape') setEditingTagId(null)
+                        }}
+                        className="flex-1 min-w-0 text-xs px-1 py-0.5 rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => handleRenameTag(tag.id)}
+                        className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground shrink-0"
+                        title="保存"
+                      >
+                        <Check className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => setEditingTagId(null)}
+                        className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground shrink-0"
+                        title="キャンセル"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div key={tag.id} className="group flex items-center mx-1.5 rounded">
+                      <Link
+                        href={makeTagLink(tag.id)}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-1.5 rounded text-sm transition-colors flex-1 min-w-0',
+                          currentTagId === tag.id
+                            ? 'bg-primary/10 text-primary font-medium'
+                            : 'text-foreground hover:bg-accent cursor-pointer'
+                        )}
+                      >
+                        <Tag className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{tag.name}</span>
+                      </Link>
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity pr-1 shrink-0">
+                        <button
+                          onClick={() => {
+                            setEditingTagId(tag.id)
+                            setEditingTagName(tag.name)
+                          }}
+                          className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                          title="タグ名を変更"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTag(tag.id)}
+                          className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-destructive"
+                          title="タグを削除"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                )}
               </div>
             )}
           </div>
