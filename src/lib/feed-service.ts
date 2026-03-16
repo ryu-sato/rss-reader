@@ -27,25 +27,47 @@ export async function createFeed(url: string): Promise<Feed> {
 }
 
 export async function getAllFeeds(): Promise<FeedListItem[]> {
-  const feeds = await prisma.feed.findMany({
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      title: true,
-      url: true,
-      faviconUrl: true,
-      createdAt: true,
-      updatedAt: true,
-      entries: {
-        where: { OR: [{ meta: null }, { meta: { isRead: false } }] },
-        select: { id: true },
+  const [feeds, latestDates] = await Promise.all([
+    prisma.feed.findMany({
+      select: {
+        id: true,
+        title: true,
+        url: true,
+        faviconUrl: true,
+        createdAt: true,
+        updatedAt: true,
+        entries: {
+          where: { OR: [{ meta: null }, { meta: { isRead: false } }] },
+          select: { id: true },
+        },
       },
-    },
-  })
-  return feeds.map(({ entries, ...feed }) => ({
-    ...feed,
-    unreadCount: entries.length,
-  }))
+    }),
+    prisma.$queryRaw<{ feedId: string; lastPublishedAt: string | null }[]>`
+      SELECT feedId, MAX(publishedAt) as lastPublishedAt
+      FROM entries
+      GROUP BY feedId
+    `,
+  ])
+
+  const latestDateMap = new Map(
+    latestDates.map(({ feedId, lastPublishedAt }) => [
+      feedId,
+      lastPublishedAt ? new Date(lastPublishedAt) : null,
+    ])
+  )
+
+  return feeds
+    .map(({ entries, ...feed }) => ({
+      ...feed,
+      unreadCount: entries.length,
+      lastPublishedAt: latestDateMap.get(feed.id) ?? null,
+    }))
+    .sort((a, b) => {
+      if (!a.lastPublishedAt && !b.lastPublishedAt) return 0
+      if (!a.lastPublishedAt) return 1
+      if (!b.lastPublishedAt) return -1
+      return b.lastPublishedAt.getTime() - a.lastPublishedAt.getTime()
+    })
 }
 
 export async function getFeedById(id: string): Promise<Feed> {

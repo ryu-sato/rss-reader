@@ -1,11 +1,24 @@
 'use client'
 
 import Link from 'next/link'
-import { Rss, CalendarDays, Pencil } from 'lucide-react'
+import { Rss, Pencil } from 'lucide-react'
 import { useState } from 'react'
 import type { FeedListItem } from '@/types/feed'
 import DeleteConfirmDialog from './delete-confirm-dialog'
 import { Button } from '@/components/ui/button'
+
+function formatRelativeDate(date: Date): string {
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const hours = diff / (1000 * 60 * 60)
+  if (hours < 1) {
+    const mins = Math.floor(diff / (1000 * 60))
+    return `${mins}分前`
+  }
+  if (hours < 24) return `${Math.floor(hours)}時間前`
+  if (hours < 24 * 7) return `${Math.floor(hours / 24)}日前`
+  return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })
+}
 
 function FeedFavicon({ faviconUrl, title }: { faviconUrl: string | null; title: string }) {
   const [error, setError] = useState(false)
@@ -60,9 +73,10 @@ export default function FeedList({ feeds }: FeedListProps) {
               <p className="text-xs text-muted-foreground truncate mt-0.5 max-w-md">
                 {feed.url}
               </p>
-              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                <CalendarDays className="h-3 w-3" />
-                Added {new Date(feed.createdAt).toLocaleDateString('ja-JP')}
+              <p className="text-xs text-muted-foreground mt-1">
+                {feed.lastPublishedAt
+                  ? `最終記事: ${formatRelativeDate(new Date(feed.lastPublishedAt))}`
+                  : '記事なし'}
               </p>
             </div>
           </div>

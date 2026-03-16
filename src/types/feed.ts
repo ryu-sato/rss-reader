@@ -26,6 +26,7 @@ export interface FeedListItem {
   unreadCount: number
   createdAt: Date
   updatedAt: Date
+  lastPublishedAt: Date | null
 }
 
 // ========================================
