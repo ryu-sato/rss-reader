@@ -20,7 +20,7 @@ interface PageProps {
 
 export default async function Home({ searchParams }: PageProps) {
   const params = await searchParams
-  const filter: ReadFilterValue = params.filter === 'unread' ? 'unread' : 'all'
+  const filter: ReadFilterValue = params.filter === 'all' ? 'all' : 'unread'
   const isUnread = filter === 'unread'
 
   const [{ entries, pagination }, allTags, allFeeds] = await Promise.all([
