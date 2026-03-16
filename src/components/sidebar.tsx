@@ -89,6 +89,16 @@ export function Sidebar() {
     return () => window.removeEventListener('entry:updated', handler)
   }, [])
 
+  useEffect(() => {
+    const handler = () => {
+      fetch('/api/tags')
+        .then((r) => r.json())
+        .then((res) => { if (res.success) setTags(res.data) })
+    }
+    window.addEventListener('tag:deleted', handler)
+    return () => window.removeEventListener('tag:deleted', handler)
+  }, [])
+
   const totalUnread = feeds.reduce((sum, f) => sum + f.unreadCount, 0)
 
   const handleRefresh = async () => {

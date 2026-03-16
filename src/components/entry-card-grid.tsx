@@ -211,7 +211,10 @@ export function EntryCardGrid({
           <button
             onClick={async () => {
               const res = await fetch(`/api/tags/${tagId}`, { method: 'DELETE' })
-              if (res.ok) router.push('/')
+              if (res.ok) {
+                window.dispatchEvent(new Event('tag:deleted'))
+                router.push('/')
+              }
             }}
             className="flex items-center gap-1.5 text-xs text-destructive hover:underline mt-1"
           >
