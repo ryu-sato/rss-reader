@@ -30,6 +30,7 @@ export function EntryFilterBar({ allFeeds, allTags }: EntryFilterBarProps) {
 
   const [searchInput, setSearchInput] = useState(currentSearch)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isComposingRef = useRef(false)
 
   // Sync input if URL param changes externally (e.g. back/forward)
   useEffect(() => {
@@ -49,6 +50,15 @@ export function EntryFilterBar({ allFeeds, allTags }: EntryFilterBarProps) {
 
   const handleSearchChange = (value: string) => {
     setSearchInput(value)
+    if (isComposingRef.current) return
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      updateParam('search', value || null)
+    }, 300)
+  }
+
+  const handleCompositionEnd = (value: string) => {
+    isComposingRef.current = false
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
       updateParam('search', value || null)
@@ -73,6 +83,8 @@ export function EntryFilterBar({ allFeeds, allTags }: EntryFilterBarProps) {
           placeholder="タイトルで検索..."
           value={searchInput}
           onChange={(e) => handleSearchChange(e.target.value)}
+          onCompositionStart={() => { isComposingRef.current = true }}
+          onCompositionEnd={(e) => handleCompositionEnd(e.currentTarget.value)}
           className="w-full h-7 pl-7 pr-7 text-xs rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
         />
         {searchInput && (
