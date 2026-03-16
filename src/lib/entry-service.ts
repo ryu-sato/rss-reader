@@ -11,7 +11,7 @@ const MAX_ENTRIES_PER_FEED = 500
 
 export async function saveEntries(feedId: string, entries: FetchedEntryData[]): Promise<void> {
   for (const entry of entries) {
-    await prisma.entry.upsert({
+    const saved = await prisma.entry.upsert({
       where: { feedId_guid: { feedId, guid: entry.guid } },
       create: {
         feedId,
@@ -32,6 +32,24 @@ export async function saveEntries(feedId: string, entries: FetchedEntryData[]): 
         publishedAt: entry.publishedAt,
       },
     })
+
+    // メタがまだない（新規エントリ）かつ同一 link で既読エントリがある場合、既読に連動させる
+    if (entry.link) {
+      const existingMeta = await prisma.entryMeta.findUnique({ where: { entryId: saved.id } })
+      if (!existingMeta) {
+        const readSibling = await prisma.entryMeta.findFirst({
+          where: {
+            isRead: true,
+            entry: { link: entry.link, NOT: { id: saved.id } },
+          },
+        })
+        if (readSibling) {
+          await prisma.entryMeta.create({
+            data: { entryId: saved.id, isRead: true, isReadLater: false },
+          })
+        }
+      }
+    }
   }
 }
 
