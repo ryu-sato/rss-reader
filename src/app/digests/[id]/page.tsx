@@ -1,8 +1,6 @@
-export const dynamic = 'force-dynamic'
-
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getDigestById } from '@/lib/digest-service'
+import { getCachedDigestById } from '@/lib/digest-service'
 import { AppError } from '@/lib/errors'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -26,7 +24,7 @@ export default async function DigestDetailPage({ params }: { params: Promise<{ i
 
   let digest
   try {
-    digest = await getDigestById(id)
+    digest = await getCachedDigestById(id)
   } catch (error) {
     if (error instanceof AppError && error.statusCode === 404) {
       notFound()

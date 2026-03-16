@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { AppError } from '@/lib/errors'
 import type { Digest, DigestListItem } from '@/types/digest'
@@ -33,6 +34,14 @@ export async function getDigestById(id: string): Promise<Digest> {
   const digest = await prisma.digest.findUnique({ where: { id } })
   if (!digest) throw new AppError('DIGEST_NOT_FOUND', 'Digest not found', 404)
   return digest
+}
+
+export function getCachedDigestById(id: string): Promise<Digest> {
+  return unstable_cache(
+    async () => getDigestById(id),
+    [`digest-${id}`],
+    { tags: [`digest-${id}`] }
+  )()
 }
 
 export async function updateDigest(

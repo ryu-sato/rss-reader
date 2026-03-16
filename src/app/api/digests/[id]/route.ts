@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { getDigestById, updateDigest, deleteDigest } from '@/lib/digest-service'
 import { AppError } from '@/lib/errors'
 
@@ -33,6 +34,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const digest = await updateDigest(id, { content, title })
+    revalidateTag(`digest-${id}`, 'max')
     return NextResponse.json({ success: true, data: digest })
   } catch (error) {
     return handleError(error)
@@ -43,6 +45,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   try {
     const { id } = await params
     await deleteDigest(id)
+    revalidateTag(`digest-${id}`, 'max')
     return NextResponse.json({ success: true })
   } catch (error) {
     return handleError(error)
