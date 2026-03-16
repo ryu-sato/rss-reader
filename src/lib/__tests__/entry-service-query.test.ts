@@ -10,6 +10,7 @@ vi.mock('@/lib/db', () => ({
     entryMeta: {
       upsert: vi.fn(),
     },
+    $queryRawUnsafe: vi.fn(),
   },
 }))
 
@@ -18,6 +19,7 @@ import { findManyEntries, getEntryById, updateEntryMeta } from '../entry-service
 
 const mockEntry = vi.mocked(prisma.entry)
 const mockEntryMeta = vi.mocked(prisma.entryMeta)
+const mockQueryRawUnsafe = vi.mocked(prisma.$queryRawUnsafe)
 
 const sampleEntry = {
   id: 'entry-1',
@@ -40,9 +42,12 @@ beforeEach(() => {
 })
 
 describe('findManyEntries', () => {
+  // feedId 未指定 → 重複排除パス ($queryRawUnsafe を使用)
   it('returns entries with pagination (default page=1, limit=20)', async () => {
+    mockQueryRawUnsafe
+      .mockResolvedValueOnce([{ id: 'entry-1' }] as never) // IDs query
+      .mockResolvedValueOnce([{ count: BigInt(1) }] as never) // count query
     mockEntry.findMany.mockResolvedValue([sampleEntry] as never)
-    mockEntry.count.mockResolvedValue(1)
 
     const result = await findManyEntries({})
 
@@ -54,13 +59,6 @@ describe('findManyEntries', () => {
       hasNext: false,
       hasPrev: false,
     })
-    expect(mockEntry.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
-        take: 20,
-        skip: 0,
-      })
-    )
   })
 
   it('filters by feedId when provided', async () => {
@@ -77,15 +75,18 @@ describe('findManyEntries', () => {
   })
 
   it('filters by tagId when provided', async () => {
-    mockEntry.findMany.mockResolvedValue([] as never)
-    mockEntry.count.mockResolvedValue(0)
+    mockQueryRawUnsafe
+      .mockResolvedValueOnce([] as never) // IDs query
+      .mockResolvedValueOnce([{ count: BigInt(0) }] as never) // count query
 
     await findManyEntries({ tagId: 'tag-1' })
 
-    expect(mockEntry.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ tags: { some: { tagId: 'tag-1' } } }),
-      })
+    // tagId は raw SQL の EXISTS 句で適用される
+    expect(mockQueryRawUnsafe).toHaveBeenCalledWith(
+      expect.stringContaining('entry_tags'),
+      'tag-1',
+      expect.any(Number),
+      expect.any(Number)
     )
   })
 
@@ -95,6 +96,7 @@ describe('findManyEntries', () => {
 
     await findManyEntries({ feedId: 'feed-1', tagId: 'tag-1' })
 
+    // feedId あり → Prisma パスを使用
     expect(mockEntry.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -106,8 +108,10 @@ describe('findManyEntries', () => {
   })
 
   it('sets hasNext=true when total exceeds page*limit', async () => {
+    mockQueryRawUnsafe
+      .mockResolvedValueOnce(Array(20).fill({ id: 'entry-1' }) as never)
+      .mockResolvedValueOnce([{ count: BigInt(25) }] as never)
     mockEntry.findMany.mockResolvedValue(Array(20).fill(sampleEntry) as never)
-    mockEntry.count.mockResolvedValue(25)
 
     const result = await findManyEntries({ page: 1, limit: 20 })
 
@@ -116,8 +120,10 @@ describe('findManyEntries', () => {
   })
 
   it('sets hasPrev=true on page 2+', async () => {
+    mockQueryRawUnsafe
+      .mockResolvedValueOnce([{ id: 'entry-1' }] as never)
+      .mockResolvedValueOnce([{ count: BigInt(25) }] as never)
     mockEntry.findMany.mockResolvedValue([sampleEntry] as never)
-    mockEntry.count.mockResolvedValue(25)
 
     const result = await findManyEntries({ page: 2, limit: 20 })
 
@@ -126,8 +132,10 @@ describe('findManyEntries', () => {
   })
 
   it('includes feed, meta, tags in response', async () => {
+    mockQueryRawUnsafe
+      .mockResolvedValueOnce([{ id: 'entry-1' }] as never)
+      .mockResolvedValueOnce([{ count: BigInt(1) }] as never)
     mockEntry.findMany.mockResolvedValue([sampleEntry] as never)
-    mockEntry.count.mockResolvedValue(1)
 
     await findManyEntries({})
 

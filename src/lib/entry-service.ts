@@ -75,8 +75,19 @@ export async function fetchAllFeedsEntries(): Promise<void> {
 // 一覧取得・フィルター・ページネーション（TASK-0006）
 // ========================================
 
+const ENTRY_INCLUDE = {
+  feed: { select: { id: true, title: true } },
+  meta: true,
+  tags: { include: { tag: true } },
+} as const
+
 export async function findManyEntries(query: GetEntriesQuery) {
   const { feedId, tagId, search, page = 1, limit = 20, afterId, beforeId, isReadLater, isUnread } = query
+
+  // feedId 未指定 & ページネーション時は URL 重複排除を適用
+  if (!feedId && !afterId && !beforeId) {
+    return findManyEntriesDedup({ tagId, search, page, limit, isReadLater, isUnread })
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: Record<string, any> = {}
@@ -120,11 +131,7 @@ export async function findManyEntries(query: GetEntriesQuery) {
       orderBy,
       take: limit,
       skip,
-      include: {
-        feed: { select: { id: true, title: true } },
-        meta: true,
-        tags: { include: { tag: true } },
-      },
+      include: ENTRY_INCLUDE,
     }),
     prisma.entry.count({ where }),
   ])
@@ -141,6 +148,88 @@ export async function findManyEntries(query: GetEntriesQuery) {
       hasNext: total > page * limit,
       hasPrev: page > 1,
     },
+  }
+}
+
+// link URL で重複排除した記事一覧を取得（feedId 未指定の全記事ビュー用）
+async function findManyEntriesDedup(query: {
+  tagId?: string
+  search?: string
+  page: number
+  limit: number
+  isReadLater?: boolean
+  isUnread?: boolean
+}) {
+  const { tagId, search, page, limit, isReadLater, isUnread } = query
+  const skip = (page - 1) * limit
+
+  // 動的 WHERE 句を構築
+  const conditions: string[] = []
+  const params: unknown[] = []
+
+  if (search) {
+    conditions.push(`title LIKE '%' || ? || '%'`)
+    params.push(search)
+  }
+  if (tagId) {
+    conditions.push(`EXISTS (SELECT 1 FROM entry_tags WHERE entryId = entries.id AND tagId = ?)`)
+    params.push(tagId)
+  }
+  if (isReadLater) {
+    conditions.push(`EXISTS (SELECT 1 FROM entry_metas WHERE entryId = entries.id AND isReadLater = 1)`)
+  }
+  if (isUnread) {
+    conditions.push(
+      `(NOT EXISTS (SELECT 1 FROM entry_metas WHERE entryId = entries.id) OR EXISTS (SELECT 1 FROM entry_metas WHERE entryId = entries.id AND isRead = 0))`
+    )
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+  // link ごとに最新エントリを1件だけ選択し、ページネーション
+  const rawRows = await prisma.$queryRawUnsafe<{ id: string }[]>(
+    `WITH ranked AS (
+       SELECT id,
+              COALESCE(publishedAt, createdAt) AS effectiveDate,
+              ROW_NUMBER() OVER (PARTITION BY link ORDER BY COALESCE(publishedAt, createdAt) DESC) AS rn
+       FROM entries
+       ${whereClause}
+     )
+     SELECT id FROM ranked
+     WHERE rn = 1
+     ORDER BY effectiveDate DESC
+     LIMIT ? OFFSET ?`,
+    ...params,
+    limit,
+    skip
+  )
+
+  const countResult = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+    `SELECT COUNT(DISTINCT link) AS count FROM entries ${whereClause}`,
+    ...params
+  )
+
+  const total = Number(countResult[0]?.count ?? 0)
+  const ids = rawRows.map((r) => r.id)
+
+  if (ids.length === 0) {
+    return {
+      entries: [],
+      pagination: { page, limit, total, hasNext: total > page * limit, hasPrev: page > 1 },
+    }
+  }
+
+  // ID で本データ取得（includes 付き）し、raw SQL の順序を復元
+  const entriesUnordered = await prisma.entry.findMany({
+    where: { id: { in: ids } },
+    include: ENTRY_INCLUDE,
+  })
+  const entryById = new Map(entriesUnordered.map((e) => [e.id, e]))
+  const entries = ids.map((id) => entryById.get(id)).filter((e): e is NonNullable<typeof e> => e != null)
+
+  return {
+    entries,
+    pagination: { page, limit, total, hasNext: total > page * limit, hasPrev: page > 1 },
   }
 }
 
