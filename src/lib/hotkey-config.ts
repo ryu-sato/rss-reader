@@ -1,5 +1,6 @@
 export type HotkeyAction =
   | 'readLater'
+  | 'toggleRead'
   | 'closeModal'
   | 'prevArticle'
   | 'nextArticle'
@@ -7,6 +8,7 @@ export type HotkeyAction =
 
 export const DEFAULT_HOTKEYS: Record<HotkeyAction, string> = {
   readLater: 'b',
+  toggleRead: 'm',
   closeModal: 'Escape',
   prevArticle: 'ArrowLeft',
   nextArticle: 'ArrowRight',
@@ -15,6 +17,7 @@ export const DEFAULT_HOTKEYS: Record<HotkeyAction, string> = {
 
 export const HOTKEY_LABELS: Record<HotkeyAction, string> = {
   readLater: 'あとで読む',
+  toggleRead: '既読 / 未読を切り替え',
   closeModal: 'モーダルを閉じる',
   prevArticle: '前の記事へ',
   nextArticle: '次の記事へ',
@@ -23,6 +26,7 @@ export const HOTKEY_LABELS: Record<HotkeyAction, string> = {
 
 export const HOTKEY_ACTIONS: HotkeyAction[] = [
   'readLater',
+  'toggleRead',
   'closeModal',
   'prevArticle',
   'nextArticle',

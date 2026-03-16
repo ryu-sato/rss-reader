@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import type { EntryListItem } from '@/types/entry'
 import { cn } from '@/lib/utils'
 
@@ -9,13 +10,39 @@ interface EntryCardProps {
   entry: EntryListItem
   isSelected?: boolean
   onClick: () => void
+  onToggleRead?: (entryId: string, newIsRead: boolean) => void
 }
 
-export function EntryCard({ entry, isSelected, onClick }: EntryCardProps) {
+export function EntryCard({ entry, isSelected, onClick, onToggleRead }: EntryCardProps) {
   const [imgError, setImgError] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
   const isRead = entry.meta?.isRead ?? false
   const date = entry.publishedAt ? new Date(entry.publishedAt) : new Date(entry.createdAt)
   const showImage = !!entry.imageUrl && !imgError
+
+  const handleToggleRead = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (isUpdating) return
+    const newIsRead = !isRead
+    setIsUpdating(true)
+    try {
+      const res = await fetch(`/api/entries/${entry.id}/meta`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isRead: newIsRead }),
+      })
+      if (res.ok) {
+        onToggleRead?.(entry.id, newIsRead)
+        if (newIsRead) {
+          window.dispatchEvent(new CustomEvent('entry:read', { detail: { entryId: entry.id, feedId: entry.feed.id } }))
+        } else {
+          window.dispatchEvent(new CustomEvent('entry:unread', { detail: { entryId: entry.id, feedId: entry.feed.id } }))
+        }
+      }
+    } finally {
+      setIsUpdating(false)
+    }
+  }
 
   return (
     <article
@@ -64,6 +91,29 @@ export function EntryCard({ entry, isSelected, onClick }: EntryCardProps) {
         {!isRead && (
           <span className="absolute top-2 left-2 h-2 w-2 rounded-full bg-primary shadow-sm" />
         )}
+
+        {/* Read/Unread toggle button (visible on hover) */}
+        <button
+          onClick={handleToggleRead}
+          disabled={isUpdating}
+          aria-label={isRead ? '未読にする' : '既読にする'}
+          title={isRead ? '未読にする' : '既読にする'}
+          className={cn(
+            'absolute top-2 right-2 h-7 w-7 rounded-md flex items-center justify-center transition-all duration-150',
+            'bg-background/80 backdrop-blur-sm border border-border/60 shadow-sm',
+            'text-muted-foreground hover:text-foreground hover:bg-background hover:border-border',
+            'opacity-0 group-hover:opacity-100 focus:opacity-100',
+            'disabled:cursor-not-allowed disabled:opacity-40',
+          )}
+        >
+          {isUpdating ? (
+            <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+          ) : isRead ? (
+            <EyeOff className="h-3.5 w-3.5" />
+          ) : (
+            <Eye className="h-3.5 w-3.5" />
+          )}
+        </button>
       </div>
 
       {/* Body */}

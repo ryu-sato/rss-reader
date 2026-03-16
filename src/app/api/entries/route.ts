@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl
     const feedId = searchParams.get('feedId') ?? undefined
     const tagId = searchParams.get('tagId') ?? undefined
+    const search = searchParams.get('search') ?? undefined
     const page = Number(searchParams.get('page') ?? '1')
     const limit = Number(searchParams.get('limit') ?? '20')
     const afterId = searchParams.get('afterId') ?? undefined
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const result = await findManyEntries({ feedId, tagId, page, limit, afterId, beforeId, isReadLater, isUnread })
+    const result = await findManyEntries({ feedId, tagId, search, page, limit, afterId, beforeId, isReadLater, isUnread })
     return NextResponse.json({ success: true, data: result.entries, pagination: result.pagination })
   } catch (error) {
     console.error('GET /api/entries error:', error)

@@ -21,6 +21,7 @@ interface EntryCardGridProps {
   initialPagination: Pagination
   feedId?: string
   tagId?: string
+  search?: string
   isReadLater?: boolean
   isUnread?: boolean
   basePath?: string
@@ -32,6 +33,7 @@ export function EntryCardGrid({
   initialPagination,
   feedId,
   tagId,
+  search,
   isReadLater,
   isUnread,
   basePath = '/',
@@ -60,20 +62,34 @@ export function EntryCardGrid({
     }
   }, [initialEntries, initialPagination, selectedEntryId])
 
-  // Update entry read state when an article is marked as read
+  // Update entry read state when an article is marked as read or unread
   useEffect(() => {
-    const handler = (e: Event) => {
+    const markRead = (e: Event) => {
       const { entryId: readEntryId } = (e as CustomEvent<{ entryId: string; feedId: string }>).detail
       setEntries((prev) =>
         prev.map((entry) =>
-          entry.id === readEntryId && entry.meta
-            ? { ...entry, meta: { ...entry.meta, isRead: true } }
+          entry.id === readEntryId
+            ? { ...entry, meta: entry.meta ? { ...entry.meta, isRead: true } : null }
             : entry
         )
       )
     }
-    window.addEventListener('entry:read', handler)
-    return () => window.removeEventListener('entry:read', handler)
+    const markUnread = (e: Event) => {
+      const { entryId: readEntryId } = (e as CustomEvent<{ entryId: string; feedId: string }>).detail
+      setEntries((prev) =>
+        prev.map((entry) =>
+          entry.id === readEntryId
+            ? { ...entry, meta: entry.meta ? { ...entry.meta, isRead: false } : null }
+            : entry
+        )
+      )
+    }
+    window.addEventListener('entry:read', markRead)
+    window.addEventListener('entry:unread', markUnread)
+    return () => {
+      window.removeEventListener('entry:read', markRead)
+      window.removeEventListener('entry:unread', markUnread)
+    }
   }, [])
 
   // Update entry isReadLater state and remove from list if on read-later page
@@ -109,6 +125,7 @@ export function EntryCardGrid({
       params.set('limit', String(initialPagination.limit))
       if (feedId) params.set('feedId', feedId)
       if (tagId) params.set('tagId', tagId)
+      if (search) params.set('search', search)
       if (isReadLater) params.set('isReadLater', 'true')
       if (isUnread) params.set('isUnread', 'true')
 
@@ -121,7 +138,7 @@ export function EntryCardGrid({
     } finally {
       setIsLoading(false)
     }
-  }, [isLoading, hasMore, page, feedId, tagId, isReadLater, isUnread, initialPagination.limit])
+  }, [isLoading, hasMore, page, feedId, tagId, search, isReadLater, isUnread, initialPagination.limit])
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
@@ -203,6 +220,15 @@ export function EntryCardGrid({
             entry={entry}
             isSelected={selectedEntryId === entry.id}
             onClick={() => openEntry(entry.id)}
+            onToggleRead={(entryId, newIsRead) => {
+              setEntries((prev) =>
+                prev.map((e) =>
+                  e.id === entryId
+                    ? { ...e, meta: e.meta ? { ...e.meta, isRead: newIsRead } : null }
+                    : e
+                )
+              )
+            }}
           />
         ))}
       </div>

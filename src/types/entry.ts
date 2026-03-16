@@ -79,6 +79,7 @@ export interface TagOnEntry {
 export interface GetEntriesQuery {
   feedId?: string
   tagId?: string
+  search?: string
   page?: number
   limit?: number
   afterId?: string

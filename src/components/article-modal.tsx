@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { X, ChevronLeft, ChevronRight, Bookmark, ExternalLink } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Bookmark, ExternalLink, Eye, EyeOff } from 'lucide-react'
 import type { EntryDetail } from '@/types/entry'
 import { Button } from '@/components/ui/button'
 import { TagInput } from '@/components/tag-input'
@@ -28,7 +28,9 @@ export function ArticleModal({
 }: ArticleModalProps) {
   const [entry, setEntry] = useState<EntryDetail | null>(null)
   const [isReadLater, setIsReadLater] = useState(false)
+  const [isRead, setIsRead] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isUpdatingRead, setIsUpdatingRead] = useState(false)
   const { config } = useHotkeyConfig()
 
   // Fetch entry detail when entryId changes
@@ -40,6 +42,7 @@ export function ArticleModal({
         if (json.success) {
           setEntry(json.data)
           setIsReadLater(json.data.meta?.isReadLater ?? false)
+          setIsRead(json.data.meta?.isRead ?? false)
         }
       })
   }, [entryId])
@@ -52,9 +55,34 @@ export function ArticleModal({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isRead: true }),
     }).then(() => {
+      setIsRead(true)
       window.dispatchEvent(new CustomEvent('entry:read', { detail: { entryId, feedId: entry.feed.id } }))
     })
   }, [entryId, entry])
+
+  const toggleRead = useCallback(async () => {
+    if (!entry) return
+    const newValue = !isRead
+    setIsRead(newValue)
+    setIsUpdatingRead(true)
+    try {
+      const res = await fetch(`/api/entries/${entryId}/meta`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isRead: newValue }),
+      })
+      if (!res.ok) {
+        setIsRead(!newValue)
+      } else {
+        const event = newValue ? 'entry:read' : 'entry:unread'
+        window.dispatchEvent(new CustomEvent(event, { detail: { entryId, feedId: entry.feed.id } }))
+      }
+    } catch {
+      setIsRead(!newValue)
+    } finally {
+      setIsUpdatingRead(false)
+    }
+  }, [entryId, entry, isRead])
 
   const toggleReadLater = useCallback(async () => {
     const newValue = !isReadLater
@@ -86,6 +114,7 @@ export function ArticleModal({
       if (e.key === config.prevArticle && hasPrev) onPrev()
       if (e.key === config.nextArticle && hasNext) onNext()
       if (e.key === config.readLater && entry && !isUpdating) toggleReadLater()
+      if (e.key === config.toggleRead && entry && !isUpdatingRead) toggleRead()
       if (e.key === config.openOriginal && entry) window.open(entry.link, '_blank', 'noopener,noreferrer')
     }
     window.addEventListener('keydown', handler)
@@ -144,6 +173,23 @@ export function ArticleModal({
             <div className="flex items-center gap-1 shrink-0">
               {entry && (
                 <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleRead}
+                    disabled={isUpdatingRead}
+                    title={`${isRead ? '未読に戻す' : '既読にする'} (${config.toggleRead.toUpperCase()})`}
+                    className="h-7 gap-1.5 text-xs"
+                  >
+                    {isUpdatingRead ? (
+                      <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                    ) : isRead ? (
+                      <EyeOff className="h-3.5 w-3.5" />
+                    ) : (
+                      <Eye className="h-3.5 w-3.5" />
+                    )}
+                    {isRead ? '未読に戻す' : '既読にする'}
+                  </Button>
                   <Button
                     variant={isReadLater ? 'default' : 'ghost'}
                     size="sm"
