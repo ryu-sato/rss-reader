@@ -9,6 +9,8 @@ vi.mock('@/lib/db', () => ({
     },
     entryMeta: {
       upsert: vi.fn(),
+      update: vi.fn(),
+      findUnique: vi.fn(),
     },
     $queryRawUnsafe: vi.fn(),
   },
@@ -19,7 +21,7 @@ import { findManyEntries, getEntryById, updateEntryMeta } from '../entry-service
 
 const mockEntry = vi.mocked(prisma.entry)
 const mockEntryMeta = vi.mocked(prisma.entryMeta)
-const mockQueryRawUnsafe = vi.mocked(prisma.$queryRawUnsafe)
+const mockQueryRawUnsafe = vi.mocked(prisma.$queryRawUnsafe as (...args: unknown[]) => Promise<unknown>)
 
 const sampleEntry = {
   id: 'entry-1',
@@ -178,42 +180,49 @@ describe('getEntryById', () => {
 })
 
 describe('updateEntryMeta', () => {
-  it('upserts EntryMeta when it does not exist (creates new)', async () => {
-    const meta = {
-      id: 'meta-1',
-      entryId: 'entry-1',
-      isRead: true,
-      isReadLater: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
+  const meta = {
+    id: 'meta-1',
+    entryId: 'entry-1',
+    isRead: true,
+    isReadLater: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
+
+  it('同一 link の全エントリに isRead を連動させる', async () => {
+    mockEntry.findUnique.mockResolvedValue({ link: 'https://example.com/1' } as never)
+    mockEntry.findMany.mockResolvedValue([{ id: 'entry-1' }, { id: 'entry-2' }] as never)
     mockEntryMeta.upsert.mockResolvedValue(meta as never)
+    mockEntryMeta.findUnique.mockResolvedValue(meta as never)
 
     const result = await updateEntryMeta('entry-1', { isRead: true })
 
     expect(result).toEqual(meta)
+    // 両方のエントリに upsert が呼ばれること
+    expect(mockEntryMeta.upsert).toHaveBeenCalledTimes(2)
     expect(mockEntryMeta.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { entryId: 'entry-1' },
-        create: expect.objectContaining({ entryId: 'entry-1', isRead: true }),
+        create: expect.objectContaining({ isRead: true }),
+        update: { isRead: true },
+      })
+    )
+    expect(mockEntryMeta.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { entryId: 'entry-2' },
+        create: expect.objectContaining({ isRead: true }),
         update: { isRead: true },
       })
     )
   })
 
-  it('updates existing EntryMeta', async () => {
-    const meta = {
-      id: 'meta-1',
-      entryId: 'entry-1',
-      isRead: false,
-      isReadLater: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
-    mockEntryMeta.upsert.mockResolvedValue(meta as never)
+  it('isReadLater のみの変更は同一 link に連動しない', async () => {
+    mockEntryMeta.upsert.mockResolvedValue({ ...meta, isReadLater: true } as never)
 
     await updateEntryMeta('entry-1', { isReadLater: true })
 
+    // entry を検索しない
+    expect(mockEntry.findUnique).not.toHaveBeenCalled()
     expect(mockEntryMeta.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         update: { isReadLater: true },
