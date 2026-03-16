@@ -48,12 +48,56 @@ export function EntryCardGrid({
   const selectedEntryId = searchParams.get('entryId')
   const selectedIndex = entries.findIndex((e) => e.id === selectedEntryId)
 
-  // Reset when initial data changes (filter change via server re-render)
+  // Reset when initial data changes, but only when modal is closed.
+  // While modal is open, keep the current entries list so that:
+  // - Navigation (next/prev) keeps working even if the server re-renders with a shorter list
+  // - Articles marked as read don't disappear from the list mid-session
   useEffect(() => {
-    setEntries(initialEntries)
-    setPage(1)
-    setHasMore(initialPagination.hasNext)
-  }, [initialEntries, initialPagination])
+    if (!selectedEntryId) {
+      setEntries(initialEntries)
+      setPage(1)
+      setHasMore(initialPagination.hasNext)
+    }
+  }, [initialEntries, initialPagination, selectedEntryId])
+
+  // Update entry read state when an article is marked as read
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { entryId: readEntryId } = (e as CustomEvent<{ entryId: string; feedId: string }>).detail
+      setEntries((prev) =>
+        prev.map((entry) =>
+          entry.id === readEntryId && entry.meta
+            ? { ...entry, meta: { ...entry.meta, isRead: true } }
+            : entry
+        )
+      )
+    }
+    window.addEventListener('entry:read', handler)
+    return () => window.removeEventListener('entry:read', handler)
+  }, [])
+
+  // Update entry isReadLater state and remove from list if on read-later page
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { entryId: updatedId, isReadLater: newIsReadLater } = (
+        e as CustomEvent<{ entryId: string; isReadLater: boolean }>
+      ).detail
+      if (isReadLater && !newIsReadLater) {
+        // Remove from read-later list
+        setEntries((prev) => prev.filter((entry) => entry.id !== updatedId))
+      } else {
+        setEntries((prev) =>
+          prev.map((entry) =>
+            entry.id === updatedId && entry.meta
+              ? { ...entry, meta: { ...entry.meta, isReadLater: newIsReadLater } }
+              : entry
+          )
+        )
+      }
+    }
+    window.addEventListener('entry:updated', handler)
+    return () => window.removeEventListener('entry:updated', handler)
+  }, [isReadLater])
 
   const loadMore = useCallback(async () => {
     if (isLoading || !hasMore) return

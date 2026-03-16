@@ -50,7 +50,7 @@ export function ArticleModal({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isRead: true }),
     }).then(() => {
-      window.dispatchEvent(new CustomEvent('entry:read', { detail: { feedId: entry.feed.id } }))
+      window.dispatchEvent(new CustomEvent('entry:read', { detail: { entryId, feedId: entry.feed.id } }))
     })
   }, [entryId, entry])
 
@@ -75,7 +75,11 @@ export function ArticleModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isReadLater: newValue }),
       })
-      if (!res.ok) setIsReadLater(!newValue)
+      if (!res.ok) {
+        setIsReadLater(!newValue)
+      } else {
+        window.dispatchEvent(new CustomEvent('entry:updated', { detail: { entryId, isReadLater: newValue } }))
+      }
     } catch {
       setIsReadLater(!newValue)
     } finally {
