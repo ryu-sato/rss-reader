@@ -148,7 +148,26 @@ export function ArticleModal({
         <div className="flex-1 min-w-0 h-[92dvh] sm:h-[85vh] bg-background sm:rounded-xl rounded-t-xl border border-border shadow-2xl flex flex-col overflow-hidden">
           {/* Toolbar */}
           <div className="h-11 border-b border-border flex items-center justify-between px-4 shrink-0 gap-2">
-            <div className="text-xs text-muted-foreground truncate">
+            {/* Prev/Next — mobile only (desktop shows outside modal) */}
+            <div className="flex items-center gap-0.5 sm:hidden shrink-0">
+              <button
+                onClick={onPrev}
+                disabled={!hasPrev}
+                aria-label="前の記事"
+                className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={onNext}
+                disabled={!hasNext}
+                aria-label="次の記事"
+                className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="text-xs text-muted-foreground truncate hidden sm:block">
               {entry ? (
                 <span className="font-medium text-primary">{entry.feed.title}</span>
               ) : (
