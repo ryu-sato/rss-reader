@@ -50,6 +50,13 @@ export function Sidebar() {
   const [feedsOpen, setFeedsOpen] = useState(true)
   const [tagsOpen, setTagsOpen] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [readLaterUnreadCount, setReadLaterUnreadCount] = useState(0)
+
+  const fetchReadLaterUnreadCount = () => {
+    fetch('/api/entries/read-later-unread-count')
+      .then((r) => r.json())
+      .then((res) => { if (res.success) setReadLaterUnreadCount(res.data.count) })
+  }
 
   useEffect(() => {
     Promise.all([
@@ -59,6 +66,7 @@ export function Sidebar() {
       if (feedsRes.success) setFeeds(feedsRes.data)
       if (tagsRes.success) setTags(tagsRes.data)
     })
+    fetchReadLaterUnreadCount()
   }, [pathname])
 
   useEffect(() => {
@@ -69,6 +77,12 @@ export function Sidebar() {
     }
     window.addEventListener('entry:read', handler)
     return () => window.removeEventListener('entry:read', handler)
+  }, [])
+
+  useEffect(() => {
+    const handler = () => { fetchReadLaterUnreadCount() }
+    window.addEventListener('entry:updated', handler)
+    return () => window.removeEventListener('entry:updated', handler)
   }, [])
 
   const totalUnread = feeds.reduce((sum, f) => sum + f.unreadCount, 0)
@@ -131,7 +145,12 @@ export function Sidebar() {
           )}
         >
           <Bookmark className="h-3.5 w-3.5 shrink-0" />
-          <span>あとで読む</span>
+          <span className="flex-1">あとで読む</span>
+          {readLaterUnreadCount > 0 && (
+            <span className="ml-1 shrink-0 text-[10px] font-medium tabular-nums opacity-70">
+              {readLaterUnreadCount}
+            </span>
+          )}
         </Link>
 
         <Link
