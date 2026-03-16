@@ -101,6 +101,16 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
 
   const totalUnread = feeds.reduce((sum, f) => sum + f.unreadCount, 0)
 
+  useEffect(() => {
+    if ('setAppBadge' in navigator) {
+      if (totalUnread > 0) {
+        navigator.setAppBadge(totalUnread)
+      } else {
+        navigator.clearAppBadge()
+      }
+    }
+  }, [totalUnread])
+
   const handleRefresh = async () => {
     setRefreshing(true)
     await fetch('/api/feeds/refresh', { method: 'POST' })
