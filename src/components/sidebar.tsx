@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useSearchParams, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw } from 'lucide-react'
+import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, Keyboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 function FeedFavicon({ faviconUrl, feedUrl }: { faviconUrl: string | null; feedUrl: string }) {
@@ -86,6 +86,7 @@ export function Sidebar() {
   const isHome = pathname === '/' && !currentFeedId && !currentTagId
   const isReadLater = pathname === '/read-later'
   const isDigests = pathname.startsWith('/digests')
+  const isSettings = pathname === '/settings'
 
   const makeFeedLink = (feedId: string) => `/?feedId=${feedId}`
   const makeTagLink = (tagId: string) => `/?tagId=${tagId}`
@@ -241,6 +242,18 @@ export function Sidebar() {
         >
           <Settings className="h-3.5 w-3.5" />
           <span>管理</span>
+        </Link>
+        <Link
+          href="/settings"
+          className={cn(
+            'flex items-center gap-1.5 text-xs transition-colors px-2.5 py-2 rounded flex-1',
+            isSettings
+              ? 'bg-accent text-foreground font-medium'
+              : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+          )}
+        >
+          <Keyboard className="h-3.5 w-3.5" />
+          <span>設定</span>
         </Link>
         <button
           onClick={handleRefresh}

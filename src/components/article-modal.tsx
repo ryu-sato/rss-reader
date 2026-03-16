@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { X, ChevronLeft, ChevronRight, Bookmark, ExternalLink } from 'lucide-react'
 import type { EntryDetail } from '@/types/entry'
 import { Button } from '@/components/ui/button'
 import { TagInput } from '@/components/tag-input'
+import { useHotkeyConfig } from '@/hooks/use-hotkey-config'
 
 interface ArticleModalProps {
   entryId: string
@@ -28,6 +29,7 @@ export function ArticleModal({
   const [entry, setEntry] = useState<EntryDetail | null>(null)
   const [isReadLater, setIsReadLater] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
+  const { config } = useHotkeyConfig()
 
   // Fetch entry detail when entryId changes
   useEffect(() => {
@@ -54,18 +56,7 @@ export function ArticleModal({
     })
   }, [entryId, entry])
 
-  // Close on Escape key
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-      if (e.key === 'ArrowLeft' && hasPrev) onPrev()
-      if (e.key === 'ArrowRight' && hasNext) onNext()
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [onClose, onPrev, onNext, hasPrev, hasNext])
-
-  const toggleReadLater = async () => {
+  const toggleReadLater = useCallback(async () => {
     const newValue = !isReadLater
     setIsReadLater(newValue)
     setIsUpdating(true)
@@ -85,7 +76,21 @@ export function ArticleModal({
     } finally {
       setIsUpdating(false)
     }
-  }
+  }, [entryId, isReadLater])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.key === config.closeModal) onClose()
+      if (e.key === config.prevArticle && hasPrev) onPrev()
+      if (e.key === config.nextArticle && hasNext) onNext()
+      if (e.key === config.readLater && entry && !isUpdating) toggleReadLater()
+      if (e.key === config.openOriginal && entry) window.open(entry.link, '_blank', 'noopener,noreferrer')
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [config, onClose, onPrev, onNext, hasPrev, hasNext, entry, isUpdating, toggleReadLater])
 
   const entryTags = entry?.tags.map((t) => t.tag) ?? []
 
@@ -144,6 +149,7 @@ export function ArticleModal({
                     size="sm"
                     onClick={toggleReadLater}
                     disabled={isUpdating}
+                    title={`あとで読む (${config.readLater.toUpperCase()})`}
                     className="h-7 gap-1.5 text-xs"
                   >
                     <Bookmark className="h-3.5 w-3.5" />
