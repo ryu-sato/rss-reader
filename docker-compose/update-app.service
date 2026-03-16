@@ -1,0 +1,8 @@
+[Unit]
+Description=Update App Script
+
+[Service]
+Type=oneshot
+WorkingDirectory=/var/www
+ExecStart=/bin/bash /var/www/update-app.sh
+User=www-data

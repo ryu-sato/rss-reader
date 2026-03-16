@@ -14,7 +14,7 @@ services:
     entrypoint: ["/bin/sh"]
     command: ["/scripts/ngrok-start.sh"]
     volumes:
-      - ./docker/ngrok-start.sh:/scripts/ngrok-start.sh:ro
+      - ./ngrok-start.sh:/scripts/ngrok-start.sh:ro
     env_file:
       - .env.docker-compose
     depends_on:
