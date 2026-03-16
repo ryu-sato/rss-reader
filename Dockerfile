@@ -20,6 +20,12 @@ ENV DATABASE_URL="file:./prisma/dev.db"
 
 RUN pnpm build
 
+# ---- Native Deps (プラットフォーム固有のネイティブバイナリをターゲットアーキテクチャ向けにインストール) ----
+# pnpmのGHAキャッシュはプラットフォームを区別しないため、arm64ビルド時にamd64キャッシュが再利用される問題を回避
+FROM node:24-slim AS native-deps
+WORKDIR /native
+RUN npm install libsql@0.5.22
+
 # ---- Prisma CLI (pnpmの仮想ストア問題を回避するためnpmでフラットインストール) ----
 FROM node:24 AS prisma-cli
 WORKDIR /prisma-cli
@@ -46,6 +52,8 @@ COPY --chown=node:node --from=builder /app/src/generated ./src/generated
 COPY --chown=node:node --from=builder /app/entrypoint.js ./entrypoint.js
 COPY --chown=node:node --from=prisma-cli /prisma-cli/node_modules/ ./prisma-cli/node_modules/
 COPY --chown=node:node --from=prisma-cli /prisma-cli/prisma.config.mjs ./prisma-cli/prisma.config.mjs
+# プラットフォームの正しいlibsqlネイティブバイナリで上書き（arm64/amd64キャッシュ混在問題を修正）
+COPY --chown=node:node --from=native-deps /native/node_modules/@libsql/ /app/node_modules/.pnpm/libsql@0.5.22/node_modules/@libsql/
 RUN mkdir -p /app/data && chown node:node /app/data
 
 USER node
