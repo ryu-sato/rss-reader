@@ -126,26 +126,26 @@ export function ArticleModal({
   return (
     /* Backdrop */
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4"
       onClick={onClose}
     >
       {/* Prev / Modal / Next row */}
       <div
-        className="flex items-center gap-2 w-full max-w-[960px]"
+        className="flex items-center gap-2 w-full sm:max-w-[960px]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Prev button — adjacent to modal left edge */}
+        {/* Prev button — hidden on mobile */}
         <button
           onClick={onPrev}
           disabled={!hasPrev}
           aria-label="前の記事"
-          className="shrink-0 h-10 w-10 rounded-full bg-background/90 border border-border shadow flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="hidden sm:flex shrink-0 h-10 w-10 rounded-full bg-background/90 border border-border shadow items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
 
         {/* Modal */}
-        <div className="flex-1 min-w-0 h-[85vh] bg-background rounded-xl border border-border shadow-2xl flex flex-col overflow-hidden">
+        <div className="flex-1 min-w-0 h-[92dvh] sm:h-[85vh] bg-background sm:rounded-xl rounded-t-xl border border-border shadow-2xl flex flex-col overflow-hidden">
           {/* Toolbar */}
           <div className="h-11 border-b border-border flex items-center justify-between px-4 shrink-0 gap-2">
             <div className="text-xs text-muted-foreground truncate">
@@ -179,7 +179,7 @@ export function ArticleModal({
                     onClick={toggleRead}
                     disabled={isUpdatingRead}
                     title={`${isRead ? '未読に戻す' : '既読にする'} (${config.toggleRead.toUpperCase()})`}
-                    className="h-7 gap-1.5 text-xs"
+                    className="h-7 w-7 sm:w-auto sm:gap-1.5 sm:px-2 p-0 text-xs"
                   >
                     {isUpdatingRead ? (
                       <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
@@ -188,7 +188,7 @@ export function ArticleModal({
                     ) : (
                       <Eye className="h-3.5 w-3.5" />
                     )}
-                    {isRead ? '未読に戻す' : '既読にする'}
+                    <span className="hidden sm:inline">{isRead ? '未読に戻す' : '既読にする'}</span>
                   </Button>
                   <Button
                     variant={isReadLater ? 'default' : 'ghost'}
@@ -196,10 +196,10 @@ export function ArticleModal({
                     onClick={toggleReadLater}
                     disabled={isUpdating}
                     title={`あとで読む (${config.readLater.toUpperCase()})`}
-                    className="h-7 gap-1.5 text-xs"
+                    className="h-7 w-7 sm:w-auto sm:gap-1.5 sm:px-2 p-0 text-xs"
                   >
                     <Bookmark className="h-3.5 w-3.5" />
-                    {isReadLater ? '保存済み' : 'あとで読む'}
+                    <span className="hidden sm:inline">{isReadLater ? '保存済み' : 'あとで読む'}</span>
                   </Button>
                   <a
                     href={entry.link}
@@ -230,7 +230,7 @@ export function ArticleModal({
               <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
             </div>
           ) : (
-            <div className="overflow-y-auto flex-1 px-8 py-6 max-w-3xl mx-auto w-full">
+            <div className="overflow-y-auto flex-1 px-4 py-4 sm:px-8 sm:py-6 max-w-3xl mx-auto w-full">
               <h2 className="text-xl font-bold leading-snug mb-5 text-foreground">
                 <a
                   href={entry.link}
@@ -265,12 +265,12 @@ export function ArticleModal({
           )}
         </div>
 
-        {/* Next button — adjacent to modal right edge */}
+        {/* Next button — hidden on mobile */}
         <button
           onClick={onNext}
           disabled={!hasNext}
           aria-label="次の記事"
-          className="shrink-0 h-10 w-10 rounded-full bg-background/90 border border-border shadow flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="hidden sm:flex shrink-0 h-10 w-10 rounded-full bg-background/90 border border-border shadow items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronRight className="h-5 w-5" />
         </button>

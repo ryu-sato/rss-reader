@@ -1,7 +1,6 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Sidebar } from "@/components/sidebar";
+import { SidebarProvider } from "@/components/sidebar-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,10 +28,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex overflow-hidden bg-background`}
       >
-        <Suspense>
-          <Sidebar />
-        </Suspense>
-        <div className="flex-1 overflow-hidden min-w-0">{children}</div>
+        <SidebarProvider>{children}</SidebarProvider>
       </body>
     </html>
   );

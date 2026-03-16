@@ -89,7 +89,7 @@ export function EntryFilterBar({ allFeeds, allTags }: EntryFilterBarProps) {
       <select
         value={currentFeedId}
         onChange={(e) => updateParam('feedId', e.target.value || null)}
-        className="h-7 px-2 text-xs rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring min-w-28 max-w-44 truncate"
+        className="h-7 px-2 text-xs rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring flex-1 sm:flex-none sm:min-w-28 sm:max-w-44 truncate"
       >
         <option value="">すべてのフィード</option>
         {allFeeds.map((feed) => (
@@ -103,7 +103,7 @@ export function EntryFilterBar({ allFeeds, allTags }: EntryFilterBarProps) {
       <select
         value={currentTagId}
         onChange={(e) => updateParam('tagId', e.target.value || null)}
-        className="h-7 px-2 text-xs rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring min-w-28 max-w-44 truncate"
+        className="h-7 px-2 text-xs rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring flex-1 sm:flex-none sm:min-w-28 sm:max-w-44 truncate"
       >
         <option value="">すべてのタグ</option>
         {allTags.map((tag) => (

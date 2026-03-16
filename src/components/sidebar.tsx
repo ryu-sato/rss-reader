@@ -42,7 +42,7 @@ interface TagItem {
   name: string
 }
 
-export function Sidebar() {
+export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: boolean; onMobileClose?: () => void }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
@@ -132,6 +132,11 @@ export function Sidebar() {
     }
   }
 
+  // Close sidebar on mobile when navigation changes
+  useEffect(() => {
+    onMobileClose?.()
+  }, [pathname, searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const currentFeedId = searchParams.get('feedId')
   const currentTagId = searchParams.get('tagId')
 
@@ -144,7 +149,16 @@ export function Sidebar() {
   const makeTagLink = (tagId: string) => `/?tagId=${tagId}`
 
   return (
-    <aside className="w-56 shrink-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col overflow-hidden">
+    <aside
+      className={cn(
+        'bg-sidebar border-r border-sidebar-border flex flex-col overflow-hidden',
+        // Mobile: fixed overlay, slides in/out
+        'fixed top-0 bottom-0 left-0 z-40 w-64 transition-transform duration-300 ease-in-out',
+        mobileOpen ? 'translate-x-0' : '-translate-x-full',
+        // Desktop: normal flex flow
+        'md:relative md:translate-x-0 md:w-56 md:shrink-0 md:h-screen md:z-auto'
+      )}
+    >
       {/* Logo */}
       <div className="h-11 flex items-center px-4 border-b border-sidebar-border shrink-0">
         <Link href="/" className="flex items-center gap-2 font-bold text-foreground">
