@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useSearchParams, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, Keyboard } from 'lucide-react'
+import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, ListFilter } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 function FeedFavicon({ faviconUrl, feedUrl }: { faviconUrl: string | null; feedUrl: string }) {
@@ -148,11 +148,11 @@ export function Sidebar() {
         </Link>
 
         {/* Feeds section */}
-        {feeds.length > 0 && (
-          <div className="mt-3">
+        <div className="mt-3">
+          <div className="flex items-center px-3 py-1 group">
             <button
               onClick={() => setFeedsOpen(!feedsOpen)}
-              className="w-full flex items-center justify-between px-3 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 flex-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
             >
               <span>フィード</span>
               <ChevronDown
@@ -162,7 +162,35 @@ export function Sidebar() {
                 )}
               />
             </button>
-            {feedsOpen && (
+            {/* Feed contextual actions */}
+            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Link
+                href="/feeds/new"
+                title="フィードを追加"
+                className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+              </Link>
+              <Link
+                href="/feeds"
+                title="フィードを管理"
+                className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ListFilter className="h-3 w-3" />
+              </Link>
+            </div>
+          </div>
+
+          {feeds.length === 0 ? (
+            <Link
+              href="/feeds/new"
+              className="flex items-center gap-2 px-3 py-1.5 mx-1.5 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors border border-dashed border-sidebar-border mt-1"
+            >
+              <Plus className="h-3 w-3 shrink-0" />
+              <span>フィードを追加</span>
+            </Link>
+          ) : (
+            feedsOpen && (
               <div className="mt-0.5">
                 {feeds.map((feed) => (
                   <Link
@@ -185,9 +213,9 @@ export function Sidebar() {
                   </Link>
                 ))}
               </div>
-            )}
-          </div>
-        )}
+            )
+          )}
+        </div>
 
         {/* Tags section */}
         {tags.length > 0 && (
@@ -228,40 +256,26 @@ export function Sidebar() {
       </nav>
 
       {/* Footer actions */}
-      <div className="border-t border-sidebar-border p-2 shrink-0 flex gap-1">
-        <Link
-          href="/feeds/new"
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2.5 py-2 rounded hover:bg-accent flex-1"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          <span>追加</span>
-        </Link>
-        <Link
-          href="/feeds"
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2.5 py-2 rounded hover:bg-accent flex-1"
-        >
-          <Settings className="h-3.5 w-3.5" />
-          <span>管理</span>
-        </Link>
+      <div className="border-t border-sidebar-border p-2 shrink-0 grid grid-cols-2 gap-1">
         <Link
           href="/settings"
           className={cn(
-            'flex items-center gap-1.5 text-xs transition-colors px-2.5 py-2 rounded flex-1',
+            'flex items-center gap-2 text-xs px-3 py-2 rounded transition-colors',
             isSettings
               ? 'bg-accent text-foreground font-medium'
               : 'text-muted-foreground hover:text-foreground hover:bg-accent'
           )}
         >
-          <Keyboard className="h-3.5 w-3.5" />
+          <Settings className="h-3.5 w-3.5 shrink-0" />
           <span>設定</span>
         </Link>
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2.5 py-2 rounded hover:bg-accent flex-1 disabled:opacity-50"
+          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded hover:bg-accent disabled:opacity-50"
         >
-          <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
-          <span>更新</span>
+          <RefreshCw className={cn('h-3.5 w-3.5 shrink-0', refreshing && 'animate-spin')} />
+          <span>{refreshing ? '更新中...' : '更新'}</span>
         </button>
       </div>
     </aside>
