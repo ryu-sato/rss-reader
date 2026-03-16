@@ -45,6 +45,7 @@ export function EntryCardGrid({
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(initialPagination.hasNext)
   const [isLoading, setIsLoading] = useState(false)
+  const [pendingNavigateNext, setPendingNavigateNext] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
   const selectedEntryId = searchParams.get('entryId')
@@ -175,19 +176,21 @@ export function EntryCardGrid({
     }
   }
 
+  // Navigate to next entry after loadMore completes
+  useEffect(() => {
+    if (pendingNavigateNext && selectedIndex < entries.length - 1) {
+      setPendingNavigateNext(false)
+      openEntry(entries[selectedIndex + 1].id)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries, pendingNavigateNext])
+
   const goToNext = () => {
     if (selectedIndex < entries.length - 1) {
       openEntry(entries[selectedIndex + 1].id)
     } else if (hasMore) {
-      // Load more and navigate after
-      loadMore().then(() => {
-        setEntries((current) => {
-          if (selectedIndex < current.length - 1) {
-            openEntry(current[selectedIndex + 1].id)
-          }
-          return current
-        })
-      })
+      setPendingNavigateNext(true)
+      loadMore()
     }
   }
 
