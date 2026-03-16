@@ -57,9 +57,10 @@ COPY --chown=node:node --from=prisma-cli /prisma-cli/prisma.config.mjs ./prisma-
 COPY --from=native-deps /native/node_modules/@libsql/ /tmp/libsql-native/
 RUN ARCH=$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/') && \
     PNPM_LIBSQL="/app/node_modules/.pnpm/libsql@0.5.22/node_modules/@libsql" && \
-    rm -rf "${PNPM_LIBSQL}/linux-${ARCH}-gnu" && \
+    rm -rf "${PNPM_LIBSQL}" && \
+    mkdir -p "${PNPM_LIBSQL}" && \
     cp -r "/tmp/libsql-native/linux-${ARCH}-gnu" "${PNPM_LIBSQL}/linux-${ARCH}-gnu" && \
-    chown -R node:node "${PNPM_LIBSQL}/linux-${ARCH}-gnu"
+    chown -R node:node "${PNPM_LIBSQL}"
 RUN mkdir -p /app/data && chown node:node /app/data
 
 USER node
