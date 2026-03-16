@@ -16,6 +16,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "RSS Reader",
   description: "Manage and read your RSS feeds",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "RSS Reader",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({
@@ -25,6 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
+      <head>
+        <meta name="theme-color" content="#f97316" />
+        <link rel="apple-touch-icon" href="/icons/icon.svg" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex overflow-hidden bg-background`}
       >
