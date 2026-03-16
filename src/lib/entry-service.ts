@@ -93,7 +93,7 @@ export async function findManyEntries(query: GetEntriesQuery) {
   const where: Record<string, any> = {}
   if (feedId) where.feedId = feedId
   if (tagId) where.tags = { some: { tagId } }
-  if (search) where.title = { contains: search, mode: 'insensitive' }
+  if (search) where.title = { contains: search }
   if (isReadLater) where.meta = { isReadLater: true }
   if (isUnread) where.OR = [{ meta: null }, { meta: { isRead: false } }]
 
