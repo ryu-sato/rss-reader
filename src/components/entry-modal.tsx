@@ -169,7 +169,16 @@ export function EntryModal({ entry, allTags }: EntryModalProps) {
           )}
         </div>
 
-        <h2 className="text-xl font-bold leading-snug mb-5 text-foreground">{entry.title}</h2>
+        <h2 className="text-xl font-bold leading-snug mb-5 text-foreground">
+          <a
+            href={entry.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            {entry.title}
+          </a>
+        </h2>
 
         {entry.imageUrl && (
           <div className="mb-5">

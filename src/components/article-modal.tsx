@@ -179,7 +179,16 @@ export function ArticleModal({
             </div>
           ) : (
             <div className="overflow-y-auto flex-1 px-8 py-6 max-w-3xl mx-auto w-full">
-              <h2 className="text-xl font-bold leading-snug mb-5 text-foreground">{entry.title}</h2>
+              <h2 className="text-xl font-bold leading-snug mb-5 text-foreground">
+                <a
+                  href={entry.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  {entry.title}
+                </a>
+              </h2>
 
               {entry.imageUrl && (
                 <div className="mb-5">
