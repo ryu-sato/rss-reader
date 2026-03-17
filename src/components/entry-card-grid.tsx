@@ -41,20 +41,27 @@ export function EntryCardGrid({
 }: EntryCardGridProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  // Card grid state (updated by events, reset when modal closes)
   const [entries, setEntries] = useState<EntryListItem[]>(initialEntries)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(initialPagination.hasNext)
   const [isLoading, setIsLoading] = useState(false)
-  const [pendingNavigateNext, setPendingNavigateNext] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
+  // Navigation state - snapshot of entries at modal open time, only grows via loadNavMore.
+  // Isolated from isRead/isReadLater changes so prev/next navigation stays stable.
+  const [navEntries, setNavEntries] = useState<EntryListItem[]>([])
+  const [navPage, setNavPage] = useState(1)
+  const [navHasMore, setNavHasMore] = useState(false)
+  const [isNavLoading, setIsNavLoading] = useState(false)
+  const [pendingNavigateNext, setPendingNavigateNext] = useState(false)
+  const hasNavSnapshotRef = useRef(false)
+
   const selectedEntryId = searchParams.get('entryId')
-  const selectedIndex = entries.findIndex((e) => e.id === selectedEntryId)
+  const navIndex = selectedEntryId ? navEntries.findIndex((e) => e.id === selectedEntryId) : -1
 
   // Reset when initial data changes, but only when modal is closed.
-  // While modal is open, keep the current entries list so that:
-  // - Navigation (next/prev) keeps working even if the server re-renders with a shorter list
-  // - Articles marked as read don't disappear from the list mid-session
   useEffect(() => {
     if (!selectedEntryId) {
       setEntries(initialEntries)
@@ -63,7 +70,25 @@ export function EntryCardGrid({
     }
   }, [initialEntries, initialPagination, selectedEntryId])
 
-  // Update entry read state when an article is marked as read or unread
+  // Snapshot entries into nav state when modal opens; clear when modal closes.
+  // Nav list is intentionally not updated by entry:read/entry:updated events.
+  useEffect(() => {
+    if (selectedEntryId && !hasNavSnapshotRef.current) {
+      hasNavSnapshotRef.current = true
+      setNavEntries([...entries])
+      setNavPage(page)
+      setNavHasMore(hasMore)
+    } else if (!selectedEntryId && hasNavSnapshotRef.current) {
+      hasNavSnapshotRef.current = false
+      setNavEntries([])
+      setNavPage(1)
+      setNavHasMore(false)
+      setPendingNavigateNext(false)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEntryId])
+
+  // Update card grid read state when an article is marked as read or unread
   useEffect(() => {
     const markRead = (e: Event) => {
       const { entryId: readEntryId } = (e as CustomEvent<{ entryId: string; feedId: string }>).detail
@@ -93,14 +118,15 @@ export function EntryCardGrid({
     }
   }, [])
 
-  // Update entry isReadLater state and remove from list if on read-later page
+  // Update card grid isReadLater state and remove from list if on read-later page.
+  // navEntries is intentionally not updated here.
   useEffect(() => {
     const handler = (e: Event) => {
       const { entryId: updatedId, isReadLater: newIsReadLater } = (
         e as CustomEvent<{ entryId: string; isReadLater: boolean }>
       ).detail
       if (isReadLater && !newIsReadLater) {
-        // Remove from read-later list
+        // Remove from read-later card grid
         setEntries((prev) => prev.filter((entry) => entry.id !== updatedId))
       } else {
         setEntries((prev) =>
@@ -116,6 +142,7 @@ export function EntryCardGrid({
     return () => window.removeEventListener('entry:updated', handler)
   }, [isReadLater])
 
+  // Load next page for the card grid (infinite scroll)
   const loadMore = useCallback(async () => {
     if (isLoading || !hasMore) return
     setIsLoading(true)
@@ -141,7 +168,33 @@ export function EntryCardGrid({
     }
   }, [isLoading, hasMore, page, feedId, tagId, search, isReadLater, isUnread, initialPagination.limit])
 
-  // Infinite scroll via IntersectionObserver
+  // Load next page for modal navigation (appends to navEntries only)
+  const loadNavMore = useCallback(async () => {
+    if (isNavLoading || !navHasMore) return
+    setIsNavLoading(true)
+    try {
+      const nextPage = navPage + 1
+      const params = new URLSearchParams()
+      params.set('page', String(nextPage))
+      params.set('limit', String(initialPagination.limit))
+      if (feedId) params.set('feedId', feedId)
+      if (tagId) params.set('tagId', tagId)
+      if (search) params.set('search', search)
+      if (isReadLater) params.set('isReadLater', 'true')
+      if (isUnread) params.set('isUnread', 'true')
+
+      const res = await fetch(`/api/entries?${params.toString()}`)
+      if (!res.ok) return
+      const json = await res.json()
+      setNavEntries((prev) => [...prev, ...json.data])
+      setNavPage(nextPage)
+      setNavHasMore(json.pagination.hasNext)
+    } finally {
+      setIsNavLoading(false)
+    }
+  }, [isNavLoading, navHasMore, navPage, feedId, tagId, search, isReadLater, isUnread, initialPagination.limit])
+
+  // Infinite scroll via IntersectionObserver (card grid only)
   useEffect(() => {
     const sentinel = sentinelRef.current
     if (!sentinel) return
@@ -158,6 +211,26 @@ export function EntryCardGrid({
     return () => observer.disconnect()
   }, [loadMore])
 
+  // Preload next nav page when the last nav entry is displayed
+  useEffect(() => {
+    if (!selectedEntryId || !navHasMore || isNavLoading || navEntries.length === 0) return
+    if (navIndex === navEntries.length - 1) {
+      loadNavMore()
+    }
+  }, [navIndex, navEntries.length, navHasMore, isNavLoading, selectedEntryId, loadNavMore])
+
+  // Navigate to next entry after loadNavMore completes (fallback for fast clicks)
+  useEffect(() => {
+    if (!pendingNavigateNext || navEntries.length === 0) return
+    const currentIndex = navEntries.findIndex((e) => e.id === selectedEntryId)
+    if (currentIndex < navEntries.length - 1) {
+      setPendingNavigateNext(false)
+      const params = new URLSearchParams(searchParams.toString())
+      params.set('entryId', navEntries[currentIndex + 1].id)
+      router.push(`${basePath}?${params.toString()}`, { scroll: false })
+    }
+  }, [navEntries, pendingNavigateNext, selectedEntryId, searchParams, router, basePath])
+
   const openEntry = (entryId: string) => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('entryId', entryId)
@@ -171,26 +244,20 @@ export function EntryCardGrid({
   }
 
   const goToPrev = () => {
-    if (selectedIndex > 0) {
-      openEntry(entries[selectedIndex - 1].id)
+    if (navIndex > 0) {
+      openEntry(navEntries[navIndex - 1].id)
     }
   }
 
-  // Navigate to next entry after loadMore completes
-  useEffect(() => {
-    if (pendingNavigateNext && selectedIndex < entries.length - 1) {
-      setPendingNavigateNext(false)
-      openEntry(entries[selectedIndex + 1].id)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries, pendingNavigateNext])
-
   const goToNext = () => {
-    if (selectedIndex < entries.length - 1) {
-      openEntry(entries[selectedIndex + 1].id)
-    } else if (hasMore) {
+    if (navIndex < navEntries.length - 1) {
+      openEntry(navEntries[navIndex + 1].id)
+    } else if (navHasMore) {
+      // Preload should already be in progress; set pending flag to navigate on completion
       setPendingNavigateNext(true)
-      loadMore()
+      if (!isNavLoading) {
+        loadNavMore()
+      }
     }
   }
 
@@ -265,8 +332,8 @@ export function EntryCardGrid({
         <ArticleModal
           entryId={selectedEntryId}
           allTags={allTags}
-          hasPrev={selectedIndex > 0}
-          hasNext={selectedIndex < entries.length - 1 || hasMore}
+          hasPrev={navIndex > 0}
+          hasNext={navIndex < navEntries.length - 1 || navHasMore}
           onClose={closeEntry}
           onPrev={goToPrev}
           onNext={goToNext}
