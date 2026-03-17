@@ -123,6 +123,17 @@ export function ArticleModal({
 
   const entryTags = entry?.tags.map((t) => t.tag) ?? []
 
+  // iOS PWA standalone mode では <a target="_blank"> がアプリ内で開くため、
+  // window.open() を使ってデフォルトブラウザ（Safari）で開く
+  const handleExternalLink = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
+    const isIosStandalone = typeof (window.navigator as unknown as { standalone?: boolean }).standalone !== 'undefined' &&
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true
+    if (isIosStandalone) {
+      e.preventDefault()
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
   return (
     /* Backdrop */
     <div
@@ -225,6 +236,7 @@ export function ArticleModal({
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="元の記事を開く"
+                    onClick={(e) => handleExternalLink(e, entry.link)}
                     className="inline-flex items-center justify-center h-7 w-7 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
@@ -255,6 +267,7 @@ export function ArticleModal({
                   href={entry.link}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => handleExternalLink(e, entry.link)}
                   className="hover:underline"
                 >
                   {entry.title}
