@@ -8,29 +8,11 @@
 // ========================================
 // エンティティ定義
 // ========================================
-
-export interface Entry {
-  id: string
-  feedId: string
-  guid: string
-  title: string
-  link: string
-  description: string | null
-  content: string | null
-  imageUrl: string | null
-  publishedAt: Date | null
-  createdAt: Date
-  updatedAt: Date
-}
+import { Entry as EntryModel } from '@/generated/prisma/client'
+export type Entry = EntryModel
 
 /** エントリー一覧表示用（軽量版） */
-export interface EntryListItem {
-  id: string
-  title: string
-  link: string
-  imageUrl: string | null
-  publishedAt: Date | null
-  createdAt: Date
+export interface EntryListItem extends Pick<Entry, 'id' | 'title' | 'link' | 'imageUrl' | 'publishedAt' | 'createdAt'> {
   feed: {
     id: string
     title: string
