@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
-import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, ListFilter, Pencil, Trash2, Check, X, ThumbsUp } from 'lucide-react'
+import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, ListFilter, Pencil, Trash2, Check, X, ThumbsUp, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 function FeedFavicon({ faviconUrl, feedUrl }: { faviconUrl: string | null; feedUrl: string }) {
@@ -155,6 +155,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
   const isPreferred = pathname === '/preferred'
   const isDigests = pathname.startsWith('/digests')
   const isSettings = pathname === '/settings'
+  const isPreferences = pathname === '/preferences'
 
   const makeFeedLink = (feedId: string) => `/?feedId=${feedId}`
   const makeTagLink = (tagId: string) => `/?tagId=${tagId}`
@@ -227,6 +228,19 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
         >
           <ThumbsUp className="h-3.5 w-3.5 shrink-0" />
           <span>お好みの記事</span>
+        </Link>
+
+        <Link
+          href="/preferences"
+          className={cn(
+            'flex items-center gap-2.5 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors',
+            isPreferences
+              ? 'bg-primary text-primary-foreground font-medium'
+              : 'text-foreground hover:bg-accent cursor-pointer'
+          )}
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
+          <span>好みの設定</span>
         </Link>
 
         <Link
