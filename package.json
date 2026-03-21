@@ -10,7 +10,9 @@
     "test": "npm run dotenvx:test -- vitest",
     "test:run": "npm test -- run",
     "test:coverage": "npm test -- run --coverage",
-    "dotenvx:test": "dotenvx run -f .env.test --"
+    "dotenvx:test": "dotenvx run -f .env.test --",
+    "dotenvx:dev": "dotenvx run -f .env.development --",
+    "dotenvx:prod": "dotenvx run -f .env.production --"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
