@@ -51,23 +51,31 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     expect(result.entries[0].title).toEqual('hello world')
   })
 
-  // it('タグフィルター（tagId）指定時、タグIDがクエリパラメータに含まれる', async () => {
-  //   // Arrange
-  //   mockQueryRawUnsafe.mockResolvedValueOnce([])
-  //   mockQueryRawUnsafe.mockResolvedValueOnce([{ count: BigInt(0) }])
+  it('タグフィルター（tagId）指定時、1つでもタグが紐づくエントリが取得される', async () => {
+    // Arrange
+    const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } })
+    await prisma.entry.createMany({
+      data: [
+        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date() },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/1', publishedAt: new Date() },
+      ],
+    })
+    const tag1 = await prisma.tag.create({ data: { id: 'tag-123', name: 'Tag 123' } })
+    const tag2 = await prisma.tag.create({ data: { id: 'tag-456', name: 'Tag 456' } })
+    await prisma.entryTag.create({ data: { entryId: 'entry-1', tagId: tag1.id } })
+    await prisma.entryTag.create({ data: { entryId: 'entry-1', tagId: tag2.id } })
+    await prisma.entryTag.create({ data: { entryId: 'entry-2', tagId: tag2.id } })
 
-  //   const targetTagId = 'tag-123'
+    const targetTagId = 'tag-123'
+    const page = 1;
 
-  //   // Act
-  //   await findManyEntries({ tagId: targetTagId, page: 1, limit: 20 })
+    // Act
+    const result = await findManyEntries({ tagId: targetTagId, page })
 
-  //   // Assert
-  //   const mainQueryArgs = mockQueryRawUnsafe.mock.calls[0]
-  //   const params = mainQueryArgs.slice(1)
-
-  //   // パラメータにタグIDが含まれていることを検証
-  //   expect(params).toContain(targetTagId)
-  // })
+    // Assert
+    expect(result.entries.length).toEqual(1)
+    expect(result.entries[0].id).toEqual('entry-1')
+  })
 
   // it('未読・あとで読むフィルター指定時、対応する条件句がクエリに含まれる', async () => {
   //   // Arrange
