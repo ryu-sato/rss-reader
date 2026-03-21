@@ -4,6 +4,7 @@ import { fetchEntries } from '@/lib/entry-fetcher'
 import type { FetchedEntryData, GetEntriesQuery, UpdateEntryMetaInput } from '@/types/entry'
 
 const MAX_ENTRIES_PER_FEED = 500
+const PREFRRED_SCORE_THRESHOLD = 0.5
 
 // ========================================
 // 保存・重複排除・上限管理（TASK-0005）
@@ -116,7 +117,7 @@ export async function findManyEntries(query: GetEntriesQuery) {
   if (search) where.title = { contains: search }
   if (isReadLater) where.meta = { isReadLater: true }
   if (isUnread) where.OR = [{ meta: null }, { meta: { isRead: false } }]
-  if (isPreferred) where.meta = { isPreferred: true }
+  if (isPreferred) where.scores = { some: { score: { gte: PREFRRED_SCORE_THRESHOLD } } };
 
   // カーソルベースの前後ナビ
   if (afterId) {
@@ -190,7 +191,7 @@ async function findManyEntriesDedup(query: {
   if (search) where.title = { contains: search };
   if (isReadLater) where.meta = { isReadLater: true };
   if (isUnread) where.OR = [{ meta: null }, { meta: { isRead: false } }];
-  if (isPreferred) {} // TODO: isPreferred フィルターの条件を定義
+  if (isPreferred) where.scores = { some: { score: { gte: PREFRRED_SCORE_THRESHOLD } } };
 
   const entries = await prisma.entry.findMany({
     where,

@@ -175,4 +175,30 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     expect(result.entries[1].id).toBe('entry-2')
     expect(result.entries[2].id).toBe('entry-1')
   })
+
+  it('isPreferredフィルタが指定されると、一定以上のscoreを持つエントリが取得される', async () => {
+    // Arrange
+    const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } });
+    await prisma.entry.createMany({
+      data: [
+        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date(), effectedDate: new Date() },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/2', publishedAt: new Date(), effectedDate: new Date() },
+      ],
+    });
+    const userPreference = await prisma.userPreference.create({ data: { id: 'user-1', text: 'Preference 1' } });
+    await prisma.entryPreferenceScore.createMany({
+      data: [
+        { entryId: 'entry-1', preferenceId: userPreference.id, score: 0.8 },
+        { entryId: 'entry-2', preferenceId: userPreference.id, score: 0.3 },
+      ]});
+
+    const page = 1;
+
+    // Act
+    const result = await findManyEntries({ isPreferred: true, page });
+
+    // Assert
+    expect(result.entries.length).toEqual(1);
+    expect(result.entries[0].id).toEqual('entry-1');
+  })
 })
