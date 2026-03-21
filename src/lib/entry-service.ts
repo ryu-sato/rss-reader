@@ -100,11 +100,11 @@ const ENTRY_INCLUDE = {
 } as const
 
 export async function findManyEntries(query: GetEntriesQuery) {
-  const { feedId, tagId, search, page = 1, limit = 20, afterId, beforeId, isReadLater, isUnread } = query
+  const { feedId, tagId, search, page = 1, limit = 20, afterId, beforeId, isReadLater, isUnread, isPreferred } = query
 
   // feedId 未指定 & ページネーション時は URL 重複排除を適用
   if (!feedId && !afterId && !beforeId) {
-    return findManyEntriesDedup({ tagId, search, page, limit, isReadLater, isUnread })
+    return findManyEntriesDedup({ tagId, search, page, limit, isReadLater, isUnread, isPreferred })
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -114,6 +114,7 @@ export async function findManyEntries(query: GetEntriesQuery) {
   if (search) where.title = { contains: search }
   if (isReadLater) where.meta = { isReadLater: true }
   if (isUnread) where.OR = [{ meta: null }, { meta: { isRead: false } }]
+  if (isPreferred) where.meta = { isPreferred: true }
 
   // カーソルベースの前後ナビ
   if (afterId) {
@@ -177,8 +178,9 @@ async function findManyEntriesDedup(query: {
   limit: number
   isReadLater?: boolean
   isUnread?: boolean
+  isPreferred?: boolean
 }) {
-  const { tagId, search, page, limit, isReadLater, isUnread } = query
+  const { tagId, search, page, limit, isReadLater, isUnread, isPreferred } = query
   const skip = (page - 1) * limit
 
   // 動的 WHERE 句を構築
@@ -201,7 +203,9 @@ async function findManyEntriesDedup(query: {
       `(NOT EXISTS (SELECT 1 FROM entry_metas WHERE entryId = entries.id) OR EXISTS (SELECT 1 FROM entry_metas WHERE entryId = entries.id AND isRead = 0))`
     )
   }
-
+  if (isPreferred) {
+    // TODO: isPreferred フィルターの実装（ユーザープリファレンスに基づくスコアリングが必要）
+  }
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
   // link ごとに最新エントリを1件だけ選択し、ページネーション
