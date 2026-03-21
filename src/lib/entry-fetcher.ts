@@ -152,7 +152,7 @@ export async function fetchEntries(feedUrl: string): Promise<FetchedEntryData[]>
   const text = await response.text()
   const feed = await parser.parseString(text)
 
-  const entries = (feed.items ?? []).map((item) => {
+  const entries: FetchedEntryData[] = (feed.items ?? []).map((item) => {
     const rawContent = item.contentEncoded ?? null
     const rawDescription = item.content ?? null
 
