@@ -24,6 +24,7 @@ interface EntryCardGridProps {
   search?: string
   isReadLater?: boolean
   isUnread?: boolean
+  isPreferred?: boolean
   basePath?: string
   allTags: Array<{ id: string; name: string; createdAt: Date }>
 }
@@ -36,6 +37,7 @@ export function EntryCardGrid({
   search,
   isReadLater,
   isUnread,
+  isPreferred,
   basePath = '/',
   allTags,
 }: EntryCardGridProps) {
@@ -156,6 +158,7 @@ export function EntryCardGrid({
       if (search) params.set('search', search)
       if (isReadLater) params.set('isReadLater', 'true')
       if (isUnread) params.set('isUnread', 'true')
+      if (isPreferred) params.set('isPreferred', 'true')
 
       const res = await fetch(`/api/entries?${params.toString()}`)
       if (!res.ok) return
@@ -166,7 +169,7 @@ export function EntryCardGrid({
     } finally {
       setIsLoading(false)
     }
-  }, [isLoading, hasMore, page, feedId, tagId, search, isReadLater, isUnread, initialPagination.limit])
+  }, [isLoading, hasMore, page, feedId, tagId, search, isReadLater, isUnread, isPreferred, initialPagination.limit])
 
   // Load next page for modal navigation (appends to navEntries only)
   const loadNavMore = useCallback(async () => {
@@ -182,6 +185,7 @@ export function EntryCardGrid({
       if (search) params.set('search', search)
       if (isReadLater) params.set('isReadLater', 'true')
       if (isUnread) params.set('isUnread', 'true')
+      if (isPreferred) params.set('isPreferred', 'true')
 
       const res = await fetch(`/api/entries?${params.toString()}`)
       if (!res.ok) return
@@ -192,7 +196,7 @@ export function EntryCardGrid({
     } finally {
       setIsNavLoading(false)
     }
-  }, [isNavLoading, navHasMore, navPage, feedId, tagId, search, isReadLater, isUnread, initialPagination.limit])
+  }, [isNavLoading, navHasMore, navPage, feedId, tagId, search, isReadLater, isUnread, isPreferred, initialPagination.limit])
 
   // Infinite scroll via IntersectionObserver (card grid only)
   useEffect(() => {
@@ -268,11 +272,13 @@ export function EntryCardGrid({
         <p className="text-sm text-muted-foreground mb-3">
           {isReadLater
             ? '「あとで読む」に追加した記事はありません'
-            : isUnread
-              ? '未読の記事はありません'
-              : '記事がありません'}
+            : isPreferred
+              ? 'お好みの記事はありません'
+              : isUnread
+                ? '未読の記事はありません'
+                : '記事がありません'}
         </p>
-        {!isReadLater && !tagId && (
+        {!isReadLater && !isPreferred && !tagId && (
           <Link href="/feeds/new" className="text-xs text-primary hover:underline">
             フィードを追加する
           </Link>
