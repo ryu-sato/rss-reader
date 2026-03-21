@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { prisma } from '@/lib/db';
 
 import { findManyEntries } from './entry-service'
-import { resumeToPipeableStream } from 'react-dom/server';
 
 describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
   beforeEach(() => {
@@ -11,23 +10,24 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
 
   it('feedId 未指定時は重複が排除される', async () => {
     // Arrange
-    const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } })
-    const feed2 = await prisma.feed.create({ data: { id: 'feed-2', url: 'http://example.com/feed2', title: 'Feed 2' } })
+    const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } });
+    const feed2 = await prisma.feed.create({ data: { id: 'feed-2', url: 'http://example.com/feed2', title: 'Feed 2' } });
+    const sameEntryLink = 'http://example.com/same-link';
     await prisma.entry.createMany({
       data: [
-        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date() },
-        { id: 'entry-2', guid: 'guid-2', feedId: feed2.id, title: 'Entry 2', link: 'http://example.com/1', publishedAt: new Date() },
+        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: sameEntryLink, publishedAt: new Date() },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed2.id, title: 'Entry 2', link: sameEntryLink, publishedAt: new Date() },
       ],
     })
 
-    const page = 1
+    const page = 1;
 
     // Act
-    const result = await findManyEntries({ page })
+    const result = await findManyEntries({ page });
 
     // Assert
-    expect(result.entries.length).toEqual(1)
-    expect(result.entries[0].id).toEqual('entry-1') // 重複が削除されていることを確認する
+    expect(result.entries.length).toEqual(1);
+    expect(result.entries[0].id).toEqual('entry-1'); // 重複が削除されていることを確認する
   })
 
   it('検索フィルター（search）指定時、マッチしたエントリが取得される', async () => {
@@ -57,7 +57,7 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     await prisma.entry.createMany({
       data: [
         { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date() },
-        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/1', publishedAt: new Date() },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/2', publishedAt: new Date() },
       ],
     })
     const tag1 = await prisma.tag.create({ data: { id: 'tag-123', name: 'Tag 123' } })
@@ -83,7 +83,7 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     await prisma.entry.createMany({
       data: [
         { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date() },
-        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/1', publishedAt: new Date() },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/2', publishedAt: new Date() },
       ],
     })
     await prisma.entryMeta.create({ data: { entryId: 'entry-1', isRead: false, isReadLater: false } })
@@ -93,6 +93,28 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
 
     // Act
     const result = await findManyEntries({ isUnread: true, page })
+
+    // Assert
+    expect(result.entries.length).toEqual(1)
+    expect(result.entries[0].id).toEqual('entry-1')
+  })
+
+  it('あとで読むフィルター指定時、該当エントリが取得される', async () => {
+    // Arrange
+    const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } })
+    await prisma.entry.createMany({
+      data: [
+        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date() },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/2', publishedAt: new Date() },
+      ],
+    })
+    await prisma.entryMeta.create({ data: { entryId: 'entry-1', isRead: true, isReadLater: true } })
+    await prisma.entryMeta.create({ data: { entryId: 'entry-2', isRead: true, isReadLater: false } })
+
+    const page = 1;
+
+    // Act
+    const result = await findManyEntries({ isReadLater: true, page })
 
     // Assert
     expect(result.entries.length).toEqual(1)
