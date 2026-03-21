@@ -15,6 +15,7 @@ import {
   Tag as TagModel,
   EntryTag as EntryTagModel,
 } from '@/generated/prisma/client'
+
 export type Entry = EntryModel
 
 type Feed = Pick<FeedModel, 'id' | 'title'>;
