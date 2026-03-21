@@ -150,14 +150,14 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     expect(result.entries[0].id).toEqual('entry-1')
   })
 
-  it('取得したエントリは publishedAt でソートされる', async () => {
+  it('取得したエントリは publishedAt または createdAt でソートされる', async () => {
     // Arrange
     const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } });
     const now = new Date();
     await prisma.entry.createMany({
       data: [
         { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date(now.getTime() - 1000) },
-        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/2', publishedAt: new Date(now.getTime() - 500) },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/2', createdAt: new Date(now.getTime() - 500) },
         { id: 'entry-3', guid: 'guid-3', feedId: feed1.id, title: 'Entry 3', link: 'http://example.com/3', publishedAt: now },
       ],
     });
