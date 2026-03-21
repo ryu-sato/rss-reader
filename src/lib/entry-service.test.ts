@@ -77,22 +77,27 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     expect(result.entries[0].id).toEqual('entry-1')
   })
 
-  // it('未読・あとで読むフィルター指定時、対応する条件句がクエリに含まれる', async () => {
-  //   // Arrange
-  //   mockQueryRawUnsafe.mockResolvedValueOnce([])
-  //   mockQueryRawUnsafe.mockResolvedValueOnce([{ count: BigInt(0) }])
+  it('未読フィルター指定時、未読エントリが取得される', async () => {
+    // Arrange
+    const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } })
+    await prisma.entry.createMany({
+      data: [
+        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date() },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/1', publishedAt: new Date() },
+      ],
+    })
+    await prisma.entryMeta.create({ data: { entryId: 'entry-1', isRead: false, isReadLater: false } })
+    await prisma.entryMeta.create({ data: { entryId: 'entry-2', isRead: true, isReadLater: false } })
 
-  //   // Act
-  //   await findManyEntries({ isUnread: true, isReadLater: true, page: 1, limit: 20 })
+    const page = 1;
 
-  //   // Assert
-  //   const sql = mockQueryRawUnsafe.mock.calls[0][0] as string
-    
-  //   // パラメータ化できない条件句については、意図したフィルタロジック（キーワード）が含まれているかを確認
-  //   // SQLの完全一致ではなく、重要な条件が含まれているかを検証
-  //   expect(sql).toContain('isReadLater = 1') // あとで読むフィルタ
-  //   expect(sql).toContain('isRead = 0')      // 未読フィルタ（既読=0）
-  // })
+    // Act
+    const result = await findManyEntries({ isUnread: true, page })
+
+    // Assert
+    expect(result.entries.length).toEqual(1)
+    expect(result.entries[0].id).toEqual('entry-1')
+  })
 
   // it('結果が空の場合、詳細取得（findMany）をスキップする', async () => {
   //   // Arrange
