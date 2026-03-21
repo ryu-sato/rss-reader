@@ -22,6 +22,7 @@ export async function saveEntries(feedId: string, entries: FetchedEntryData[]): 
         content: entry.content,
         imageUrl: entry.imageUrl,
         publishedAt: entry.publishedAt,
+        ...(entry.publishedAt ? { effectedDate: entry.publishedAt } : {}),
       },
       update: {
         title: entry.title,
@@ -30,6 +31,7 @@ export async function saveEntries(feedId: string, entries: FetchedEntryData[]): 
         content: entry.content,
         imageUrl: entry.imageUrl,
         publishedAt: entry.publishedAt,
+        ...(entry.publishedAt ? { effectedDate: entry.publishedAt } : {}),
       },
     })
 
@@ -180,74 +182,29 @@ async function findManyEntriesDedup(query: {
   isUnread?: boolean
   isPreferred?: boolean
 }) {
-  const { tagId, search, page, limit, isReadLater, isUnread, isPreferred } = query
-  const skip = (page - 1) * limit
+  const { tagId, search, page, limit, isReadLater, isUnread, isPreferred } = query;
+  const skip = (page - 1) * limit;
 
-  // 動的 WHERE 句を構築
-  const conditions: string[] = []
-  const params: unknown[] = []
+  const where: Record<string, any> = {};
+  if (tagId) where.tags = { some: { tagId } };
+  if (search) where.title = { contains: search };
+  if (isReadLater) where.meta = { isReadLater: true };
+  if (isUnread) where.OR = [{ meta: null }, { meta: { isRead: false } }];
+  if (isPreferred) {} // TODO: isPreferred フィルターの条件を定義
 
-  if (search) {
-    conditions.push('title LIKE ?')
-    params.push(`%${search}%`)
-  }
-  if (tagId) {
-    conditions.push(`EXISTS (SELECT 1 FROM entry_tags WHERE entryId = entries.id AND tagId = ?)`)
-    params.push(tagId)
-  }
-  if (isReadLater) {
-    conditions.push(`EXISTS (SELECT 1 FROM entry_metas WHERE entryId = entries.id AND isReadLater = 1)`)
-  }
-  if (isUnread) {
-    conditions.push(
-      `(NOT EXISTS (SELECT 1 FROM entry_metas WHERE entryId = entries.id) OR EXISTS (SELECT 1 FROM entry_metas WHERE entryId = entries.id AND isRead = 0))`
-    )
-  }
-  if (isPreferred) {
-    // TODO: isPreferred フィルターの実装（ユーザープリファレンスに基づくスコアリングが必要）
-  }
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-
-  // link ごとに最新エントリを1件だけ選択し、ページネーション
-  const rawRows = await prisma.$queryRawUnsafe<{ id: string }[]>(
-    `WITH ranked AS (
-       SELECT id,
-              COALESCE(publishedAt, createdAt) AS effectiveDate,
-              ROW_NUMBER() OVER (PARTITION BY link ORDER BY COALESCE(publishedAt, createdAt) DESC) AS rn
-       FROM entries
-       ${whereClause}
-     )
-     SELECT id FROM ranked
-     WHERE rn = 1
-     ORDER BY effectiveDate DESC
-     LIMIT ? OFFSET ?`,
-    ...params,
-    limit,
-    skip
-  )
-
-  const countResult = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
-    `SELECT COUNT(DISTINCT link) AS count FROM entries ${whereClause}`,
-    ...params
-  )
-
-  const total = Number(countResult[0]?.count ?? 0)
-  const ids = rawRows.map((r) => r.id)
-
-  if (ids.length === 0) {
-    return {
-      entries: [],
-      pagination: { page, limit, total, hasNext: total > page * limit, hasPrev: page > 1 },
-    }
-  }
-
-  // ID で本データ取得（includes 付き）し、raw SQL の順序を復元
-  const entriesUnordered = await prisma.entry.findMany({
-    where: { id: { in: ids } },
+  const entries = await prisma.entry.findMany({
+    where,
+    distinct: ['link'], // link URL で重複排除
+    orderBy: { effectedDate: 'desc' },
     include: ENTRY_INCLUDE,
-  })
-  const entryById = new Map(entriesUnordered.map((e) => [e.id, e]))
-  const entries = ids.map((id) => entryById.get(id)).filter((e): e is NonNullable<typeof e> => e != null)
+    skip,
+    take: limit,
+  });
+  const aggregate = await prisma.entry.aggregate({
+    where,
+    _count: { link: true },
+  });
+  const total = aggregate._count.link;
 
   return {
     entries,
