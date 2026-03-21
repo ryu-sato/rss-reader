@@ -8,6 +8,35 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     vi.clearAllMocks()
   })
 
+  it('limit以上のエントリーがある場合、ページネーションされる', async () => {
+    // Arrange
+    const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } })
+    const entriesData = Array.from({ length: 3 }, (_, i) => ({
+      id: `entry-${i + 1}`,
+      guid: `guid-${i + 1}`,
+      feedId: feed1.id,
+      title: `Entry ${i + 1}`,
+      link: `http://example.com/${i + 1}`,
+      publishedAt: new Date(Date.now() - i * 1000), // 新しい順になるように
+    }))
+    await prisma.entry.createMany({ data: entriesData })
+
+    const page = 2;
+    const limit = 1;
+
+    // Act
+    const result = await findManyEntries({ page, limit })
+
+    // Assert
+    expect(result.entries).toHaveLength(limit)
+    expect(result.entries[0].id).toBe('entry-2') // 2番目のエントリーが取得されることを確認
+    expect(result.pagination.page).toBe(page)
+    expect(result.pagination.limit).toBe(limit)
+    expect(result.pagination.total).toBe(3)
+    expect(result.pagination.hasNext).toBe(true)
+    expect(result.pagination.hasPrev).toBe(true)
+  })
+
   it('feedId 未指定時は重複が排除される', async () => {
     // Arrange
     const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } });
