@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { prisma } from '@/lib/db';
 
 import { findManyEntries } from './entry-service'
+import { resumeToPipeableStream } from 'react-dom/server';
 
 describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
   beforeEach(() => {
@@ -29,24 +30,26 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     expect(result.entries[0].id).toEqual('entry-1') // 重複が削除されていることを確認する
   })
 
-  // it('検索フィルター（search）指定時、マッチしたエントリが取得される', async () => {
-  //   // Arrange
-  //   mockQueryRawUnsafe.mockResolvedValueOnce([{ id: 'entry-1' }])
-  //   mockQueryRawUnsafe.mockResolvedValueOnce([{ count: BigInt(1) }])
-  //   mockEntryFindMany.mockResolvedValue([{ id: 'entry-1' }] as any)
+  it('検索フィルター（search）指定時、マッチしたエントリが取得される', async () => {
+    // Arrange
+    const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } })
+    await prisma.entry.createMany({
+      data: [
+        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'hello world', link: 'http://example.com/1', publishedAt: new Date() },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'bye world', link: 'http://example.com/2', publishedAt: new Date() },
+      ],
+    })
 
-  //   const searchKeyword = 'hello'
+    const searchKeyword = 'hello'
+    const page = 1;
 
-  //   // Act
-  //   await findManyEntries({ search: searchKeyword, page: 1, limit: 20 })
+    // Act
+    const result = await findManyEntries({ search: searchKeyword, page })
 
-  //   // Assert
-  //   const mainQueryArgs = mockQueryRawUnsafe.mock.calls[0]
-  //   const params = mainQueryArgs.slice(1)
-
-  //   // SQL文字列の構造（LIKE ? など）ではなく、パラメータに検索語が含まれていることを検証
-  //   expect(params).toContain(`%${searchKeyword}%`)
-  // })
+    // Assert
+    expect(result.entries.length).toEqual(1)
+    expect(result.entries[0].title).toEqual('hello world')
+  })
 
   // it('タグフィルター（tagId）指定時、タグIDがクエリパラメータに含まれる', async () => {
   //   // Arrange
