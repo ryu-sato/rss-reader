@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { prisma } from '@/lib/db';
 
-import { findManyEntries } from './entry-service'
+import { findManyEntries } from '../entry-service'
 
 describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
   beforeEach(() => {
@@ -18,6 +18,7 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
       title: `Entry ${i + 1}`,
       link: `http://example.com/${i + 1}`,
       publishedAt: new Date(Date.now() - i * 1000), // 新しい順になるように
+      effectedDate: new Date(Date.now() - i * 1000), // 新しい順になるように
     }))
     await prisma.entry.createMany({ data: entriesData })
 
@@ -44,8 +45,8 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     const sameEntryLink = 'http://example.com/same-link';
     await prisma.entry.createMany({
       data: [
-        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: sameEntryLink, publishedAt: new Date() },
-        { id: 'entry-2', guid: 'guid-2', feedId: feed2.id, title: 'Entry 2', link: sameEntryLink, publishedAt: new Date() },
+        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: sameEntryLink, publishedAt: new Date(), effectedDate: new Date() },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed2.id, title: 'Entry 2', link: sameEntryLink, publishedAt: new Date(), effectedDate: new Date() },
       ],
     })
 
@@ -64,8 +65,8 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } })
     await prisma.entry.createMany({
       data: [
-        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'hello world', link: 'http://example.com/1', publishedAt: new Date() },
-        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'bye world', link: 'http://example.com/2', publishedAt: new Date() },
+        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'hello world', link: 'http://example.com/1', publishedAt: new Date(), effectedDate: new Date() },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'bye world', link: 'http://example.com/2', publishedAt: new Date(), effectedDate: new Date() },
       ],
     })
 
@@ -85,8 +86,8 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } })
     await prisma.entry.createMany({
       data: [
-        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date() },
-        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/2', publishedAt: new Date() },
+        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date(), effectedDate: new Date() },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/2', publishedAt: new Date(), effectedDate: new Date() },
       ],
     })
     const tag1 = await prisma.tag.create({ data: { id: 'tag-123', name: 'Tag 123' } })
@@ -111,8 +112,8 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } })
     await prisma.entry.createMany({
       data: [
-        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date() },
-        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/2', publishedAt: new Date() },
+        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date(), effectedDate: new Date() },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/2', publishedAt: new Date(), effectedDate: new Date() },
       ],
     })
     await prisma.entryMeta.create({ data: { entryId: 'entry-1', isRead: false, isReadLater: false } })
@@ -133,8 +134,8 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } })
     await prisma.entry.createMany({
       data: [
-        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date() },
-        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/2', publishedAt: new Date() },
+        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date(), effectedDate: new Date() },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/2', publishedAt: new Date(), effectedDate: new Date() },
       ],
     })
     await prisma.entryMeta.create({ data: { entryId: 'entry-1', isRead: true, isReadLater: true } })
@@ -156,9 +157,9 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     const now = new Date();
     await prisma.entry.createMany({
       data: [
-        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date(now.getTime() - 1000) },
-        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/2', createdAt: new Date(now.getTime() - 500) },
-        { id: 'entry-3', guid: 'guid-3', feedId: feed1.id, title: 'Entry 3', link: 'http://example.com/3', publishedAt: now },
+        { id: 'entry-1', guid: 'guid-1', feedId: feed1.id, title: 'Entry 1', link: 'http://example.com/1', publishedAt: new Date(now.getTime() - 1000), effectedDate: new Date(now.getTime() - 1000) },
+        { id: 'entry-2', guid: 'guid-2', feedId: feed1.id, title: 'Entry 2', link: 'http://example.com/2', createdAt: new Date(now.getTime() - 500), effectedDate: new Date(now.getTime() - 500) },
+        { id: 'entry-3', guid: 'guid-3', feedId: feed1.id, title: 'Entry 3', link: 'http://example.com/3', publishedAt: now, effectedDate: now },
       ],
     });
 
