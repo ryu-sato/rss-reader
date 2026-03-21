@@ -188,8 +188,8 @@ async function findManyEntriesDedup(query: {
   const params: unknown[] = []
 
   if (search) {
-    conditions.push(`title LIKE '%' || ? || '%'`)
-    params.push(search)
+    conditions.push('title LIKE ?')
+    params.push(`%${search}%`)
   }
   if (tagId) {
     conditions.push(`EXISTS (SELECT 1 FROM entry_tags WHERE entryId = entries.id AND tagId = ?)`)
