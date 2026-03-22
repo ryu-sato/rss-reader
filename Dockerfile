@@ -43,11 +43,16 @@ COPY scripts/scoring/requirements.txt /app/scripts/scoring/requirements.txt
 # CPU-only torch を先にインストールし、不要なCUDAパッケージ(~2GB)のダウンロードを防ぐ
 RUN pip3 install --break-system-packages --timeout 300 --retries 10 torch --index-url https://download.pytorch.org/whl/cpu && \
     pip3 install --break-system-packages --timeout 300 --retries 10 -r /app/scripts/scoring/requirements.txt
+# モデルをビルド時にキャッシュ（実行時のHF Hub ダウンロードを回避）
+RUN mkdir -p /app/hf_cache && \
+    HF_HOME=/app/hf_cache python3 -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/paraphrase-multilingual-mpnet-base-v2')" && \
+    chown -R node:node /app/hf_cache
 
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV DATABASE_URL="file:/app/data/db.sqlite"
+ENV HF_HOME=/app/hf_cache
 
 COPY --chown=node:node --from=builder /app/public ./public
 COPY --chown=node:node --from=builder /app/.next/standalone ./

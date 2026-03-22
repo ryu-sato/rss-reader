@@ -7,11 +7,12 @@ function runScoreEntries(): Promise<void> {
   return new Promise((resolve, reject) => {
     const scriptPath = path.resolve(process.cwd(), 'scripts/scoring/score_entries.py')
     const child = spawn('python3', [scriptPath], { stdio: 'inherit' })
-    child.on('close', (code) => {
+    child.on('close', (code, signal) => {
       if (code === 0) {
         resolve()
       } else {
-        reject(new Error(`score_entries.py exited with code ${code}`))
+        const detail = signal ? `killed by signal ${signal}` : `code ${code}`
+        reject(new Error(`score_entries.py exited with ${detail}`))
       }
     })
     child.on('error', reject)
