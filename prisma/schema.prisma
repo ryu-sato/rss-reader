@@ -36,12 +36,14 @@ model Entry {
   content     String?
   imageUrl    String?
   publishedAt DateTime?
+  effectedDate DateTime  @default(now())
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
   feed        Feed       @relation(fields: [feedId], references: [id], onDelete: Cascade)
   meta        EntryMeta?
   tags        EntryTag[]
+  scores      EntryPreferenceScore[]
 
   @@unique([feedId, guid])
   @@index([publishedAt(sort: Desc)])
@@ -92,4 +94,32 @@ model Digest {
 
   @@index([createdAt(sort: Desc)])
   @@map("digests")
+}
+
+model UserPreference {
+  id        String   @id @default(uuid())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  scores    EntryPreferenceScore[]
+
+  @@map("user_preferences")
+}
+
+model EntryPreferenceScore {
+  id           String   @id @default(uuid())
+  entryId      String
+  preferenceId String
+  score        Float
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  entry        Entry          @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  preference   UserPreference @relation(fields: [preferenceId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, preferenceId])
+  @@index([entryId])
+  @@index([preferenceId])
+  @@map("entry_preference_scores")
 }

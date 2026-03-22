@@ -8,66 +8,38 @@
 // ========================================
 // エンティティ定義
 // ========================================
+import {
+  Entry as EntryModel,
+  Feed as FeedModel,
+  EntryMeta as EntryMetaModel,
+  Tag as TagModel,
+  EntryTag as EntryTagModel,
+} from '@/generated/prisma/client'
 
-export interface Entry {
-  id: string
-  feedId: string
-  guid: string
-  title: string
-  link: string
-  description: string | null
-  content: string | null
-  imageUrl: string | null
-  publishedAt: Date | null
-  createdAt: Date
-  updatedAt: Date
-}
+export type Entry = EntryModel
+
+type Feed = Pick<FeedModel, 'id' | 'title'>;
 
 /** エントリー一覧表示用（軽量版） */
-export interface EntryListItem {
-  id: string
-  title: string
-  link: string
-  imageUrl: string | null
-  publishedAt: Date | null
-  createdAt: Date
-  feed: {
-    id: string
-    title: string
-  }
+export interface EntryListItem extends Pick<Entry, 'id' | 'title' | 'link' | 'imageUrl' | 'publishedAt' | 'createdAt'> {
+  feed: Feed
   meta: EntryMeta | null
   tags: TagOnEntry[]
 }
 
 /** エントリーモーダル用（詳細） */
 export interface EntryDetail extends Entry {
-  feed: {
-    id: string
-    title: string
-  }
+  feed: Feed
   meta: EntryMeta | null
   tags: TagOnEntry[]
 }
 
-export interface EntryMeta {
-  id: string
-  entryId: string
-  isRead: boolean
-  isReadLater: boolean
-  createdAt: Date
-  updatedAt: Date
-}
+export type EntryMeta = EntryMetaModel;
 
-export interface Tag {
-  id: string
-  name: string
-  createdAt: Date
-}
+export type Tag = TagModel;
 
 /** エントリーとタグの関連（中間テーブル） */
-export interface TagOnEntry {
-  entryId: string
-  tagId: string
+export type TagOnEntry = EntryTagModel & {
   tag: Tag
 }
 
@@ -86,6 +58,8 @@ export interface GetEntriesQuery {
   beforeId?: string
   isReadLater?: boolean
   isUnread?: boolean
+  userPreferenceId?: string
+  isAnyPreferred?: boolean
 }
 
 export interface GetEntriesResponse {

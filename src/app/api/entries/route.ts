@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
     const beforeId = searchParams.get('beforeId') ?? undefined
     const isReadLater = searchParams.get('isReadLater') === 'true' ? true : undefined
     const isUnread = searchParams.get('isUnread') === 'true' ? true : undefined
+    const userPreferenceId = searchParams.get('userPreferenceId') ?? undefined
+    const isAnyPreferred = searchParams.get('isAnyPreferred') === 'true' ? true : undefined
 
     if (isNaN(page) || page < 1) {
       return NextResponse.json(
@@ -21,7 +23,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const result = await findManyEntries({ feedId, tagId, search, page, limit, afterId, beforeId, isReadLater, isUnread })
+    const result = await findManyEntries({ feedId, tagId, search, page, limit, afterId, beforeId, isReadLater, isUnread, userPreferenceId, isAnyPreferred })
     return NextResponse.json({ success: true, data: result.entries, pagination: result.pagination })
   } catch (error) {
     console.error('GET /api/entries error:', error)

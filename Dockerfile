@@ -37,7 +37,12 @@ COPY docker/prisma.config.mjs ./prisma.config.mjs
 FROM node:24-slim AS runner
 WORKDIR /app
 
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y openssl python3 python3-pip && rm -rf /var/lib/apt/lists/*
+
+COPY scripts/scoring/requirements.txt /app/scripts/scoring/requirements.txt
+# CPU-only torch を先にインストールし、不要なCUDAパッケージ(~2GB)のダウンロードを防ぐ
+RUN pip3 install --break-system-packages --timeout 300 --retries 10 torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip3 install --break-system-packages --timeout 300 --retries 10 -r /app/scripts/scoring/requirements.txt
 
 ENV NODE_ENV=production
 ENV PORT=3000
@@ -50,6 +55,7 @@ COPY --chown=node:node --from=builder /app/.next/static ./.next/static
 COPY --chown=node:node --from=builder /app/prisma ./prisma
 COPY --chown=node:node --from=builder /app/src/generated ./src/generated
 COPY --chown=node:node --from=builder /app/entrypoint.js ./entrypoint.js
+COPY --chown=node:node --from=builder /app/scripts/scoring/score_entries.py ./scripts/scoring/score_entries.py
 COPY --chown=node:node --from=prisma-cli /prisma-cli/node_modules/ ./prisma-cli/node_modules/
 COPY --chown=node:node --from=prisma-cli /prisma-cli/prisma.config.mjs ./prisma-cli/prisma.config.mjs
 # プラットフォームの正しいlibsqlネイティブバイナリで上書き（arm64/amd64キャッシュ混在問題を修正）

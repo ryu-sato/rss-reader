@@ -7,6 +7,9 @@
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {
+		"ghcr.io/roul/devcontainer-features/mise-python:1": {
+			"version": "3.12"
+		},
 		"ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
 	},
 
@@ -14,7 +17,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "yarn install",
+	"postCreateCommand": "bash -l .devcontainer/postCreateCommand.sh",
 
 	// Configure tool-specific properties.
 	"customizations": {
