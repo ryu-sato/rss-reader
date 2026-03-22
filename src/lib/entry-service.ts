@@ -103,11 +103,11 @@ const ENTRY_INCLUDE = {
 } as const
 
 export async function findManyEntries(query: GetEntriesQuery) {
-  const { feedId, tagId, search, page = 1, limit = 20, afterId, beforeId, isReadLater, isUnread, userPreferenceId } = query
+  const { feedId, tagId, search, page = 1, limit = 20, afterId, beforeId, isReadLater, isUnread, userPreferenceId, isAnyPreferred } = query
 
   // feedId 未指定 & ページネーション時は URL 重複排除を適用
   if (!feedId && !afterId && !beforeId) {
-    return findManyEntriesDedup({ tagId, search, page, limit, isReadLater, isUnread, userPreferenceId })
+    return findManyEntriesDedup({ tagId, search, page, limit, isReadLater, isUnread, userPreferenceId, isAnyPreferred })
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -118,6 +118,7 @@ export async function findManyEntries(query: GetEntriesQuery) {
   if (isReadLater) where.meta = { isReadLater: true }
   if (isUnread) where.OR = [{ meta: null }, { meta: { isRead: false } }]
   if (userPreferenceId) where.scores = { and: [{ userPreferenceId }, { score: { gte: PREFRRED_SCORE_THRESHOLD } }] };
+  if (isAnyPreferred) where.scores = { some: { score: { gte: PREFRRED_SCORE_THRESHOLD } } };
 
   // カーソルベースの前後ナビ
   if (afterId) {
@@ -182,8 +183,9 @@ async function findManyEntriesDedup(query: {
   isReadLater?: boolean
   isUnread?: boolean
   userPreferenceId?: string
+  isAnyPreferred?: boolean
 }) {
-  const { tagId, search, page, limit, isReadLater, isUnread, userPreferenceId } = query;
+  const { tagId, search, page, limit, isReadLater, isUnread, userPreferenceId, isAnyPreferred } = query;
   const skip = (page - 1) * limit;
 
   const where: Record<string, any> = {};
@@ -192,6 +194,7 @@ async function findManyEntriesDedup(query: {
   if (isReadLater) where.meta = { isReadLater: true };
   if (isUnread) where.OR = [{ meta: null }, { meta: { isRead: false } }];
   if (userPreferenceId) where.scores = { some: { preferenceId: userPreferenceId, score: { gte: PREFRRED_SCORE_THRESHOLD } } };
+  if (isAnyPreferred) where.scores = { some: { score: { gte: PREFRRED_SCORE_THRESHOLD } } };
 
   const entries = await prisma.entry.findMany({
     where,

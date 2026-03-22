@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { ThumbsUp } from 'lucide-react'
+import { ThumbsUp, Layers } from 'lucide-react'
 import { getAllPreferences } from '@/lib/preference-service'
 
 export default async function PreferredPage() {
@@ -21,16 +21,25 @@ export default async function PreferredPage() {
             から好みを追加してください。
           </p>
         ) : (
-          preferences.map((p) => (
+          <>
             <Link
-              key={p.id}
-              href={`/preferred/${p.id}`}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border hover:bg-accent transition-colors"
+              href="/preferred/all"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg border border-primary/40 bg-primary/5 hover:bg-primary/10 transition-colors"
             >
-              <ThumbsUp className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="text-sm">{p.text}</span>
+              <Layers className="h-4 w-4 shrink-0 text-primary" />
+              <span className="text-sm font-medium text-primary">すべての好みに合う記事</span>
             </Link>
-          ))
+            {preferences.map((p) => (
+              <Link
+                key={p.id}
+                href={`/preferred/${p.id}`}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border hover:bg-accent transition-colors"
+              >
+                <ThumbsUp className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="text-sm">{p.text}</span>
+              </Link>
+            ))}
+          </>
         )}
       </div>
     </div>

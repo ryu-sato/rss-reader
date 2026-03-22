@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
-import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, ListFilter, Pencil, Trash2, Check, X, ThumbsUp, SlidersHorizontal } from 'lucide-react'
+import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, ListFilter, Pencil, Trash2, Check, X, ThumbsUp, SlidersHorizontal, Layers } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 function FeedFavicon({ faviconUrl, feedUrl }: { faviconUrl: string | null; feedUrl: string }) {
@@ -257,6 +257,18 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
           </div>
           {preferredOpen && preferences.length > 0 && (
             <div className="mt-0.5">
+              <Link
+                href="/preferred/all"
+                className={cn(
+                  'flex items-center gap-2 pl-8 pr-3 py-1.5 mx-1.5 rounded text-sm transition-colors min-w-0',
+                  pathname === '/preferred/all'
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-foreground hover:bg-accent cursor-pointer'
+                )}
+              >
+                <Layers className="h-3 w-3 shrink-0 text-muted-foreground" />
+                <span className="truncate">すべて</span>
+              </Link>
               {preferences.map((pref) => (
                 <Link
                   key={pref.id}
