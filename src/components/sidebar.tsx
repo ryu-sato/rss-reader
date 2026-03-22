@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
-import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, ListFilter, Pencil, Trash2, Check, X, ThumbsUp, SlidersHorizontal, Layers } from 'lucide-react'
+import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, ListFilter, Pencil, Trash2, Check, X, ThumbsUp, SlidersHorizontal, Layers, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { signOut } from '@/lib/auth-client'
 
 function FeedFavicon({ faviconUrl, feedUrl }: { faviconUrl: string | null; feedUrl: string }) {
   const [index, setIndex] = useState(0)
@@ -494,6 +495,13 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
         >
           <RefreshCw className={cn('h-3.5 w-3.5 shrink-0', refreshing && 'animate-spin')} />
           <span>{refreshing ? '更新中...' : '更新'}</span>
+        </button>
+        <button
+          onClick={() => signOut({ fetchOptions: { onSuccess: () => { window.location.href = '/login' } } })}
+          className="col-span-2 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded hover:bg-accent"
+        >
+          <LogOut className="h-3.5 w-3.5 shrink-0" />
+          <span>サインアウト</span>
         </button>
       </div>
     </aside>
