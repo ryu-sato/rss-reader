@@ -42,14 +42,21 @@ interface TagItem {
   name: string
 }
 
+interface PreferenceItem {
+  id: string
+  text: string
+}
+
 export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: boolean; onMobileClose?: () => void }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const [feeds, setFeeds] = useState<Feed[]>([])
   const [tags, setTags] = useState<TagItem[]>([])
+  const [preferences, setPreferences] = useState<PreferenceItem[]>([])
   const [feedsOpen, setFeedsOpen] = useState(true)
   const [tagsOpen, setTagsOpen] = useState(true)
+  const [preferredOpen, setPreferredOpen] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [readLaterUnreadCount, setReadLaterUnreadCount] = useState(0)
   const [editingTagId, setEditingTagId] = useState<string | null>(null)
@@ -66,9 +73,11 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
     Promise.all([
       fetch('/api/feeds').then((r) => r.json()),
       fetch('/api/tags').then((r) => r.json()),
-    ]).then(([feedsRes, tagsRes]) => {
+      fetch('/api/preferences').then((r) => r.json()),
+    ]).then(([feedsRes, tagsRes, prefsRes]) => {
       if (feedsRes.success) setFeeds(feedsRes.data)
       if (tagsRes.success) setTags(tagsRes.data)
+      if (prefsRes.success) setPreferences(prefsRes.data)
     })
     fetchReadLaterUnreadCount()
   }, [pathname])
@@ -217,18 +226,54 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
           )}
         </Link>
 
-        <Link
-          href="/preferred"
-          className={cn(
-            'flex items-center gap-2.5 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors',
-            isPreferred
-              ? 'bg-primary text-primary-foreground font-medium'
-              : 'text-foreground hover:bg-accent cursor-pointer'
+        {/* Preferred section */}
+        <div className="mt-1">
+          <div className="flex items-center px-3 py-1">
+            <Link
+              href="/preferred"
+              className={cn(
+                'flex items-center gap-2.5 flex-1 min-w-0 rounded text-sm transition-colors py-0.5',
+                isPreferred && !pathname.startsWith('/preferred/')
+                  ? 'text-primary font-medium'
+                  : 'text-foreground hover:text-foreground'
+              )}
+            >
+              <ThumbsUp className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">お好みの記事</span>
+            </Link>
+            {preferences.length > 0 && (
+              <button
+                onClick={() => setPreferredOpen(!preferredOpen)}
+                className="h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ChevronDown
+                  className={cn(
+                    'h-3 w-3 transition-transform duration-150',
+                    preferredOpen ? '' : '-rotate-90'
+                  )}
+                />
+              </button>
+            )}
+          </div>
+          {preferredOpen && preferences.length > 0 && (
+            <div className="mt-0.5">
+              {preferences.map((pref) => (
+                <Link
+                  key={pref.id}
+                  href={`/preferred/${pref.id}`}
+                  className={cn(
+                    'flex items-center gap-2 pl-8 pr-3 py-1.5 mx-1.5 rounded text-sm transition-colors min-w-0',
+                    pathname === `/preferred/${pref.id}`
+                      ? 'bg-primary/10 text-primary font-medium'
+                      : 'text-foreground hover:bg-accent cursor-pointer'
+                  )}
+                >
+                  <span className="truncate">{pref.text}</span>
+                </Link>
+              ))}
+            </div>
           )}
-        >
-          <ThumbsUp className="h-3.5 w-3.5 shrink-0" />
-          <span>お好みの記事</span>
-        </Link>
+        </div>
 
         <Link
           href="/preferences"

@@ -25,6 +25,7 @@ interface EntryCardGridProps {
   isReadLater?: boolean
   isUnread?: boolean
   isPreferred?: boolean
+  userPreferenceId?: string
   basePath?: string
   allTags: Array<{ id: string; name: string; createdAt: Date }>
 }
@@ -38,6 +39,7 @@ export function EntryCardGrid({
   isReadLater,
   isUnread,
   isPreferred,
+  userPreferenceId,
   basePath = '/',
   allTags,
 }: EntryCardGridProps) {
@@ -159,6 +161,7 @@ export function EntryCardGrid({
       if (isReadLater) params.set('isReadLater', 'true')
       if (isUnread) params.set('isUnread', 'true')
       if (isPreferred) params.set('isPreferred', 'true')
+      if (userPreferenceId) params.set('userPreferenceId', userPreferenceId)
 
       const res = await fetch(`/api/entries?${params.toString()}`)
       if (!res.ok) return
@@ -169,7 +172,7 @@ export function EntryCardGrid({
     } finally {
       setIsLoading(false)
     }
-  }, [isLoading, hasMore, page, feedId, tagId, search, isReadLater, isUnread, isPreferred, initialPagination.limit])
+  }, [isLoading, hasMore, page, feedId, tagId, search, isReadLater, isUnread, isPreferred, userPreferenceId, initialPagination.limit])
 
   // Load next page for modal navigation (appends to navEntries only)
   const loadNavMore = useCallback(async () => {
@@ -186,6 +189,7 @@ export function EntryCardGrid({
       if (isReadLater) params.set('isReadLater', 'true')
       if (isUnread) params.set('isUnread', 'true')
       if (isPreferred) params.set('isPreferred', 'true')
+      if (userPreferenceId) params.set('userPreferenceId', userPreferenceId)
 
       const res = await fetch(`/api/entries?${params.toString()}`)
       if (!res.ok) return
@@ -196,7 +200,7 @@ export function EntryCardGrid({
     } finally {
       setIsNavLoading(false)
     }
-  }, [isNavLoading, navHasMore, navPage, feedId, tagId, search, isReadLater, isUnread, isPreferred, initialPagination.limit])
+  }, [isNavLoading, navHasMore, navPage, feedId, tagId, search, isReadLater, isUnread, isPreferred, userPreferenceId, initialPagination.limit])
 
   // Infinite scroll via IntersectionObserver (card grid only)
   useEffect(() => {
