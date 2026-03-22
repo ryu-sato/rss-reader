@@ -58,7 +58,7 @@ export interface GetEntriesQuery {
   beforeId?: string
   isReadLater?: boolean
   isUnread?: boolean
-  isPreferred?: boolean
+  userPreferenceId?: string
 }
 
 export interface GetEntriesResponse {

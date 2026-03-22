@@ -176,7 +176,7 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     expect(result.entries[2].id).toBe('entry-1')
   })
 
-  it('isPreferredフィルタが指定されると、一定以上のscoreを持つエントリが取得される', async () => {
+  it('userPreferenceIdフィルタが指定されると、一定以上のscoreを持つエントリが取得される', async () => {
     // Arrange
     const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } });
     await prisma.entry.createMany({
@@ -195,7 +195,7 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     const page = 1;
 
     // Act
-    const result = await findManyEntries({ isPreferred: true, page });
+    const result = await findManyEntries({ userPreferenceId: userPreference.id, page });
 
     // Assert
     expect(result.entries.length).toEqual(1);
