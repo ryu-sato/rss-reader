@@ -33,6 +33,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
+  // 許可メールアドレスの確認
+  const allowedEmails = (process.env.ALLOWED_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean)
+
+  if (allowedEmails.length > 0 && !allowedEmails.includes(session.user.email)) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+    const loginUrl = new URL("/login", request.url)
+    loginUrl.searchParams.set("error", "AccessDenied")
+    return NextResponse.redirect(loginUrl)
+  }
+
   return NextResponse.next()
 }
 
