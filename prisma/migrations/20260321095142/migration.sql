@@ -16,7 +16,7 @@ CREATE TABLE "new_entries" (
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "entries_feedId_fkey" FOREIGN KEY ("feedId") REFERENCES "feeds" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
-INSERT INTO "new_entries" ("content", "createdAt", "description", "feedId", "guid", "id", "imageUrl", "link", "publishedAt", "title", "updatedAt") SELECT "content", "createdAt", "description", "feedId", "guid", "id", "imageUrl", "link", "publishedAt", "title", "updatedAt" FROM "entries";
+INSERT INTO "new_entries" ("content", "createdAt", "description", "effectedDate", "feedId", "guid", "id", "imageUrl", "link", "publishedAt", "title", "updatedAt") SELECT "content", "createdAt", "description", COALESCE("publishedAt", "createdAt"), "feedId", "guid", "id", "imageUrl", "link", "publishedAt", "title", "updatedAt" FROM "entries";
 DROP TABLE "entries";
 ALTER TABLE "new_entries" RENAME TO "entries";
 CREATE INDEX "entries_publishedAt_idx" ON "entries"("publishedAt" DESC);
