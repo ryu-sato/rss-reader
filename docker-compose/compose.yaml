@@ -10,18 +10,16 @@ services:
     restart: unless-stopped
 
   tunnel:
-    image: ngrok/ngrok:latest
-    entrypoint: ["/bin/sh"]
-    command: ["/scripts/ngrok-start.sh"]
-    volumes:
-      - ./ngrok-start.sh:/scripts/ngrok-start.sh:ro
-    env_file:
-      - .env.docker-compose
+    image: cloudflare/cloudflared:latest
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - ${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
       - app
     restart: unless-stopped
-    ports:
-      - "4040:4040"
 
 volumes:
   db-data:
