@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
 
 const PUBLIC_PATHS = ["/login", "/api/auth"]
 
@@ -11,12 +10,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // セッションを検証
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  })
+  // Edge RuntimeではPrismaが使えないため、APIコールでセッションを確認する
+  const sessionRes = await fetch(
+    new URL("/api/auth/get-session", request.url),
+    {
+      headers: {
+        cookie: request.headers.get("cookie") ?? "",
+      },
+    }
+  )
 
-  if (!session) {
+  const session = sessionRes.ok ? await sessionRes.json() : null
+
+  if (!session?.user) {
     // APIルートは401を返す
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

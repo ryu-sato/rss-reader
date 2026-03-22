@@ -10,6 +10,8 @@ const withSerwist = withSerwistInit({
 const nextConfig: NextConfig = {
   output: "standalone",
   cacheMaxMemorySize: 0, // メモリキャッシュを無効化し、ファイルキャッシュのみ使用
+  // PrismaとlibSQLはNode.jsネイティブモジュールを使用するため、Edge Runtimeにバンドルさせない
+  serverExternalPackages: ["@prisma/client", "@libsql/client", "libsql", "better-auth"],
   images: {
     remotePatterns: [
       {
