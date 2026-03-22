@@ -3,5 +3,8 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-docker compose -f "$SCRIPT_DIR/docker-compose.yaml" pull
-docker compose -f "$SCRIPT_DIR/docker-compose.yaml" up -d --remove-orphans
+(
+  cd ${SCRIPT_DIR}
+  docker compose pull
+  docker compose up -d --remove-orphans
+)
