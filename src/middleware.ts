@@ -11,8 +11,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // Edge RuntimeではPrismaが使えないため、APIコールでセッションを確認する
+  // 内部通信はlocalhostを使い、ngrok等のHTTPS経由を避ける
+  const internalBaseUrl = `http://localhost:${process.env.PORT ?? 3000}`
   const sessionRes = await fetch(
-    new URL("/api/auth/get-session", request.url),
+    new URL("/api/auth/get-session", internalBaseUrl),
     {
       headers: {
         cookie: request.headers.get("cookie") ?? "",
