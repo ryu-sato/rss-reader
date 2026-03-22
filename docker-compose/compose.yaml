@@ -8,7 +8,7 @@ services:
     environment:
       DATABASE_URL: "file:/app/data/db.sqlite"
     env_file:
-      - .env.app
+      - .env.app.secret
     restart: unless-stopped
 
   tunnel:
