@@ -20,9 +20,18 @@ export async function middleware(request: NextRequest) {
         cookie: request.headers.get("cookie") ?? "",
       },
     }
-  )
+  ).catch((err) => {
+    console.error("[middleware] session fetch failed:", err)
+    return null
+  })
 
   const session = sessionRes.ok ? await sessionRes.json() : null
+  console.log("[middleware]", {
+    path: pathname,
+    hasCookie: !!request.headers.get("cookie"),
+    sessionStatus: sessionRes.status,
+    hasUser: !!session?.user,
+  })
 
   if (!session?.user) {
     // APIルートは401を返す
