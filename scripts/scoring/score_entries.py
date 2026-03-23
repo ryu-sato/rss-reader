@@ -108,7 +108,7 @@ def main():
     con.row_factory = sqlite3.Row
 
     # Load preferences
-    prefs = con.execute("SELECT id, text FROM user_preferences").fetchall()
+    prefs = con.execute("SELECT id, text, updatedAt FROM user_preferences").fetchall()
     if not prefs:
         print("[info] No user preferences found. Nothing to score.")
         con.close()
@@ -116,8 +116,31 @@ def main():
 
     print(f"[info] Found {len(prefs)} preference(s)")
 
-    # Load entries
+    # Classify preferences as changed or unchanged (skip if --force)
     if args.force:
+        changed_prefs = list(prefs)
+        unchanged_prefs = []
+    else:
+        changed_prefs = []
+        unchanged_prefs = []
+        for pref in prefs:
+            last_scored = con.execute(
+                "SELECT MAX(updatedAt) FROM entry_preference_scores WHERE preferenceId = ?",
+                (pref["id"],),
+            ).fetchone()[0]
+            if last_scored is None or pref["updatedAt"] > last_scored:
+                changed_prefs.append(pref)
+            else:
+                unchanged_prefs.append(pref)
+
+        if changed_prefs:
+            print(f"[info] {len(changed_prefs)} preference(s) changed → will re-score all entries")
+        if unchanged_prefs:
+            print(f"[info] {len(unchanged_prefs)} preference(s) unchanged → will skip already-scored entries")
+
+    # Load entries
+    if args.force or changed_prefs:
+        # Need all entries because changed prefs require full re-scoring
         entries = con.execute(
             "SELECT id, title, description, content FROM entries"
         ).fetchall()
@@ -145,13 +168,14 @@ def main():
     print(f"[info] Loading model: {args.model}")
     model = SentenceTransformer(args.model)
 
-    pref_texts = [row["text"] for row in prefs]
+    all_prefs = list(prefs)
+    pref_texts = [row["text"] for row in all_prefs]
     entry_texts = [
         build_entry_text(row["title"], row["description"], row["content"])
         for row in entries
     ]
 
-    print(f"[info] Encoding {len(prefs)} preference(s) ...")
+    print(f"[info] Encoding {len(all_prefs)} preference(s) ...")
     pref_embeddings = model.encode(pref_texts, batch_size=args.batch_size, normalize_embeddings=True, show_progress_bar=False)
 
     print(f"[info] Encoding {len(entries)} entry/entries ...")
@@ -161,16 +185,20 @@ def main():
     # shape: (num_entries, num_prefs)
     scores_matrix = np.dot(entry_embeddings, np.array(pref_embeddings).T)
 
+    # Build sets for fast lookup
+    changed_pref_ids = {p["id"] for p in changed_prefs}
+
     now = now_iso()
     rows_upserted = 0
 
     for entry_idx, entry in enumerate(entries):
         entry_id = entry["id"]
-        for pref_idx, pref in enumerate(prefs):
+        for pref_idx, pref in enumerate(all_prefs):
             pref_id = pref["id"]
             score = float(scores_matrix[entry_idx, pref_idx])
 
-            if args.force:
+            if args.force or pref_id in changed_pref_ids:
+                # Preference changed (or --force): upsert to overwrite stale score
                 con.execute(
                     """
                     INSERT INTO entry_preference_scores (id, entryId, preferenceId, score, createdAt, updatedAt)
@@ -182,6 +210,7 @@ def main():
                     (str(uuid.uuid4()), entry_id, pref_id, score, now, now),
                 )
             else:
+                # Preference unchanged: only insert if no score exists yet
                 con.execute(
                     """
                     INSERT OR IGNORE INTO entry_preference_scores (id, entryId, preferenceId, score, createdAt, updatedAt)
