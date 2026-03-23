@@ -8,6 +8,7 @@ sentence-transformers を使用して各嗜好とエントリー間のコサイ�
 
 Usage:
     python score_entries.py [--db-path PATH] [--model MODEL] [--batch-size N]
+                            [--limit N] [--interval SECONDS]
 
 Environment variables:
     DATABASE_URL: SQLite database URL (e.g. file:./prisma/dev.db)
@@ -19,6 +20,7 @@ import os
 import re
 import sqlite3
 import sys
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -46,6 +48,21 @@ def parse_args():
         "--force",
         action="store_true",
         help="Re-score entries even if a score already exists",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help="Max entries to score per batch (default: 0 = unlimited)",
+    )
+    parser.add_argument(
+        "--interval",
+        type=float,
+        default=0,
+        help=(
+            "Seconds to sleep between batches when --limit is set. "
+            "If 0 (default), process one batch and exit."
+        ),
     )
     return parser.parse_args()
 
@@ -82,6 +99,27 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
 
+def fetch_pending_entries(con: sqlite3.Connection, limit: int) -> list:
+    """Fetch entries that have at least one preference without a score."""
+    query_limit = limit if limit > 0 else -1  # -1 = no limit in SQLite
+    return con.execute(
+        """
+        SELECT DISTINCT e.id, e.title, e.description, e.content
+        FROM entries e
+        WHERE EXISTS (
+            SELECT 1 FROM user_preferences p
+            WHERE NOT EXISTS (
+                SELECT 1 FROM entry_preference_scores s
+                WHERE s.entryId = e.id AND s.preferenceId = p.id
+            )
+        )
+        ORDER BY e.id
+        LIMIT ?
+        """,
+        (query_limit,),
+    ).fetchall()
+
+
 def main():
     args = parse_args()
     db_path = resolve_db_path(args.db_path)
@@ -116,13 +154,15 @@ def main():
 
     print(f"[info] Found {len(prefs)} preference(s)")
 
-    # Classify preferences as changed or unchanged (skip if --force)
+    # Determine which preferences have changed since last scoring,
+    # then delete their stale scores so they will be re-scored uniformly.
     if args.force:
-        changed_prefs = list(prefs)
-        unchanged_prefs = []
+        con.execute("DELETE FROM entry_preference_scores")
+        con.commit()
+        print("[info] --force: cleared all existing scores")
     else:
         changed_prefs = []
-        unchanged_prefs = []
+        unchanged_count = 0
         for pref in prefs:
             last_scored = con.execute(
                 "SELECT MAX(updatedAt) FROM entry_preference_scores WHERE preferenceId = ?",
@@ -131,36 +171,22 @@ def main():
             if last_scored is None or pref["updatedAt"] > last_scored:
                 changed_prefs.append(pref)
             else:
-                unchanged_prefs.append(pref)
+                unchanged_count += 1
 
         if changed_prefs:
-            print(f"[info] {len(changed_prefs)} preference(s) changed → will re-score all entries")
-        if unchanged_prefs:
-            print(f"[info] {len(unchanged_prefs)} preference(s) unchanged → will skip already-scored entries")
-
-    # Load entries
-    if args.force or changed_prefs:
-        # Need all entries because changed prefs require full re-scoring
-        entries = con.execute(
-            "SELECT id, title, description, content FROM entries"
-        ).fetchall()
-    else:
-        # Only entries that have at least one preference without a score
-        entries = con.execute(
-            """
-            SELECT DISTINCT e.id, e.title, e.description, e.content
-            FROM entries e
-            WHERE EXISTS (
-                SELECT 1 FROM user_preferences p
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM entry_preference_scores s
-                    WHERE s.entryId = e.id AND s.preferenceId = p.id
+            for pref in changed_prefs:
+                con.execute(
+                    "DELETE FROM entry_preference_scores WHERE preferenceId = ?",
+                    (pref["id"],),
                 )
-            )
-            """
-        ).fetchall()
+            con.commit()
+            print(f"[info] {len(changed_prefs)} preference(s) changed → stale scores cleared")
+        if unchanged_count:
+            print(f"[info] {unchanged_count} preference(s) unchanged → existing scores kept")
 
-    if not entries:
+    # Check upfront whether there is anything to process
+    pending_check = fetch_pending_entries(con, limit=1)
+    if not pending_check:
         print("[info] All entries already scored. Use --force to re-score.")
         con.close()
         return
@@ -168,62 +194,88 @@ def main():
     print(f"[info] Loading model: {args.model}")
     model = SentenceTransformer(args.model)
 
-    all_prefs = list(prefs)
-    pref_texts = [row["text"] for row in all_prefs]
-    entry_texts = [
-        build_entry_text(row["title"], row["description"], row["content"])
-        for row in entries
-    ]
+    # Encode preferences once — they don't change during the run
+    pref_texts = [row["text"] for row in prefs]
+    print(f"[info] Encoding {len(prefs)} preference(s) ...")
+    pref_embeddings = model.encode(
+        pref_texts,
+        batch_size=args.batch_size,
+        normalize_embeddings=True,
+        show_progress_bar=False,
+    )
 
-    print(f"[info] Encoding {len(all_prefs)} preference(s) ...")
-    pref_embeddings = model.encode(pref_texts, batch_size=args.batch_size, normalize_embeddings=True, show_progress_bar=False)
+    if args.limit > 0:
+        print(f"[info] Batch limit: {args.limit} entries per batch")
+        if args.interval > 0:
+            print(f"[info] Interval: {args.interval}s between batches")
 
-    print(f"[info] Encoding {len(entries)} entry/entries ...")
-    entry_embeddings = model.encode(entry_texts, batch_size=args.batch_size, normalize_embeddings=True, show_progress_bar=True)
+    total_scored = 0
+    batch_num = 0
 
-    # cosine similarity = dot product when embeddings are L2-normalized
-    # shape: (num_entries, num_prefs)
-    scores_matrix = np.dot(entry_embeddings, np.array(pref_embeddings).T)
+    while True:
+        entries = fetch_pending_entries(con, args.limit)
+        if not entries:
+            print("[info] All entries scored.")
+            break
 
-    # Build sets for fast lookup
-    changed_pref_ids = {p["id"] for p in changed_prefs}
+        batch_num += 1
+        if args.limit > 0:
+            print(f"[info] Batch {batch_num}: scoring {len(entries)} entries ...")
+        else:
+            print(f"[info] Encoding {len(entries)} entry/entries ...")
 
-    now = now_iso()
-    rows_upserted = 0
+        entry_texts = [
+            build_entry_text(row["title"], row["description"], row["content"])
+            for row in entries
+        ]
+        entry_embeddings = model.encode(
+            entry_texts,
+            batch_size=args.batch_size,
+            normalize_embeddings=True,
+            show_progress_bar=(args.limit == 0),  # progress bar only for single full run
+        )
 
-    for entry_idx, entry in enumerate(entries):
-        entry_id = entry["id"]
-        for pref_idx, pref in enumerate(all_prefs):
-            pref_id = pref["id"]
-            score = float(scores_matrix[entry_idx, pref_idx])
+        # cosine similarity = dot product when embeddings are L2-normalized
+        # shape: (num_entries, num_prefs)
+        scores_matrix = np.dot(entry_embeddings, np.array(pref_embeddings).T)
 
-            if args.force or pref_id in changed_pref_ids:
-                # Preference changed (or --force): upsert to overwrite stale score
+        now = now_iso()
+        for entry_idx, entry in enumerate(entries):
+            entry_id = entry["id"]
+            for pref_idx, pref in enumerate(prefs):
+                pref_id = pref["id"]
+                score = float(scores_matrix[entry_idx, pref_idx])
                 con.execute(
                     """
-                    INSERT INTO entry_preference_scores (id, entryId, preferenceId, score, createdAt, updatedAt)
+                    INSERT OR IGNORE INTO entry_preference_scores
+                        (id, entryId, preferenceId, score, createdAt, updatedAt)
                     VALUES (?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(entryId, preferenceId) DO UPDATE SET
-                        score = excluded.score,
-                        updatedAt = excluded.updatedAt
                     """,
                     (str(uuid.uuid4()), entry_id, pref_id, score, now, now),
                 )
-            else:
-                # Preference unchanged: only insert if no score exists yet
-                con.execute(
-                    """
-                    INSERT OR IGNORE INTO entry_preference_scores (id, entryId, preferenceId, score, createdAt, updatedAt)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    """,
-                    (str(uuid.uuid4()), entry_id, pref_id, score, now, now),
-                )
-            rows_upserted += 1
 
-    con.commit()
+        # Commit after each batch so progress is preserved on interruption
+        con.commit()
+        total_scored += len(entries)
+
+        # Exit loop when no limit is set, or the batch was smaller than the limit
+        # (meaning there are no more entries to process)
+        if args.limit == 0 or len(entries) < args.limit:
+            break
+
+        # More entries remain — sleep if interval is set, otherwise stop
+        if args.interval > 0:
+            print(f"[info] Sleeping {args.interval}s before next batch ...")
+            time.sleep(args.interval)
+        else:
+            print(
+                f"[info] Batch complete ({total_scored} scored so far). "
+                "Run again to process remaining entries."
+            )
+            break
+
     con.close()
-
-    print(f"[info] Done. Upserted {rows_upserted} score(s).")
+    print(f"[info] Done. Scored {total_scored} entry/entries in {batch_num} batch(es).")
 
 
 if __name__ == "__main__":
