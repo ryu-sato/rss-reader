@@ -26,12 +26,14 @@ export async function middleware(request: NextRequest) {
   })
 
   const session = sessionRes?.ok ? await sessionRes.json() : null
-  console.log("[middleware]", {
-    path: pathname,
-    hasCookie: !!request.headers.get("cookie"),
-    sessionStatus: sessionRes?.status,
-    hasUser: !!session?.user,
-  })
+  if (sessionRes?.status !== 200) {
+    console.log("[middleware]", {
+      path: pathname,
+      hasCookie: !!request.headers.get("cookie"),
+      sessionStatus: sessionRes?.status,
+      hasUser: !!session?.user,
+    })
+  }
 
   if (!session?.user) {
     // APIルートは401を返す
