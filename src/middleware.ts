@@ -25,11 +25,11 @@ export async function middleware(request: NextRequest) {
     return null
   })
 
-  const session = sessionRes.ok ? await sessionRes.json() : null
+  const session = sessionRes?.ok ? await sessionRes.json() : null
   console.log("[middleware]", {
     path: pathname,
     hasCookie: !!request.headers.get("cookie"),
-    sessionStatus: sessionRes.status,
+    sessionStatus: sessionRes?.status,
     hasUser: !!session?.user,
   })
 
