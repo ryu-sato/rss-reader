@@ -177,7 +177,13 @@ export function EntryCardGrid({
     }
   }, [isLoading, hasMore, page, feedId, tagId, search, isReadLater, isUnread, isPreferred, userPreferenceId, isAnyPreferred, initialPagination.limit])
 
-  // Load next page for modal navigation (appends to navEntries only)
+  // モーダルナビ用の次ページを読み込み、navEntries と entries の両方を更新する。
+  // 要件：次の記事を取得する際は、本来の記事リスト（entries）と
+  // モーダル表示開始時用の記事リスト（navEntries）の両方を更新すること。
+  // 背景：「あとで読む」リストで閲覧中に「あとで読む」を解除しながら「次へ」を押すと
+  // リストの先頭に戻ってしまうのを防ぐため、モーダル表示中は navEntries を
+  // スナップショットとして独立管理している。しかし次ページ読み込み時は
+  // entries も同時に更新して無限スクロールとの整合性を維持する必要がある。
   const loadNavMore = useCallback(async () => {
     if (isNavLoading || !navHasMore) return
     setIsNavLoading(true)
@@ -198,9 +204,14 @@ export function EntryCardGrid({
       const res = await fetch(`/api/entries?${params.toString()}`)
       if (!res.ok) return
       const json = await res.json()
+      // モーダルナビ用リストを更新（モーダル表示中の安定したナビゲーションに使用）
       setNavEntries((prev) => [...prev, ...json.data])
       setNavPage(nextPage)
       setNavHasMore(json.pagination.hasNext)
+      // 本来の記事リストと無限スクロール状態も同時に更新し、二重読み込みを防ぐ
+      setEntries((prev) => [...prev, ...json.data])
+      setPage(nextPage)
+      setHasMore(json.pagination.hasNext)
     } finally {
       setIsNavLoading(false)
     }
