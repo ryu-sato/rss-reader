@@ -50,6 +50,8 @@ export function EntryModal({ entry, allTags }: EntryModalProps) {
       })
       if (!res.ok) {
         setIsReadLater(!newValue)
+      } else {
+        window.dispatchEvent(new CustomEvent('entry:updated', { detail: { entryId: entry.id, isReadLater: newValue } }))
       }
     } catch {
       setIsReadLater(!newValue)
