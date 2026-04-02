@@ -45,7 +45,7 @@ RUN pip3 install --break-system-packages --timeout 300 --retries 10 torch --inde
     pip3 install --break-system-packages --timeout 300 --retries 10 -r /app/scripts/scoring/requirements.txt
 # モデルをビルド時にキャッシュ（実行時のHF Hub ダウンロードを回避）
 RUN mkdir -p /app/hf_cache && \
-    HF_HOME=/app/hf_cache python3 -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/paraphrase-multilingual-mpnet-base-v2')" && \
+    HF_HOME=/app/hf_cache python3 -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')" && \
     chown -R node:node /app/hf_cache
 
 ENV NODE_ENV=production

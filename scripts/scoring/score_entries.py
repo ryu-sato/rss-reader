@@ -35,7 +35,7 @@ def parse_args():
     )
     parser.add_argument(
         "--model",
-        default="sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+        default="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
         help="Sentence-transformers model name (default: paraphrase-multilingual-mpnet-base-v2)",
     )
     parser.add_argument(
