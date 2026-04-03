@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { X, ChevronLeft, ChevronRight, Bookmark, ExternalLink, Eye, EyeOff } from 'lucide-react'
 import type { EntryDetail } from '@/types/entry'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,8 @@ interface ArticleModalProps {
   onNext: () => void
 }
 
+const SWIPE_THRESHOLD = 60
+
 export function ArticleModal({
   entryId,
   prefetchedEntry,
@@ -33,7 +35,44 @@ export function ArticleModal({
   const [isRead, setIsRead] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isUpdatingRead, setIsUpdatingRead] = useState(false)
+  const [swipeX, setSwipeX] = useState(0)
+  const [swipeTransition, setSwipeTransition] = useState(false)
+  const swipeStartRef = useRef<{ x: number; y: number; active: boolean } | null>(null)
   const { config } = useHotkeyConfig()
+
+  // Reset swipe when entry changes
+  useEffect(() => {
+    setSwipeX(0)
+  }, [entryId])
+
+  // Swipe handlers
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input, textarea')) return
+    swipeStartRef.current = { x: e.clientX, y: e.clientY, active: false }
+  }, [])
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!swipeStartRef.current) return
+    const dx = e.clientX - swipeStartRef.current.x
+    const dy = e.clientY - swipeStartRef.current.y
+    if (!swipeStartRef.current.active) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
+      if (Math.abs(dy) >= Math.abs(dx)) { swipeStartRef.current = null; return }
+      swipeStartRef.current.active = true
+    }
+    setSwipeX(dx)
+  }, [])
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!swipeStartRef.current?.active) { swipeStartRef.current = null; return }
+    const dx = e.clientX - swipeStartRef.current.x
+    swipeStartRef.current = null
+    setSwipeTransition(true)
+    setSwipeX(0)
+    setTimeout(() => setSwipeTransition(false), 200)
+    if (dx > SWIPE_THRESHOLD && hasPrev) onPrev()
+    else if (dx < -SWIPE_THRESHOLD && hasNext) onNext()
+  }, [hasPrev, hasNext, onPrev, onNext])
 
   // Fetch entry detail when entryId changes (use prefetched data if available)
   useEffect(() => {
@@ -165,7 +204,17 @@ export function ArticleModal({
         </button>
 
         {/* Modal */}
-        <div className="flex-1 min-w-0 h-[92dvh] sm:h-[85vh] bg-background sm:rounded-xl rounded-t-xl border border-border shadow-2xl flex flex-col overflow-hidden">
+        <div
+          className="flex-1 min-w-0 h-[92dvh] sm:h-[85vh] bg-background sm:rounded-xl rounded-t-xl border border-border shadow-2xl flex flex-col overflow-hidden"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          style={{
+            transform: `translateX(${swipeX}px)`,
+            transition: swipeTransition ? 'transform 0.2s ease' : 'none',
+          }}
+        >
           {/* Toolbar */}
           <div className="h-11 border-b border-border flex items-center justify-between px-4 shrink-0 gap-2">
             {/* Prev/Next — mobile only (desktop shows outside modal) */}
