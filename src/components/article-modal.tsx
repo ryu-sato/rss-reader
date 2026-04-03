@@ -9,6 +9,7 @@ import { useHotkeyConfig } from '@/hooks/use-hotkey-config'
 
 interface ArticleModalProps {
   entryId: string
+  prefetchedEntry?: EntryDetail | null
   allTags: Array<{ id: string; name: string; createdAt: Date }>
   hasPrev: boolean
   hasNext: boolean
@@ -19,6 +20,7 @@ interface ArticleModalProps {
 
 export function ArticleModal({
   entryId,
+  prefetchedEntry,
   allTags,
   hasPrev,
   hasNext,
@@ -33,8 +35,14 @@ export function ArticleModal({
   const [isUpdatingRead, setIsUpdatingRead] = useState(false)
   const { config } = useHotkeyConfig()
 
-  // Fetch entry detail when entryId changes
+  // Fetch entry detail when entryId changes (use prefetched data if available)
   useEffect(() => {
+    if (prefetchedEntry) {
+      setEntry(prefetchedEntry)
+      setIsReadLater(prefetchedEntry.meta?.isReadLater ?? false)
+      setIsRead(prefetchedEntry.meta?.isRead ?? false)
+      return
+    }
     setEntry(null)
     fetch(`/api/entries/${entryId}`)
       .then((r) => r.json())
@@ -45,6 +53,7 @@ export function ArticleModal({
           setIsRead(json.data.meta?.isRead ?? false)
         }
       })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entryId])
 
   // Auto-mark as read

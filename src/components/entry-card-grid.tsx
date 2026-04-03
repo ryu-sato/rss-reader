@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Rss, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import type { Entry, EntryListItem } from '@/types/entry'
+import type { Entry, EntryDetail, EntryListItem } from '@/types/entry'
 import { EntryCard } from '@/components/entry-card'
 import { ArticleModal } from '@/components/article-modal'
 
@@ -64,6 +64,10 @@ export function EntryCardGrid({
   const [pendingNavigateNext, setPendingNavigateNext] = useState(false)
   const hasNavSnapshotRef = useRef(false)
 
+  // Prefetch cache for adjacent entry details
+  const prefetchCacheRef = useRef<Map<string, EntryDetail>>(new Map())
+  const prefetchingRef = useRef<Set<string>>(new Set())
+
   const selectedEntryId = searchParams.get('entryId')
   const navIndex = selectedEntryId ? navEntries.findIndex((e) => e.id === selectedEntryId) : -1
 
@@ -90,6 +94,8 @@ export function EntryCardGrid({
       setNavPage(1)
       setNavHasMore(false)
       setPendingNavigateNext(false)
+      prefetchCacheRef.current.clear()
+      prefetchingRef.current.clear()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEntryId])
@@ -234,6 +240,24 @@ export function EntryCardGrid({
     return () => observer.disconnect()
   }, [loadMore])
 
+  // Prefetch entry details for adjacent entries (prev and next)
+  useEffect(() => {
+    if (!selectedEntryId || navEntries.length === 0 || navIndex === -1) return
+    const ids: string[] = []
+    if (navIndex > 0) ids.push(navEntries[navIndex - 1].id)
+    if (navIndex < navEntries.length - 1) ids.push(navEntries[navIndex + 1].id)
+    for (const id of ids) {
+      if (prefetchCacheRef.current.has(id) || prefetchingRef.current.has(id)) continue
+      prefetchingRef.current.add(id)
+      fetch(`/api/entries/${id}`)
+        .then((r) => r.json())
+        .then((json) => {
+          if (json.success) prefetchCacheRef.current.set(id, json.data)
+        })
+        .finally(() => prefetchingRef.current.delete(id))
+    }
+  }, [navIndex, navEntries, selectedEntryId])
+
   // Preload next nav page when the last nav entry is displayed
   useEffect(() => {
     if (!selectedEntryId || !navHasMore || isNavLoading || navEntries.length === 0) return
@@ -356,6 +380,7 @@ export function EntryCardGrid({
       {selectedEntryId && (
         <ArticleModal
           entryId={selectedEntryId}
+          prefetchedEntry={prefetchCacheRef.current.get(selectedEntryId) ?? null}
           allTags={allTags}
           hasPrev={navIndex > 0}
           hasNext={navIndex < navEntries.length - 1 || navHasMore}
