@@ -51,28 +51,32 @@ export function EntryCard({ entry, isSelected, onClick, onToggleRead }: EntryCar
       onClick={onClick}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
       className={cn(
-        'group flex flex-col rounded-lg border border-border bg-card cursor-pointer transition-all duration-150',
-        'hover:shadow-md hover:border-border/80',
-        isSelected && 'ring-2 ring-primary border-primary',
-        isRead && 'opacity-70'
+        'group flex flex-col rounded-xl border border-border bg-card cursor-pointer transition-all duration-200',
+        'hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 hover:border-border/60',
+        isSelected && 'ring-2 ring-primary border-primary shadow-md shadow-primary/10',
+        isRead && 'opacity-60'
       )}
     >
       {/* Image */}
-      <div className="relative w-full aspect-video overflow-hidden rounded-t-lg bg-muted shrink-0">
+      <div className="relative w-full aspect-video overflow-hidden rounded-t-xl shrink-0">
         {showImage ? (
-          <Image
-            src={entry.imageUrl!}
-            alt=""
-            fill
-            className="object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-            onError={() => setImgError(true)}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            unoptimized
-          />
+          <>
+            <Image
+              src={entry.imageUrl!}
+              alt=""
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+              onError={() => setImgError(true)}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              unoptimized
+            />
+            {/* Subtle gradient overlay at bottom */}
+            <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+          </>
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/60">
             <svg
-              className="h-8 w-8 text-muted-foreground/20"
+              className="h-8 w-8 text-muted-foreground/25"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -89,7 +93,7 @@ export function EntryCard({ entry, isSelected, onClick, onToggleRead }: EntryCar
 
         {/* Unread dot */}
         {!isRead && (
-          <span className="absolute top-2 left-2 h-2 w-2 rounded-full bg-primary shadow-sm" />
+          <span className="absolute top-2 left-2 h-2 w-2 rounded-full bg-primary shadow-sm ring-2 ring-card/80" />
         )}
 
         {/* Read/Unread toggle button (visible on hover) */}
@@ -99,9 +103,9 @@ export function EntryCard({ entry, isSelected, onClick, onToggleRead }: EntryCar
           aria-label={isRead ? '未読にする' : '既読にする'}
           title={isRead ? '未読にする' : '既読にする'}
           className={cn(
-            'absolute top-2 right-2 h-7 w-7 rounded-md flex items-center justify-center transition-all duration-150',
-            'bg-background/80 backdrop-blur-sm border border-border/60 shadow-sm',
-            'text-muted-foreground hover:text-foreground hover:bg-background hover:border-border',
+            'absolute top-2 right-2 h-7 w-7 rounded-lg flex items-center justify-center transition-all duration-150',
+            'bg-background/85 backdrop-blur-sm border border-white/20 shadow-sm',
+            'text-muted-foreground hover:text-foreground hover:bg-background hover:scale-110',
             'opacity-0 group-hover:opacity-100 focus:opacity-100',
             'disabled:cursor-not-allowed disabled:opacity-40',
           )}
@@ -117,7 +121,7 @@ export function EntryCard({ entry, isSelected, onClick, onToggleRead }: EntryCar
       </div>
 
       {/* Body */}
-      <div className="flex flex-col gap-1.5 p-3 flex-1">
+      <div className="flex flex-col gap-2 p-3 flex-1">
         <p
           className={cn(
             'text-sm leading-snug line-clamp-2',
@@ -126,10 +130,10 @@ export function EntryCard({ entry, isSelected, onClick, onToggleRead }: EntryCar
         >
           {entry.title}
         </p>
-        <div className="flex items-center gap-1.5 mt-auto pt-1">
-          <span className="text-[11px] text-muted-foreground truncate">{entry.feed.title}</span>
-          <span className="text-[11px] text-muted-foreground/50 shrink-0">·</span>
-          <time className="text-[11px] text-muted-foreground shrink-0">{formatDate(date)}</time>
+        <div className="flex items-center gap-1.5 mt-auto">
+          <span className="text-[11px] text-muted-foreground/80 truncate">{entry.feed.title}</span>
+          <span className="text-[11px] text-muted-foreground/40 shrink-0">·</span>
+          <time className="text-[11px] text-muted-foreground/70 shrink-0 tabular-nums">{formatDate(date)}</time>
         </div>
       </div>
     </article>

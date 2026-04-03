@@ -182,19 +182,21 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
       )}
     >
       {/* Logo */}
-      <div className="h-11 flex items-center px-4 border-b border-sidebar-border shrink-0">
-        <Link href="/" className="flex items-center gap-2 font-bold text-foreground">
-          <Rss className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold">RSS Reader</span>
+      <div className="h-12 flex items-center px-3.5 border-b border-sidebar-border shrink-0">
+        <Link href="/" className="flex items-center gap-2.5 font-bold text-foreground">
+          <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center shrink-0">
+            <Rss className="h-3.5 w-3.5 text-primary-foreground" />
+          </div>
+          <span className="text-sm font-semibold tracking-tight">RSS Reader</span>
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="overflow-y-auto flex-1 py-1.5">
+      <nav className="overflow-y-auto flex-1 py-2">
         <Link
           href="/"
           className={cn(
-            'flex items-center gap-2.5 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors',
+            'flex items-center gap-2.5 px-3 py-1.5 mx-1.5 rounded-lg text-sm transition-colors',
             isHome
               ? 'bg-primary text-primary-foreground font-medium'
               : 'text-foreground hover:bg-accent cursor-pointer'
@@ -212,7 +214,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
         <Link
           href="/read-later"
           className={cn(
-            'flex items-center gap-2.5 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors',
+            'flex items-center gap-2.5 px-3 py-1.5 mx-1.5 rounded-lg text-sm transition-colors',
             isReadLater
               ? 'bg-primary text-primary-foreground font-medium'
               : 'text-foreground hover:bg-accent cursor-pointer'
@@ -261,7 +263,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
               <Link
                 href="/preferred/all"
                 className={cn(
-                  'flex items-center gap-2 pl-8 pr-3 py-1.5 mx-1.5 rounded text-sm transition-colors min-w-0',
+                  'flex items-center gap-2 pl-8 pr-3 py-1.5 mx-1.5 rounded-lg text-sm transition-colors min-w-0',
                   pathname === '/preferred/all'
                     ? 'bg-primary/10 text-primary font-medium'
                     : 'text-foreground hover:bg-accent cursor-pointer'
@@ -275,7 +277,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
                   key={pref.id}
                   href={`/preferred/${pref.id}`}
                   className={cn(
-                    'flex items-center gap-2 pl-8 pr-3 py-1.5 mx-1.5 rounded text-sm transition-colors min-w-0',
+                    'flex items-center gap-2 pl-8 pr-3 py-1.5 mx-1.5 rounded-lg text-sm transition-colors min-w-0',
                     pathname === `/preferred/${pref.id}`
                       ? 'bg-primary/10 text-primary font-medium'
                       : 'text-foreground hover:bg-accent cursor-pointer'
@@ -291,7 +293,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
         <Link
           href="/preferences"
           className={cn(
-            'flex items-center gap-2.5 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors',
+            'flex items-center gap-2.5 px-3 py-1.5 mx-1.5 rounded-lg text-sm transition-colors',
             isPreferences
               ? 'bg-primary text-primary-foreground font-medium'
               : 'text-foreground hover:bg-accent cursor-pointer'
@@ -304,7 +306,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
         <Link
           href="/digests"
           className={cn(
-            'flex items-center gap-2.5 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors',
+            'flex items-center gap-2.5 px-3 py-1.5 mx-1.5 rounded-lg text-sm transition-colors',
             isDigests
               ? 'bg-primary text-primary-foreground font-medium'
               : 'text-foreground hover:bg-accent cursor-pointer'
@@ -319,7 +321,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
           <div className="flex items-center px-3 py-1 group">
             <button
               onClick={() => setFeedsOpen(!feedsOpen)}
-              className="flex items-center gap-1.5 flex-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 flex-1 text-[10.5px] font-semibold text-muted-foreground/70 uppercase tracking-widest hover:text-foreground transition-colors"
             >
               <span>フィード</span>
               <ChevronDown
@@ -351,7 +353,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
           {feeds.length === 0 ? (
             <Link
               href="/feeds/new"
-              className="flex items-center gap-2 px-3 py-1.5 mx-1.5 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors border border-dashed border-sidebar-border mt-1"
+              className="flex items-center gap-2 px-3 py-1.5 mx-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors border border-dashed border-sidebar-border mt-1"
             >
               <Plus className="h-3 w-3 shrink-0" />
               <span>フィードを追加</span>
@@ -364,7 +366,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
                     key={feed.id}
                     href={makeFeedLink(feed.id)}
                     className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 mx-1.5 rounded text-sm transition-colors min-w-0',
+                      'flex items-center gap-2 px-3 py-1.5 mx-1.5 rounded-lg text-sm transition-colors min-w-0',
                       currentFeedId === feed.id
                         ? 'bg-primary/10 text-primary font-medium'
                         : 'text-foreground hover:bg-accent cursor-pointer'
@@ -389,7 +391,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
           <div className="mt-3">
             <button
               onClick={() => setTagsOpen(!tagsOpen)}
-              className="w-full flex items-center justify-between px-3 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+              className="w-full flex items-center justify-between px-3 py-1 text-[10.5px] font-semibold text-muted-foreground/70 uppercase tracking-widest hover:text-foreground transition-colors"
             >
               <span>タグ</span>
               <ChevronDown
@@ -433,11 +435,11 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
                       </button>
                     </div>
                   ) : (
-                    <div key={tag.id} className="group flex items-center mx-1.5 rounded">
+                    <div key={tag.id} className="group flex items-center mx-1.5 rounded-lg">
                       <Link
                         href={makeTagLink(tag.id)}
                         className={cn(
-                          'flex items-center gap-2 px-3 py-1.5 rounded text-sm transition-colors flex-1 min-w-0',
+                          'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors flex-1 min-w-0',
                           currentTagId === tag.id
                             ? 'bg-primary/10 text-primary font-medium'
                             : 'text-foreground hover:bg-accent cursor-pointer'
@@ -475,30 +477,32 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
       </nav>
 
       {/* Footer actions */}
-      <div className="border-t border-sidebar-border p-2 shrink-0 grid grid-cols-2 gap-1">
-        <Link
-          href="/settings"
-          className={cn(
-            'flex items-center gap-2 text-xs px-3 py-2 rounded transition-colors',
-            isSettings
-              ? 'bg-accent text-foreground font-medium'
-              : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-          )}
-        >
-          <Settings className="h-3.5 w-3.5 shrink-0" />
-          <span>設定</span>
-        </Link>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded hover:bg-accent disabled:opacity-50"
-        >
-          <RefreshCw className={cn('h-3.5 w-3.5 shrink-0', refreshing && 'animate-spin')} />
-          <span>{refreshing ? '更新中...' : '更新'}</span>
-        </button>
+      <div className="border-t border-sidebar-border p-2 shrink-0 flex flex-col gap-0.5">
+        <div className="flex gap-1">
+          <Link
+            href="/settings"
+            className={cn(
+              'flex items-center gap-2 text-xs px-3 py-2 rounded-lg transition-colors flex-1',
+              isSettings
+                ? 'bg-accent text-foreground font-medium'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+            )}
+          >
+            <Settings className="h-3.5 w-3.5 shrink-0" />
+            <span>設定</span>
+          </Link>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-accent disabled:opacity-50 flex-1"
+          >
+            <RefreshCw className={cn('h-3.5 w-3.5 shrink-0', refreshing && 'animate-spin')} />
+            <span>{refreshing ? '更新中...' : '更新'}</span>
+          </button>
+        </div>
         <button
           onClick={() => signOut({ fetchOptions: { onSuccess: () => { window.location.href = '/login' } } })}
-          className="col-span-2 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded hover:bg-accent"
+          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-destructive transition-colors px-3 py-2 rounded-lg hover:bg-destructive/8 w-full"
         >
           <LogOut className="h-3.5 w-3.5 shrink-0" />
           <span>サインアウト</span>

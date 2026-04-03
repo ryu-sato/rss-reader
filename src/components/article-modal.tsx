@@ -205,7 +205,7 @@ export function ArticleModal({
 
         {/* Modal */}
         <div
-          className="flex-1 min-w-0 h-[92dvh] sm:h-[85vh] bg-background sm:rounded-xl rounded-t-xl border border-border shadow-2xl flex flex-col overflow-hidden"
+          className="flex-1 min-w-0 h-[92dvh] sm:h-[85vh] bg-background sm:rounded-2xl rounded-t-2xl border border-border shadow-2xl flex flex-col overflow-hidden"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -315,8 +315,18 @@ export function ArticleModal({
 
           {/* Content */}
           {!entry ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <div className="overflow-y-auto flex-1 px-4 py-4 sm:px-8 sm:py-6 max-w-3xl mx-auto w-full">
+              {/* Skeleton loading */}
+              <div className="h-7 bg-muted rounded-lg animate-pulse mb-2 w-full" />
+              <div className="h-7 bg-muted rounded-lg animate-pulse mb-5 w-3/4" />
+              <div className="aspect-video bg-muted rounded-xl animate-pulse mb-6" />
+              <div className="space-y-2.5">
+                <div className="h-4 bg-muted rounded animate-pulse w-full" />
+                <div className="h-4 bg-muted rounded animate-pulse w-full" />
+                <div className="h-4 bg-muted rounded animate-pulse w-5/6" />
+                <div className="h-4 bg-muted rounded animate-pulse w-full" />
+                <div className="h-4 bg-muted rounded animate-pulse w-4/5" />
+              </div>
             </div>
           ) : (
             <div className="overflow-y-auto flex-1 px-4 py-4 sm:px-8 sm:py-6 max-w-3xl mx-auto w-full">
