@@ -16,6 +16,7 @@ Environment variables:
 """
 
 import argparse
+import gc
 import os
 import re
 import sqlite3
@@ -80,6 +81,15 @@ def parse_args():
         help=(
             "Maximum characters per entry text before truncation (default: 2000). "
             "Reduces memory and speeds up encoding."
+        ),
+    )
+    parser.add_argument(
+        "--insert-chunk-size",
+        type=int,
+        default=500,
+        help=(
+            "Number of score rows to insert per executemany call (default: 500). "
+            "Prevents large in-memory row lists when entries × prefs is high."
         ),
     )
     return parser.parse_args()
@@ -269,23 +279,41 @@ def main():
         # shape: (num_entries, num_prefs)
         scores_matrix = np.dot(entry_embeddings, pref_embeddings_T)
         del entry_embeddings
+        gc.collect()
 
         now = now_iso()
-        rows = [
-            (str(uuid.uuid4()), entry["id"], pref["id"], float(scores_matrix[ei, pi]), now, now)
-            for ei, entry in enumerate(entries)
-            for pi, pref in enumerate(prefs)
-        ]
-        con.executemany(
-            """
+
+        # Insert in small chunks to avoid building a huge list of (entries × prefs) rows.
+        def _score_rows(entries, prefs, scores_matrix, now):
+            for ei, entry in enumerate(entries):
+                for pi, pref in enumerate(prefs):
+                    yield (
+                        str(uuid.uuid4()),
+                        entry["id"],
+                        pref["id"],
+                        float(scores_matrix[ei, pi]),
+                        now,
+                        now,
+                    )
+
+        row_gen = _score_rows(entries, prefs, scores_matrix, now)
+        insert_sql = """
             INSERT OR IGNORE INTO entry_preference_scores
                 (id, entryId, preferenceId, score, createdAt, updatedAt)
             VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            rows,
-        )
+        """
+        buf = []
+        for row in row_gen:
+            buf.append(row)
+            if len(buf) >= args.insert_chunk_size:
+                con.executemany(insert_sql, buf)
+                buf.clear()
+        if buf:
+            con.executemany(insert_sql, buf)
 
         del scores_matrix
+        gc.collect()
+
         total_scored += len(entries)
         del entries
 
