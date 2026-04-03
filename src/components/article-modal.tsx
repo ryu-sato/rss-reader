@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { X, ChevronLeft, ChevronRight, Bookmark, ExternalLink, Eye, EyeOff } from 'lucide-react'
 import type { EntryDetail } from '@/types/entry'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { TagInput } from '@/components/tag-input'
 import { useHotkeyConfig } from '@/hooks/use-hotkey-config'
 
@@ -261,55 +262,81 @@ export function ArticleModal({
             <div className="flex items-center gap-1 shrink-0">
               {entry && (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleRead}
-                    disabled={isUpdatingRead}
-                    title={`${isRead ? '未読に戻す' : '既読にする'} (${config.toggleRead.toUpperCase()})`}
-                    className="h-7 w-7 sm:w-auto sm:gap-1.5 sm:px-2 p-0 text-xs"
-                  >
-                    {isUpdatingRead ? (
-                      <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                    ) : isRead ? (
-                      <EyeOff className="h-3.5 w-3.5" />
-                    ) : (
-                      <Eye className="h-3.5 w-3.5" />
-                    )}
-                    <span className="hidden sm:inline">{isRead ? '未読に戻す' : '既読にする'}</span>
-                  </Button>
-                  <Button
-                    variant={isReadLater ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={toggleReadLater}
-                    disabled={isUpdating}
-                    title={`あとで読む (${config.readLater.toUpperCase()})`}
-                    className="h-7 w-7 sm:w-auto sm:gap-1.5 sm:px-2 p-0 text-xs"
-                  >
-                    <Bookmark className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">{isReadLater ? '保存済み' : 'あとで読む'}</span>
-                  </Button>
-                  <a
-                    href={entry.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="元の記事を開く"
-                    onClick={(e) => handleExternalLink(e, entry.link)}
-                    className="inline-flex items-center justify-center h-7 w-7 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={toggleRead}
+                        disabled={isUpdatingRead}
+                        aria-label={isRead ? '未読に戻す' : '既読にする'}
+                        className="h-7 w-7 sm:w-auto sm:gap-1.5 sm:px-2 p-0 text-xs"
+                      >
+                        {isUpdatingRead ? (
+                          <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                        ) : isRead ? (
+                          <EyeOff className="h-3.5 w-3.5" />
+                        ) : (
+                          <Eye className="h-3.5 w-3.5" />
+                        )}
+                        <span className="hidden sm:inline">{isRead ? '未読に戻す' : '既読にする'}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      {isRead ? '未読に戻す' : '既読にする'} ({config.toggleRead.toUpperCase()})
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Button
+                        variant={isReadLater ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={toggleReadLater}
+                        disabled={isUpdating}
+                        aria-label={isReadLater ? '保存済み' : 'あとで読む'}
+                        className="h-7 w-7 sm:w-auto sm:gap-1.5 sm:px-2 p-0 text-xs"
+                      >
+                        <Bookmark className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">{isReadLater ? '保存済み' : 'あとで読む'}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      あとで読む ({config.readLater.toUpperCase()})
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <a
+                        href={entry.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="元の記事を開く"
+                        onClick={(e) => handleExternalLink(e, entry.link)}
+                        className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      元の記事を開く ({config.openOriginal.toUpperCase()})
+                    </TooltipContent>
+                  </Tooltip>
                 </>
               )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                aria-label="閉じる"
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={onClose}
+                    aria-label="閉じる"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">閉じる ({config.closeModal.toUpperCase()})</TooltipContent>
+              </Tooltip>
             </div>
           </div>
 

@@ -6,6 +6,10 @@ import { useState, useEffect, useRef } from 'react'
 import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, ListFilter, Pencil, Trash2, Check, X, ThumbsUp, SlidersHorizontal, Layers, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { signOut } from '@/lib/auth-client'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { Input } from '@/components/ui/input'
 
 function FeedFavicon({ faviconUrl, feedUrl }: { faviconUrl: string | null; feedUrl: string }) {
   const [index, setIndex] = useState(0)
@@ -192,7 +196,8 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
       </div>
 
       {/* Navigation */}
-      <nav className="overflow-y-auto flex-1 py-2">
+      <ScrollArea className="flex-1">
+      <nav className="py-2">
         <Link
           href="/"
           className={cn(
@@ -205,9 +210,9 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
           <Rss className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1">全ての記事</span>
           {totalUnread > 0 && (
-            <span className="ml-1 shrink-0 text-[10px] font-medium tabular-nums opacity-70">
+            <Badge variant="secondary" className="ml-1 shrink-0 h-4 px-1.5 text-[10px] tabular-nums">
               {totalUnread}
-            </span>
+            </Badge>
           )}
         </Link>
 
@@ -223,9 +228,9 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
           <Bookmark className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1">あとで読む</span>
           {readLaterUnreadCount > 0 && (
-            <span className="ml-1 shrink-0 text-[10px] font-medium tabular-nums opacity-70">
+            <Badge variant="secondary" className="ml-1 shrink-0 h-4 px-1.5 text-[10px] tabular-nums">
               {readLaterUnreadCount}
-            </span>
+            </Badge>
           )}
         </Link>
 
@@ -316,8 +321,10 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
           <span>ダイジェスト</span>
         </Link>
 
+        <Separator className="mx-3 my-2 w-auto" />
+
         {/* Feeds section */}
-        <div className="mt-3">
+        <div className="mt-1">
           <div className="flex items-center px-3 py-1 group">
             <button
               onClick={() => setFeedsOpen(!feedsOpen)}
@@ -375,9 +382,9 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
                     <FeedFavicon faviconUrl={feed.faviconUrl} feedUrl={feed.url} />
                     <span className="truncate flex-1">{feed.title}</span>
                     {feed.unreadCount > 0 && (
-                      <span className="ml-1 shrink-0 text-[10px] font-medium tabular-nums text-muted-foreground">
+                      <Badge variant="secondary" className="ml-1 shrink-0 h-4 px-1.5 text-[10px] tabular-nums">
                         {feed.unreadCount}
-                      </span>
+                      </Badge>
                     )}
                   </Link>
                 ))}
@@ -388,7 +395,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
 
         {/* Tags section */}
         {tags.length > 0 && (
-          <div className="mt-3">
+          <div className="mt-1">
             <button
               onClick={() => setTagsOpen(!tagsOpen)}
               className="w-full flex items-center justify-between px-3 py-1 text-[10.5px] font-semibold text-muted-foreground/70 uppercase tracking-widest hover:text-foreground transition-colors"
@@ -408,7 +415,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
                     // Inline rename form
                     <div key={tag.id} className="flex items-center gap-1 px-3 py-1 mx-1.5">
                       <Tag className="h-3 w-3 shrink-0 text-muted-foreground" />
-                      <input
+                      <Input
                         ref={editInputRef}
                         value={editingTagName}
                         onChange={(e) => setEditingTagName(e.target.value)}
@@ -416,7 +423,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
                           if (e.key === 'Enter') handleRenameTag(tag.id)
                           if (e.key === 'Escape') setEditingTagId(null)
                         }}
-                        className="flex-1 min-w-0 text-xs px-1 py-0.5 rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                        className="flex-1 min-w-0 h-6 text-xs px-1.5"
                         autoFocus
                       />
                       <button
@@ -475,6 +482,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
           </div>
         )}
       </nav>
+      </ScrollArea>
 
       {/* Footer actions */}
       <div className="border-t border-sidebar-border p-2 shrink-0 flex flex-col gap-0.5">
