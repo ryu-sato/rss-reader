@@ -16,7 +16,6 @@ Environment variables:
 """
 
 import argparse
-import gc
 import os
 import re
 import sqlite3
@@ -239,10 +238,9 @@ def main():
     else:
         print(f"[info] Processing in chunks of {fetch_size} to limit memory usage")
 
-    pref_embeddings_arr = np.array(pref_embeddings)
-
     total_scored = 0
     batch_num = 0
+    pref_embeddings_T = pref_embeddings.T
 
     while True:
         entries = fetch_pending_entries(con, fetch_size)
@@ -269,45 +267,38 @@ def main():
 
         # cosine similarity = dot product when embeddings are L2-normalized
         # shape: (num_entries, num_prefs)
-        scores_matrix = np.dot(entry_embeddings, pref_embeddings_arr.T)
+        scores_matrix = np.dot(entry_embeddings, pref_embeddings_T)
         del entry_embeddings
 
         now = now_iso()
-        for entry_idx, entry in enumerate(entries):
-            entry_id = entry["id"]
-            for pref_idx, pref in enumerate(prefs):
-                pref_id = pref["id"]
-                score = float(scores_matrix[entry_idx, pref_idx])
-                con.execute(
-                    """
-                    INSERT OR IGNORE INTO entry_preference_scores
-                        (id, entryId, preferenceId, score, createdAt, updatedAt)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    """,
-                    (str(uuid.uuid4()), entry_id, pref_id, score, now, now),
-                )
+        rows = [
+            (str(uuid.uuid4()), entry["id"], pref["id"], float(scores_matrix[ei, pi]), now, now)
+            for ei, entry in enumerate(entries)
+            for pi, pref in enumerate(prefs)
+        ]
+        con.executemany(
+            """
+            INSERT OR IGNORE INTO entry_preference_scores
+                (id, entryId, preferenceId, score, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            rows,
+        )
 
         del scores_matrix
-        chunk_size_actual = len(entries)
+        total_scored += len(entries)
         del entries
 
         # Commit after each chunk so progress is preserved on interruption
         con.commit()
-        gc.collect()
-        total_scored += chunk_size_actual
 
         # When --limit is set and there might be more entries, apply interval/stop logic
         if args.limit > 0:
-            next_check = fetch_pending_entries(con, 1)
-            if not next_check:
-                break
             if args.interval > 0:
                 print(f"[info] Sleeping {args.interval}s before next batch ...")
                 time.sleep(args.interval)
             else:
-                print(
-                    f"[info] Batch complete. Run again to process remaining entries."
-                )
+                print("[info] Batch complete. Run again to process remaining entries.")
                 break
 
     con.close()
