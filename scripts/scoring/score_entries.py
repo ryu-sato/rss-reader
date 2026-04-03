@@ -16,6 +16,7 @@ Environment variables:
 """
 
 import argparse
+import gc
 import os
 import re
 import sqlite3
@@ -64,6 +65,24 @@ def parse_args():
             "If 0 (default), process one batch and exit."
         ),
     )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=200,
+        help=(
+            "Number of entries to process per internal chunk when --limit is 0. "
+            "Limits peak memory usage (default: 200)."
+        ),
+    )
+    parser.add_argument(
+        "--max-text-chars",
+        type=int,
+        default=2000,
+        help=(
+            "Maximum characters per entry text before truncation (default: 2000). "
+            "Reduces memory and speeds up encoding."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -85,14 +104,19 @@ def resolve_db_path(db_path_arg: str | None) -> Path:
     return default
 
 
-def build_entry_text(title: str, description: str | None, content: str | None) -> str:
+def build_entry_text(
+    title: str, description: str | None, content: str | None, max_chars: int = 0
+) -> str:
     """Concatenate available text fields for embedding."""
     parts = [title]
     if description:
         parts.append(description)
     elif content:
         parts.append(content)
-    return "\n".join(parts)
+    text = "\n".join(parts)
+    if max_chars > 0 and len(text) > max_chars:
+        text = text[:max_chars]
+    return text
 
 
 def now_iso() -> str:
@@ -204,40 +228,49 @@ def main():
         show_progress_bar=False,
     )
 
+    # When --limit is set, use it as the fetch size; otherwise use --chunk-size
+    # so we never load all entries into memory at once.
+    fetch_size = args.limit if args.limit > 0 else args.chunk_size
+
     if args.limit > 0:
         print(f"[info] Batch limit: {args.limit} entries per batch")
         if args.interval > 0:
             print(f"[info] Interval: {args.interval}s between batches")
+    else:
+        print(f"[info] Processing in chunks of {fetch_size} to limit memory usage")
+
+    pref_embeddings_arr = np.array(pref_embeddings)
 
     total_scored = 0
     batch_num = 0
 
     while True:
-        entries = fetch_pending_entries(con, args.limit)
+        entries = fetch_pending_entries(con, fetch_size)
         if not entries:
             print("[info] All entries scored.")
             break
 
         batch_num += 1
-        if args.limit > 0:
-            print(f"[info] Batch {batch_num}: scoring {len(entries)} entries ...")
-        else:
-            print(f"[info] Encoding {len(entries)} entry/entries ...")
+        print(f"[info] Chunk {batch_num}: scoring {len(entries)} entries ...")
 
         entry_texts = [
-            build_entry_text(row["title"], row["description"], row["content"])
+            build_entry_text(
+                row["title"], row["description"], row["content"], args.max_text_chars
+            )
             for row in entries
         ]
         entry_embeddings = model.encode(
             entry_texts,
             batch_size=args.batch_size,
             normalize_embeddings=True,
-            show_progress_bar=(args.limit == 0),  # progress bar only for single full run
+            show_progress_bar=False,
         )
+        del entry_texts
 
         # cosine similarity = dot product when embeddings are L2-normalized
         # shape: (num_entries, num_prefs)
-        scores_matrix = np.dot(entry_embeddings, np.array(pref_embeddings).T)
+        scores_matrix = np.dot(entry_embeddings, pref_embeddings_arr.T)
+        del entry_embeddings
 
         now = now_iso()
         for entry_idx, entry in enumerate(entries):
@@ -254,28 +287,31 @@ def main():
                     (str(uuid.uuid4()), entry_id, pref_id, score, now, now),
                 )
 
-        # Commit after each batch so progress is preserved on interruption
+        del scores_matrix
+        chunk_size_actual = len(entries)
+        del entries
+
+        # Commit after each chunk so progress is preserved on interruption
         con.commit()
-        total_scored += len(entries)
+        gc.collect()
+        total_scored += chunk_size_actual
 
-        # Exit loop when no limit is set, or the batch was smaller than the limit
-        # (meaning there are no more entries to process)
-        if args.limit == 0 or len(entries) < args.limit:
-            break
-
-        # More entries remain — sleep if interval is set, otherwise stop
-        if args.interval > 0:
-            print(f"[info] Sleeping {args.interval}s before next batch ...")
-            time.sleep(args.interval)
-        else:
-            print(
-                f"[info] Batch complete ({total_scored} scored so far). "
-                "Run again to process remaining entries."
-            )
-            break
+        # When --limit is set and there might be more entries, apply interval/stop logic
+        if args.limit > 0:
+            next_check = fetch_pending_entries(con, 1)
+            if not next_check:
+                break
+            if args.interval > 0:
+                print(f"[info] Sleeping {args.interval}s before next batch ...")
+                time.sleep(args.interval)
+            else:
+                print(
+                    f"[info] Batch complete. Run again to process remaining entries."
+                )
+                break
 
     con.close()
-    print(f"[info] Done. Scored {total_scored} entry/entries in {batch_num} batch(es).")
+    print(f"[info] Done. Scored {total_scored} entry/entries in {batch_num} chunk(s).")
 
 
 if __name__ == "__main__":
