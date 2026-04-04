@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { memo, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import type { EntryListItem } from '@/types/entry'
 import { cn } from '@/lib/utils'
@@ -19,8 +19,13 @@ export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, o
   const [imgError, setImgError] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const isRead = entry.meta?.isRead ?? false
-  const date = entry.publishedAt ? new Date(entry.publishedAt) : new Date(entry.createdAt)
+  const dateStr = entry.publishedAt ?? entry.createdAt
   const showImage = !!entry.imageUrl && !imgError
+  const [displayDate, setDisplayDate] = useState('')
+
+  useEffect(() => {
+    setDisplayDate(formatDate(new Date(dateStr)))
+  }, [dateStr])
 
   const handleToggleRead = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -100,26 +105,28 @@ export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, o
 
         {/* Read/Unread toggle button (visible on hover) */}
         <Tooltip>
-          <TooltipTrigger>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={handleToggleRead}
-              disabled={isUpdating}
-              aria-label={isRead ? '未読にする' : '既読にする'}
-              className={cn(
-                'absolute top-2 right-2 bg-background/85 backdrop-blur-sm border border-white/20 shadow-sm hover:scale-110',
-                'opacity-0 group-hover:opacity-100 focus:opacity-100',
-              )}
-            >
-              {isUpdating ? (
-                <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-              ) : isRead ? (
-                <EyeOff className="h-3.5 w-3.5" />
-              ) : (
-                <Eye className="h-3.5 w-3.5" />
-              )}
-            </Button>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={handleToggleRead}
+                disabled={isUpdating}
+                aria-label={isRead ? '未読にする' : '既読にする'}
+                className={cn(
+                  'absolute top-2 right-2 bg-background/85 backdrop-blur-sm border border-white/20 shadow-sm hover:scale-110',
+                  'opacity-0 group-hover:opacity-100 focus:opacity-100',
+                )}
+              />
+            }
+          >
+            {isUpdating ? (
+              <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+            ) : isRead ? (
+              <EyeOff className="h-3.5 w-3.5" />
+            ) : (
+              <Eye className="h-3.5 w-3.5" />
+            )}
           </TooltipTrigger>
           <TooltipContent side="bottom">{isRead ? '未読にする' : '既読にする'}</TooltipContent>
         </Tooltip>
@@ -138,7 +145,7 @@ export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, o
         <div className="flex items-center gap-1.5 mt-auto">
           <span className="text-[11px] text-muted-foreground/80 truncate">{entry.feed.title}</span>
           <span className="text-[11px] text-muted-foreground/40 shrink-0">·</span>
-          <time suppressHydrationWarning className="text-[11px] text-muted-foreground/70 shrink-0 tabular-nums">{formatDate(date)}</time>
+          <time className="text-[11px] text-muted-foreground/70 shrink-0 tabular-nums">{displayDate}</time>
         </div>
       </div>
     </article>
