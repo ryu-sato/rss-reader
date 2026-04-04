@@ -85,7 +85,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
       if (prefsRes.success) setPreferences(prefsRes.data)
     })
     fetchReadLaterUnreadCount()
-  }, [pathname])
+  }, [])
 
   useEffect(() => {
     const handler = () => {
