@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, ListFilter, Pencil, Trash2, Check, X, ThumbsUp, SlidersHorizontal, Layers, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { signOut } from '@/lib/auth-client'
@@ -68,6 +68,9 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
   const [editingTagName, setEditingTagName] = useState('')
   const editInputRef = useRef<HTMLInputElement>(null)
 
+  const currentFeedId = searchParams.get('feedId')
+  const currentTagId = searchParams.get('tagId')
+
   const fetchReadLaterUnreadCount = () => {
     fetch('/api/entries/read-later-unread-count')
       .then((r) => r.json())
@@ -125,14 +128,14 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
     }
   }, [totalUnread])
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true)
     await fetch('/api/feeds/refresh', { method: 'POST' })
     setRefreshing(false)
     window.location.reload()
-  }
+  }, [])
 
-  const handleRenameTag = async (tagId: string) => {
+  const handleRenameTag = useCallback(async (tagId: string) => {
     const name = editingTagName.trim()
     if (!name) return
     const res = await fetch(`/api/tags/${tagId}`, {
@@ -145,24 +148,21 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
       setTags((prev) => prev.map((t) => (t.id === tagId ? { ...t, name: data.name } : t)))
     }
     setEditingTagId(null)
-  }
+  }, [editingTagName])
 
-  const handleDeleteTag = async (tagId: string) => {
+  const handleDeleteTag = useCallback(async (tagId: string) => {
     const res = await fetch(`/api/tags/${tagId}`, { method: 'DELETE' })
     if (res.ok) {
       setTags((prev) => prev.filter((t) => t.id !== tagId))
       // If currently filtering by this tag, go back to home
       if (currentTagId === tagId) router.push('/')
     }
-  }
+  }, [currentTagId, router])
 
   // Close sidebar on mobile when navigation changes
   useEffect(() => {
     onMobileClose?.()
   }, [pathname, searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const currentFeedId = searchParams.get('feedId')
-  const currentTagId = searchParams.get('tagId')
 
   const isHome = pathname === '/' && !currentFeedId && !currentTagId
   const isReadLater = pathname === '/read-later'
