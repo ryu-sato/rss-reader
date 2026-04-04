@@ -5,8 +5,13 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Rss, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import type { Entry, EntryDetail, EntryListItem } from '@/types/entry'
+import dynamic from 'next/dynamic'
 import { EntryCard } from '@/components/entry-card'
-import { ArticleModal } from '@/components/article-modal'
+
+const ArticleModal = dynamic(
+  () => import('@/components/article-modal').then((m) => m.ArticleModal),
+  { ssr: false }
+)
 
 interface Pagination {
   page: number
