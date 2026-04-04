@@ -283,11 +283,21 @@ export function EntryCardGrid({
     }
   }, [navEntries, pendingNavigateNext, selectedEntryId, searchParams, router, basePath])
 
-  const openEntry = (entryId: string) => {
+  const openEntry = useCallback((entryId: string) => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('entryId', entryId)
     router.push(`${basePath}?${params.toString()}`, { scroll: false })
-  }
+  }, [searchParams, router, basePath])
+
+  const handleToggleRead = useCallback((entryId: string, newIsRead: boolean) => {
+    setEntries((prev) =>
+      prev.map((e) =>
+        e.id === entryId
+          ? { ...e, meta: e.meta ? { ...e.meta, isRead: newIsRead } : null }
+          : e
+      )
+    )
+  }, [])
 
   const closeEntry = () => {
     const params = new URLSearchParams(searchParams.toString())
@@ -358,16 +368,8 @@ export function EntryCardGrid({
             key={entry.id}
             entry={entry}
             isSelected={selectedEntryId === entry.id}
-            onClick={() => openEntry(entry.id)}
-            onToggleRead={(entryId, newIsRead) => {
-              setEntries((prev) =>
-                prev.map((e) =>
-                  e.id === entryId
-                    ? { ...e, meta: e.meta ? { ...e.meta, isRead: newIsRead } : null }
-                    : e
-                )
-              )
-            }}
+            onClick={openEntry}
+            onToggleRead={handleToggleRead}
           />
         ))}
       </div>

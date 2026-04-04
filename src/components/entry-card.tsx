@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import type { EntryListItem } from '@/types/entry'
 import { cn } from '@/lib/utils'
@@ -11,11 +11,11 @@ import { Button } from '@/components/ui/button'
 interface EntryCardProps {
   entry: EntryListItem
   isSelected?: boolean
-  onClick: () => void
+  onClick: (entryId: string) => void
   onToggleRead?: (entryId: string, newIsRead: boolean) => void
 }
 
-export function EntryCard({ entry, isSelected, onClick, onToggleRead }: EntryCardProps) {
+export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, onToggleRead }: EntryCardProps) {
   const [imgError, setImgError] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const isRead = entry.meta?.isRead ?? false
@@ -50,8 +50,8 @@ export function EntryCard({ entry, isSelected, onClick, onToggleRead }: EntryCar
     <article
       role="button"
       tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => e.key === 'Enter' && onClick()}
+      onClick={() => onClick(entry.id)}
+      onKeyDown={(e) => e.key === 'Enter' && onClick(entry.id)}
       className={cn(
         'group flex flex-col rounded-xl border border-border bg-card cursor-pointer transition-all duration-200',
         'hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 hover:border-border/60',
@@ -143,7 +143,7 @@ export function EntryCard({ entry, isSelected, onClick, onToggleRead }: EntryCar
       </div>
     </article>
   )
-}
+})
 
 function formatDate(date: Date): string {
   const now = new Date()
