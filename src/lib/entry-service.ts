@@ -120,25 +120,23 @@ export async function findManyEntries(query: GetEntriesQuery) {
   if (userPreferenceId) where.scores = { and: [{ userPreferenceId }, { score: { gte: PREFRRED_SCORE_THRESHOLD } }] };
   if (isAnyPreferred) where.scores = { some: { score: { gte: PREFRRED_SCORE_THRESHOLD } } };
 
-  // カーソルベースの前後ナビ
-  if (afterId) {
-    const pivot = await prisma.entry.findUnique({ where: { id: afterId } })
+  // カーソルベースの前後ナビ: ピボット取得とメインクエリを並列化するため先にピボットを解決する
+  if (afterId || beforeId) {
+    const pivotId = (afterId ?? beforeId)!
+    const pivot = await prisma.entry.findUnique({ where: { id: pivotId } })
     if (pivot) {
       const pivotDate = pivot.publishedAt ?? pivot.createdAt
-      where.OR = [
-        { publishedAt: { lt: pivotDate } },
-        { publishedAt: null, createdAt: { lt: pivot.createdAt } },
-      ]
-    }
-  }
-  if (beforeId) {
-    const pivot = await prisma.entry.findUnique({ where: { id: beforeId } })
-    if (pivot) {
-      const pivotDate = pivot.publishedAt ?? pivot.createdAt
-      where.OR = [
-        { publishedAt: { gt: pivotDate } },
-        { publishedAt: null, createdAt: { gt: pivot.createdAt } },
-      ]
+      if (afterId) {
+        where.OR = [
+          { publishedAt: { lt: pivotDate } },
+          { publishedAt: null, createdAt: { lt: pivot.createdAt } },
+        ]
+      } else {
+        where.OR = [
+          { publishedAt: { gt: pivotDate } },
+          { publishedAt: null, createdAt: { gt: pivot.createdAt } },
+        ]
+      }
     }
   }
 
