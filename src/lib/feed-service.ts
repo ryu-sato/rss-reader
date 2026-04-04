@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { prisma } from '@/lib/db'
 import { validateUrl } from '@/lib/ssrf-guard'
 import { fetchFeed } from '@/lib/rss-fetcher'
@@ -26,7 +27,7 @@ export async function createFeed(url: string): Promise<Feed> {
   })
 }
 
-export async function getAllFeeds(): Promise<FeedListItem[]> {
+export const getAllFeeds = cache(async function getAllFeeds(): Promise<FeedListItem[]> {
   const [feeds, latestDates] = await Promise.all([
     prisma.feed.findMany({
       select: {
@@ -68,7 +69,7 @@ export async function getAllFeeds(): Promise<FeedListItem[]> {
       if (!b.lastPublishedAt) return -1
       return b.lastPublishedAt.getTime() - a.lastPublishedAt.getTime()
     })
-}
+})
 
 export async function getFeedById(id: string): Promise<Feed> {
   const feed = await prisma.feed.findUnique({ where: { id } })

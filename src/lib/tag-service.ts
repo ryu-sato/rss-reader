@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { prisma } from '@/lib/db'
 import type { Tag } from '@/types/entry'
 
@@ -25,9 +26,9 @@ export async function removeTagFromEntry(tagId: string, entryId: string): Promis
   })
 }
 
-export async function getAllTags(): Promise<Tag[]> {
+export const getAllTags = cache(async function getAllTags(): Promise<Tag[]> {
   return prisma.tag.findMany({ orderBy: { name: 'asc' } })
-}
+})
 
 export async function renameTag(tagId: string, newName: string): Promise<Tag> {
   const normalizedName = newName.toLowerCase().trim()
