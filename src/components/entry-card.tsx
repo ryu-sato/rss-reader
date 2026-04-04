@@ -138,7 +138,7 @@ export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, o
         <div className="flex items-center gap-1.5 mt-auto">
           <span className="text-[11px] text-muted-foreground/80 truncate">{entry.feed.title}</span>
           <span className="text-[11px] text-muted-foreground/40 shrink-0">·</span>
-          <time className="text-[11px] text-muted-foreground/70 shrink-0 tabular-nums">{formatDate(date)}</time>
+          <time suppressHydrationWarning className="text-[11px] text-muted-foreground/70 shrink-0 tabular-nums">{formatDate(date)}</time>
         </div>
       </div>
     </article>
