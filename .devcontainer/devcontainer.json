@@ -27,8 +27,14 @@
 				"anthropic.claude-code"
 			]
 		}
-	}
+	},
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
+
+	"containerEnv": {
+		// IPv6 による接続の問題を回避するため、Node.js の DNS 結果の順序を IPv4 優先にする
+		// 参考: https://github.com/anthropics/claude-code/issues/9376#issuecomment-3773860151
+		"NODE_OPTIONS": "--dns-result-order=ipv4first"
+	}
 }

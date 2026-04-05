@@ -41,5 +41,9 @@
     "paths": [
       ".claude/skills"
     ]
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
   }
 }
