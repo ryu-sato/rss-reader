@@ -7,7 +7,6 @@ import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, L
 import { cn } from '@/lib/utils'
 import { signOut } from '@/lib/auth-client'
 import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Input } from '@/components/ui/input'
 
@@ -196,7 +195,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
       </div>
 
       {/* Navigation */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto min-h-0">
       <nav className="py-2">
         <Link
           href="/"
@@ -482,7 +481,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
           </div>
         )}
       </nav>
-      </ScrollArea>
+      </div>
 
       {/* Footer actions */}
       <div className="border-t border-sidebar-border p-2 shrink-0 flex flex-col gap-0.5">
