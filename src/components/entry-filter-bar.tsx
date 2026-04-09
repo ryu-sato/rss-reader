@@ -112,7 +112,11 @@ export function EntryFilterBar({ allFeeds, allTags }: EntryFilterBarProps) {
         onValueChange={(v) => updateParam('feedId', v === '__all__' ? null : v)}
       >
         <SelectTrigger className="h-8 text-xs flex-1 sm:flex-none sm:min-w-28 sm:max-w-44">
-          <SelectValue placeholder="すべてのフィード" />
+          <SelectValue>
+            {currentFeedId
+              ? (allFeeds.find((f) => f.id === currentFeedId)?.title ?? currentFeedId)
+              : 'すべてのフィード'}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">すべてのフィード</SelectItem>
@@ -131,7 +135,11 @@ export function EntryFilterBar({ allFeeds, allTags }: EntryFilterBarProps) {
           onValueChange={(v) => updateParam('tagId', v === '__all__' ? null : v)}
         >
           <SelectTrigger className="h-8 text-xs flex-1 sm:flex-none sm:min-w-28 sm:max-w-44">
-            <SelectValue placeholder="すべてのタグ" />
+            <SelectValue>
+              {currentTagId
+                ? (allTags.find((t) => t.id === currentTagId)?.name ?? currentTagId)
+                : 'すべてのタグ'}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">すべてのタグ</SelectItem>
