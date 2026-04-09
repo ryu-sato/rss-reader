@@ -4,10 +4,20 @@ import { Suspense } from 'react'
 import { getAllTags } from '@/lib/tag-service'
 import { findManyEntries } from '@/lib/entry-service'
 import { EntryCardGrid } from '@/components/entry-card-grid'
+import { ReadFilter } from '@/components/read-filter'
+import type { ReadFilterValue } from '@/components/read-filter'
 
-export default async function PreferredAllPage() {
+interface PageProps {
+  searchParams: Promise<{ filter?: string }>
+}
+
+export default async function PreferredAllPage({ searchParams }: PageProps) {
+  const params = await searchParams
+  const filter: ReadFilterValue = params.filter === 'all' ? 'all' : 'unread'
+  const isUnread = filter === 'unread'
+
   const [{ entries, pagination }, allTags] = await Promise.all([
-    findManyEntries({ isAnyPreferred: true, page: 1 }),
+    findManyEntries({ isAnyPreferred: true, isUnread, page: 1 }),
     getAllTags(),
   ])
 
@@ -18,12 +28,17 @@ export default async function PreferredAllPage() {
         <span className="text-xs text-muted-foreground shrink-0">
           {pagination.total === 0 ? '記事なし' : `${pagination.total} 件`}
         </span>
+        <Suspense>
+          <ReadFilter value={filter} />
+        </Suspense>
       </div>
       <Suspense>
         <EntryCardGrid
+          key={filter}
           initialEntries={entries}
           initialPagination={pagination}
           isAnyPreferred
+          isUnread={isUnread}
           basePath="/preferred/all"
           allTags={allTags}
         />
