@@ -28,13 +28,13 @@ importers:
         version: 7.5.0(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(typescript@5.9.3)
       '@serwist/next':
         specifier: ^9.5.7
-        version: 9.5.7(next@16.1.6(@babel/core@7.29.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+        version: 9.5.7(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       '@tailwindcss/typography':
         specifier: ^0.5.19
         version: 0.5.19(tailwindcss@4.2.1)
       better-auth:
         specifier: ^1.5.5
-        version: 1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(typescript@5.9.3))(mongodb@7.1.0)(mysql2@3.15.3)(next@16.1.6(@babel/core@7.29.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vitest@4.1.0(@types/node@20.19.37)(jsdom@28.1.0(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@20.19.37)(typescript@5.9.3))(vite@8.0.0(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1)))
+        version: 1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(typescript@5.9.3))(mongodb@7.1.0)(mysql2@3.15.3)(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vitest@4.1.0(@opentelemetry/api@1.9.1)(@types/node@20.19.37)(jsdom@28.1.0(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@20.19.37)(typescript@5.9.3))(vite@8.0.0(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1)))
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -49,7 +49,7 @@ importers:
         version: 0.577.0(react@19.2.3)
       next:
         specifier: 16.1.6
-        version: 16.1.6(@babel/core@7.29.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -149,7 +149,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.0
-        version: 4.1.0(@types/node@20.19.37)(jsdom@28.1.0(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@20.19.37)(typescript@5.9.3))(vite@8.0.0(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1))
+        version: 4.1.0(@opentelemetry/api@1.9.1)(@types/node@20.19.37)(jsdom@28.1.0(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@20.19.37)(typescript@5.9.3))(vite@8.0.0(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1))
 
 packages:
 
@@ -974,6 +974,10 @@ packages:
 
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
+
+  '@opentelemetry/api@1.9.1':
+    resolution: {integrity: sha512-gLyJlPHPZYdAk1JENA9LeHejZe1Ti77/pTeFm/nMXmQH/HFZlcS/O2XJB+L8fkbrNSqhdtlvjBVjxwUYanNH5Q==}
+    engines: {node: '>=8.0.0'}
 
   '@oxc-project/runtime@0.115.0':
     resolution: {integrity: sha512-Rg8Wlt5dCbXhQnsXPrkOjL1DTSvXLgb2R/KYfnf1/K+R0k6UMLEmbQXPM+kwrWqSmWA2t0B1EtHy2/3zikQpvQ==}
@@ -5673,6 +5677,9 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
+  '@opentelemetry/api@1.9.1':
+    optional: true
+
   '@oxc-project/runtime@0.115.0': {}
 
   '@oxc-project/types@0.115.0': {}
@@ -5837,7 +5844,7 @@ snapshots:
     transitivePeerDependencies:
       - browserslist
 
-  '@serwist/next@9.5.7(next@16.1.6(@babel/core@7.29.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)(typescript@5.9.3)':
+  '@serwist/next@9.5.7(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)(typescript@5.9.3)':
     dependencies:
       '@serwist/build': 9.5.7(browserslist@4.28.1)(typescript@5.9.3)
       '@serwist/utils': 9.5.7(browserslist@4.28.1)
@@ -5846,7 +5853,7 @@ snapshots:
       browserslist: 4.28.1
       glob: 10.5.0
       kolorist: 1.8.0
-      next: 16.1.6(@babel/core@7.29.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      next: 16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react: 19.2.3
       semver: 7.7.4
       serwist: 9.5.7(browserslist@4.28.1)(typescript@5.9.3)
@@ -6427,7 +6434,7 @@ snapshots:
 
   baseline-browser-mapping@2.10.7: {}
 
-  better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(typescript@5.9.3))(mongodb@7.1.0)(mysql2@3.15.3)(next@16.1.6(@babel/core@7.29.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vitest@4.1.0(@types/node@20.19.37)(jsdom@28.1.0(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@20.19.37)(typescript@5.9.3))(vite@8.0.0(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1))):
+  better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(typescript@5.9.3))(mongodb@7.1.0)(mysql2@3.15.3)(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vitest@4.1.0(@opentelemetry/api@1.9.1)(@types/node@20.19.37)(jsdom@28.1.0(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@20.19.37)(typescript@5.9.3))(vite@8.0.0(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1))):
     dependencies:
       '@better-auth/core': 1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.14)(nanostores@1.2.0)
       '@better-auth/drizzle-adapter': 1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.14)(nanostores@1.2.0))(@better-auth/utils@0.3.1)
@@ -6450,11 +6457,11 @@ snapshots:
       '@prisma/client': 7.5.0(prisma@7.5.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(typescript@5.9.3)
       mongodb: 7.1.0
       mysql2: 3.15.3
-      next: 16.1.6(@babel/core@7.29.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      next: 16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       prisma: 7.5.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
-      vitest: 4.1.0(@types/node@20.19.37)(jsdom@28.1.0(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@20.19.37)(typescript@5.9.3))(vite@8.0.0(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1))
+      vitest: 4.1.0(@opentelemetry/api@1.9.1)(@types/node@20.19.37)(jsdom@28.1.0(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@20.19.37)(typescript@5.9.3))(vite@8.0.0(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1))
     transitivePeerDependencies:
       - '@cloudflare/workers-types'
 
@@ -8557,7 +8564,7 @@ snapshots:
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
 
-  next@16.1.6(@babel/core@7.29.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
+  next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
     dependencies:
       '@next/env': 16.1.6
       '@swc/helpers': 0.5.15
@@ -8576,6 +8583,7 @@ snapshots:
       '@next/swc-linux-x64-musl': 16.1.6
       '@next/swc-win32-arm64-msvc': 16.1.6
       '@next/swc-win32-x64-msvc': 16.1.6
+      '@opentelemetry/api': 1.9.1
       sharp: 0.34.5
     transitivePeerDependencies:
       - '@babel/core'
@@ -9771,7 +9779,7 @@ snapshots:
       jiti: 2.6.1
       terser: 5.46.1
 
-  vitest@4.1.0(@types/node@20.19.37)(jsdom@28.1.0(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@20.19.37)(typescript@5.9.3))(vite@8.0.0(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1)):
+  vitest@4.1.0(@opentelemetry/api@1.9.1)(@types/node@20.19.37)(jsdom@28.1.0(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@20.19.37)(typescript@5.9.3))(vite@8.0.0(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1)):
     dependencies:
       '@vitest/expect': 4.1.0
       '@vitest/mocker': 4.1.0(msw@2.12.10(@types/node@20.19.37)(typescript@5.9.3))(vite@8.0.0(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1))
@@ -9794,6 +9802,7 @@ snapshots:
       vite: 8.0.0(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
+      '@opentelemetry/api': 1.9.1
       '@types/node': 20.19.37
       jsdom: 28.1.0(@noble/hashes@2.0.1)
     transitivePeerDependencies:
