@@ -151,6 +151,16 @@ export function EntryCardGrid({
     }
   }, [])
 
+  // Invalidate prefetch cache when tags are updated so navigating back shows fresh data.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { entryId: updatedId } = (e as CustomEvent<{ entryId: string; tags: unknown[] }>).detail
+      prefetchCacheRef.current.delete(updatedId)
+    }
+    window.addEventListener('entry:tags-updated', handler)
+    return () => window.removeEventListener('entry:tags-updated', handler)
+  }, [])
+
   // Update card grid isReadLater state and remove from list if on read-later page.
   // navEntries is intentionally not updated here.
   useEffect(() => {
@@ -158,6 +168,8 @@ export function EntryCardGrid({
       const { entryId: updatedId, isReadLater: newIsReadLater } = (
         e as CustomEvent<{ entryId: string; isReadLater: boolean }>
       ).detail
+      // Invalidate prefetch cache so navigating back to this entry shows fresh state
+      prefetchCacheRef.current.delete(updatedId)
       if (isReadLater && !newIsReadLater) {
         // Remove from read-later card grid
         setEntries((prev) => prev.filter((entry) => entry.id !== updatedId))

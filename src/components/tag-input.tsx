@@ -35,7 +35,9 @@ export function TagInput({ entryId, initialTags, allTags }: TagInputProps) {
         const { data } = await res.json()
         setTags((prev) => {
           if (prev.some((t) => t.id === data.id)) return prev
-          return [...prev, data]
+          const next = [...prev, data]
+          window.dispatchEvent(new CustomEvent('entry:tags-updated', { detail: { entryId, tags: next } }))
+          return next
         })
         setInputValue('')
       }
@@ -49,7 +51,11 @@ export function TagInput({ entryId, initialTags, allTags }: TagInputProps) {
     try {
       const res = await fetch(`/api/tags/${tagId}/entries/${entryId}`, { method: 'DELETE' })
       if (res.ok) {
-        setTags((prev) => prev.filter((t) => t.id !== tagId))
+        setTags((prev) => {
+          const next = prev.filter((t) => t.id !== tagId)
+          window.dispatchEvent(new CustomEvent('entry:tags-updated', { detail: { entryId, tags: next } }))
+          return next
+        })
       }
     } finally {
       setIsLoading(false)
