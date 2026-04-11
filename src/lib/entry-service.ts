@@ -99,7 +99,6 @@ export async function fetchAllFeedsEntries(): Promise<void> {
 const ENTRY_INCLUDE = {
   feed: { select: { id: true, title: true } },
   meta: true,
-  tags: { include: { tag: true } },
 } as const
 
 export async function findManyEntries(query: GetEntriesQuery) {

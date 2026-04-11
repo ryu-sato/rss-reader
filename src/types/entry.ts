@@ -24,7 +24,6 @@ type Feed = Pick<FeedModel, 'id' | 'title'>;
 export interface EntryListItem extends Pick<Entry, 'id' | 'title' | 'link' | 'imageUrl' | 'publishedAt' | 'createdAt'> {
   feed: Feed
   meta: EntryMeta | null
-  tags: TagOnEntry[]
 }
 
 /** エントリーモーダル用（詳細） */

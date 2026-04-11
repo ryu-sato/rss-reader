@@ -37,9 +37,12 @@ export const getAllFeeds = cache(async function getAllFeeds(): Promise<FeedListI
         faviconUrl: true,
         createdAt: true,
         updatedAt: true,
-        entries: {
-          where: { OR: [{ meta: null }, { meta: { isRead: false } }] },
-          select: { id: true },
+        _count: {
+          select: {
+            entries: {
+              where: { OR: [{ meta: null }, { meta: { isRead: false } }] },
+            },
+          },
         },
       },
     }),
@@ -58,9 +61,9 @@ export const getAllFeeds = cache(async function getAllFeeds(): Promise<FeedListI
   )
 
   return feeds
-    .map(({ entries, ...feed }) => ({
+    .map(({ _count, ...feed }) => ({
       ...feed,
-      unreadCount: entries.length,
+      unreadCount: _count.entries,
       lastPublishedAt: latestDateMap.get(feed.id) ?? null,
     }))
     .sort((a, b) => {

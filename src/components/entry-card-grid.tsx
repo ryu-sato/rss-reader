@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Rss, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import type { Entry, EntryDetail, EntryListItem } from '@/types/entry'
@@ -51,7 +51,6 @@ export function EntryCardGrid({
   allTags,
 }: EntryCardGridProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   // Card grid state (updated by events, reset when modal closes)
   const [entries, setEntries] = useState<EntryListItem[]>(initialEntries)
@@ -73,7 +72,24 @@ export function EntryCardGrid({
   const prefetchCacheRef = useRef<Map<string, EntryDetail>>(new Map())
   const prefetchingRef = useRef<Set<string>>(new Set())
 
-  const selectedEntryId = searchParams.get('entryId')
+  // entryId はローカル state で管理し、history.pushState で URL を更新する。
+  // router.push を使うと Next.js ナビゲーションが発火して SSR が再実行されるため。
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null)
+
+  // マウント時に URL から entryId を読み込む
+  useEffect(() => {
+    setSelectedEntryId(new URLSearchParams(window.location.search).get('entryId'))
+  }, [])
+
+  // ブラウザの戻る/進む操作に追従する
+  useEffect(() => {
+    const onPopState = () => {
+      setSelectedEntryId(new URLSearchParams(window.location.search).get('entryId'))
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
   const navIndex = selectedEntryId ? navEntries.findIndex((e) => e.id === selectedEntryId) : -1
 
   // Reset when initial data changes, but only when modal is closed.
@@ -180,7 +196,7 @@ export function EntryCardGrid({
       const res = await fetch(`/api/entries?${params.toString()}`)
       if (!res.ok) return
       const json = await res.json() as {data: Entry[], pagination: Pagination};
-      setEntries((prev) => [...prev, ...(json.data.map((entry) => ({ ...entry, meta : null, feed: { id: '', title: '' }, tags: [] })))])
+      setEntries((prev) => [...prev, ...(json.data.map((entry) => ({ ...entry, meta: null, feed: { id: '', title: '' } })))])
       setPage(nextPage)
       setHasMore(json.pagination.hasNext)
     } finally {
@@ -277,17 +293,20 @@ export function EntryCardGrid({
     const currentIndex = navEntries.findIndex((e) => e.id === selectedEntryId)
     if (currentIndex < navEntries.length - 1) {
       setPendingNavigateNext(false)
-      const params = new URLSearchParams(searchParams.toString())
-      params.set('entryId', navEntries[currentIndex + 1].id)
-      router.push(`${basePath}?${params.toString()}`, { scroll: false })
+      const nextId = navEntries[currentIndex + 1].id
+      const params = new URLSearchParams(window.location.search)
+      params.set('entryId', nextId)
+      window.history.pushState(null, '', `${basePath}?${params.toString()}`)
+      setSelectedEntryId(nextId)
     }
-  }, [navEntries, pendingNavigateNext, selectedEntryId, searchParams, router, basePath])
+  }, [navEntries, pendingNavigateNext, selectedEntryId, basePath])
 
   const openEntry = useCallback((entryId: string) => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(window.location.search)
     params.set('entryId', entryId)
-    router.push(`${basePath}?${params.toString()}`, { scroll: false })
-  }, [searchParams, router, basePath])
+    window.history.pushState(null, '', `${basePath}?${params.toString()}`)
+    setSelectedEntryId(entryId)
+  }, [basePath])
 
   const handleToggleRead = useCallback((entryId: string, newIsRead: boolean) => {
     setEntries((prev) =>
@@ -300,9 +319,10 @@ export function EntryCardGrid({
   }, [])
 
   const closeEntry = () => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(window.location.search)
     params.delete('entryId')
-    router.push(`${basePath}?${params.toString()}`, { scroll: false })
+    window.history.pushState(null, '', `${basePath}?${params.toString()}`)
+    setSelectedEntryId(null)
   }
 
   const goToPrev = () => {
