@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-sentence-transformers を使用したエントリーの嗜好スコア計算スクリプト。
+sentence-transformers または BM25 を使用したエントリーの嗜好スコア計算スクリプト。
 
 このスクリプトは、データベースからユーザーの嗜好と未スコアリングのエントリーを読み込み、
-sentence-transformers を使用して各嗜好とエントリー間のコサイン類似度を計算し、
+選択したメソッドで各嗜好とエントリー間のスコアを計算し、
 そのスコアを entry_preference_scores テーブルに書き戻します。
 
 Usage:
-    python score_entries.py [--db-path PATH] [--model MODEL] [--batch-size N]
-                            [--limit N] [--interval SECONDS]
+    python score_entries.py [--db-path PATH] [--method METHOD] [--model MODEL]
+                            [--batch-size N] [--limit N] [--interval SECONDS]
 
 Environment variables:
     DATABASE_URL: SQLite database URL (e.g. file:./prisma/dev.db)
@@ -35,15 +35,21 @@ def parse_args():
         help="Path to SQLite database file. Defaults to DATABASE_URL env var or ./prisma/dev.db",
     )
     parser.add_argument(
+        "--method",
+        default="embeddings",
+        choices=["embeddings", "bm25"],
+        help="Scoring method: 'embeddings' (sentence-transformers) or 'bm25' (default: embeddings)",
+    )
+    parser.add_argument(
         "--model",
         default="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-        help="Sentence-transformers model name (default: paraphrase-multilingual-mpnet-base-v2)",
+        help="Sentence-transformers model name (embeddings method only)",
     )
     parser.add_argument(
         "--batch-size",
         type=int,
         default=64,
-        help="Encoding batch size (default: 64)",
+        help="Encoding batch size for embeddings method (default: 64)",
     )
     parser.add_argument(
         "--force",
@@ -70,8 +76,8 @@ def parse_args():
         type=int,
         default=200,
         help=(
-            "Number of entries to process per internal chunk when --limit is 0. "
-            "Limits peak memory usage (default: 200)."
+            "Number of entries to process per internal chunk when --limit is 0 "
+            "(embeddings method only, default: 200)."
         ),
     )
     parser.add_argument(
@@ -128,6 +134,19 @@ def build_entry_text(
     return text
 
 
+def tokenize(text: str) -> list[str]:
+    """Multilingual tokenizer for BM25.
+
+    CJK characters are each treated as an individual token.
+    Latin/numeric sequences are split into word tokens (lowercased).
+    """
+    return re.findall(
+        r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uac00-\ud7af]"
+        r"|[a-zA-Z0-9]+",
+        text.lower(),
+    )
+
+
 def now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -153,17 +172,11 @@ def fetch_pending_entries(con: sqlite3.Connection, limit: int) -> list:
     ).fetchall()
 
 
-def main():
-    args = parse_args()
-    db_path = resolve_db_path(args.db_path)
+def score_with_embeddings(con: sqlite3.Connection, prefs: list, args) -> tuple[int, int]:
+    """Score pending entries using sentence-transformers embeddings.
 
-    if not db_path.exists():
-        print(f"[error] Database not found: {db_path}", file=sys.stderr)
-        sys.exit(1)
-
-    print(f"[info] Using database: {db_path}")
-
-    # Lazy import so startup is fast when showing --help
+    Returns (total_scored, num_chunks).
+    """
     try:
         from sentence_transformers import SentenceTransformer
         import numpy as np
@@ -174,6 +187,198 @@ def main():
             file=sys.stderr,
         )
         sys.exit(1)
+
+    print(f"[info] Loading model: {args.model}")
+    model = SentenceTransformer(args.model)
+
+    # Encode preferences once — they don't change during the run
+    pref_texts = [row["text"] for row in prefs]
+    print(f"[info] Encoding {len(prefs)} preference(s) ...")
+    pref_embeddings = model.encode(
+        pref_texts,
+        batch_size=args.batch_size,
+        normalize_embeddings=True,
+        show_progress_bar=False,
+    )
+
+    fetch_size = args.limit if args.limit > 0 else args.chunk_size
+
+    if args.limit > 0:
+        print(f"[info] Batch limit: {args.limit} entries per batch")
+        if args.interval > 0:
+            print(f"[info] Interval: {args.interval}s between batches")
+    else:
+        print(f"[info] Processing in chunks of {fetch_size} to limit memory usage")
+
+    total_scored = 0
+    batch_num = 0
+    pref_embeddings_T = pref_embeddings.T
+
+    insert_sql = """
+        INSERT OR IGNORE INTO entry_preference_scores
+            (id, entryId, preferenceId, score, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """
+
+    while True:
+        entries = fetch_pending_entries(con, fetch_size)
+        if not entries:
+            print("[info] All entries scored.")
+            break
+
+        batch_num += 1
+        print(f"[info] Chunk {batch_num}: scoring {len(entries)} entries ...")
+
+        entry_texts = [
+            build_entry_text(
+                row["title"], row["description"], row["content"], args.max_text_chars
+            )
+            for row in entries
+        ]
+        entry_embeddings = model.encode(
+            entry_texts,
+            batch_size=args.batch_size,
+            normalize_embeddings=True,
+            show_progress_bar=False,
+        )
+        del entry_texts
+
+        # cosine similarity = dot product when embeddings are L2-normalized
+        # shape: (num_entries, num_prefs)
+        scores_matrix = np.dot(entry_embeddings, pref_embeddings_T)
+        del entry_embeddings
+        gc.collect()
+
+        now = now_iso()
+
+        def _score_rows(entries, prefs, scores_matrix, now):
+            for ei, entry in enumerate(entries):
+                for pi, pref in enumerate(prefs):
+                    yield (
+                        str(uuid.uuid4()),
+                        entry["id"],
+                        pref["id"],
+                        float(scores_matrix[ei, pi]),
+                        now,
+                        now,
+                    )
+
+        row_gen = _score_rows(entries, prefs, scores_matrix, now)
+        buf = []
+        for row in row_gen:
+            buf.append(row)
+            if len(buf) >= args.insert_chunk_size:
+                con.executemany(insert_sql, buf)
+                buf.clear()
+        if buf:
+            con.executemany(insert_sql, buf)
+
+        del scores_matrix
+        gc.collect()
+
+        total_scored += len(entries)
+        del entries
+
+        con.commit()
+
+        if args.limit > 0:
+            if args.interval > 0:
+                print(f"[info] Sleeping {args.interval}s before next batch ...")
+                time.sleep(args.interval)
+            else:
+                print("[info] Batch complete. Run again to process remaining entries.")
+                break
+
+    return total_scored, batch_num
+
+
+def score_with_bm25(con: sqlite3.Connection, prefs: list, args) -> tuple[int, int]:
+    """Score pending entries using BM25 ranking.
+
+    BM25 requires the full corpus to compute IDF, so all pending entries are
+    fetched at once (respecting --limit).  Scores are normalized to [0, 1]
+    per query (preference) by dividing by the maximum raw BM25 score.
+
+    Returns (total_scored, 1).
+    """
+    try:
+        from rank_bm25 import BM25Okapi
+        import numpy as np
+    except ImportError:
+        print(
+            "[error] rank-bm25 is not installed.\n"
+            "Run: pip install rank-bm25  (or add it to requirements.txt)",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    fetch_size = args.limit if args.limit > 0 else 0
+    print("[info] BM25 mode: loading pending entries ...")
+    entries = fetch_pending_entries(con, fetch_size)
+    if not entries:
+        return 0, 0
+
+    print(f"[info] Tokenizing {len(entries)} entries ...")
+    entry_texts = [
+        build_entry_text(
+            row["title"], row["description"], row["content"], args.max_text_chars
+        )
+        for row in entries
+    ]
+    tokenized_corpus = [tokenize(text) for text in entry_texts]
+    del entry_texts
+
+    print("[info] Building BM25 index ...")
+    bm25 = BM25Okapi(tokenized_corpus)
+    del tokenized_corpus
+    gc.collect()
+
+    insert_sql = """
+        INSERT OR IGNORE INTO entry_preference_scores
+            (id, entryId, preferenceId, score, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """
+    now = now_iso()
+
+    for pref in prefs:
+        query_tokens = tokenize(pref["text"])
+        raw_scores = bm25.get_scores(query_tokens)  # numpy array, length = len(entries)
+
+        max_score = float(raw_scores.max())
+        normalized = raw_scores / max_score if max_score > 0 else raw_scores
+
+        buf = []
+        for ei, entry in enumerate(entries):
+            buf.append((
+                str(uuid.uuid4()),
+                entry["id"],
+                pref["id"],
+                float(normalized[ei]),
+                now,
+                now,
+            ))
+            if len(buf) >= args.insert_chunk_size:
+                con.executemany(insert_sql, buf)
+                buf.clear()
+        if buf:
+            con.executemany(insert_sql, buf)
+
+    con.commit()
+    gc.collect()
+
+    return len(entries), 1
+
+
+def main():
+    args = parse_args()
+    db_path = resolve_db_path(args.db_path)
+
+    if not db_path.exists():
+        print(f"[error] Database not found: {db_path}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"[info] Using database: {db_path}")
+    print(f"[info] Scoring method: {args.method}")
 
     con = sqlite3.connect(str(db_path))
     con.row_factory = sqlite3.Row
@@ -224,110 +429,10 @@ def main():
         con.close()
         return
 
-    print(f"[info] Loading model: {args.model}")
-    model = SentenceTransformer(args.model)
-
-    # Encode preferences once — they don't change during the run
-    pref_texts = [row["text"] for row in prefs]
-    print(f"[info] Encoding {len(prefs)} preference(s) ...")
-    pref_embeddings = model.encode(
-        pref_texts,
-        batch_size=args.batch_size,
-        normalize_embeddings=True,
-        show_progress_bar=False,
-    )
-
-    # When --limit is set, use it as the fetch size; otherwise use --chunk-size
-    # so we never load all entries into memory at once.
-    fetch_size = args.limit if args.limit > 0 else args.chunk_size
-
-    if args.limit > 0:
-        print(f"[info] Batch limit: {args.limit} entries per batch")
-        if args.interval > 0:
-            print(f"[info] Interval: {args.interval}s between batches")
+    if args.method == "bm25":
+        total_scored, batch_num = score_with_bm25(con, prefs, args)
     else:
-        print(f"[info] Processing in chunks of {fetch_size} to limit memory usage")
-
-    total_scored = 0
-    batch_num = 0
-    pref_embeddings_T = pref_embeddings.T
-
-    while True:
-        entries = fetch_pending_entries(con, fetch_size)
-        if not entries:
-            print("[info] All entries scored.")
-            break
-
-        batch_num += 1
-        print(f"[info] Chunk {batch_num}: scoring {len(entries)} entries ...")
-
-        entry_texts = [
-            build_entry_text(
-                row["title"], row["description"], row["content"], args.max_text_chars
-            )
-            for row in entries
-        ]
-        entry_embeddings = model.encode(
-            entry_texts,
-            batch_size=args.batch_size,
-            normalize_embeddings=True,
-            show_progress_bar=False,
-        )
-        del entry_texts
-
-        # cosine similarity = dot product when embeddings are L2-normalized
-        # shape: (num_entries, num_prefs)
-        scores_matrix = np.dot(entry_embeddings, pref_embeddings_T)
-        del entry_embeddings
-        gc.collect()
-
-        now = now_iso()
-
-        # Insert in small chunks to avoid building a huge list of (entries × prefs) rows.
-        def _score_rows(entries, prefs, scores_matrix, now):
-            for ei, entry in enumerate(entries):
-                for pi, pref in enumerate(prefs):
-                    yield (
-                        str(uuid.uuid4()),
-                        entry["id"],
-                        pref["id"],
-                        float(scores_matrix[ei, pi]),
-                        now,
-                        now,
-                    )
-
-        row_gen = _score_rows(entries, prefs, scores_matrix, now)
-        insert_sql = """
-            INSERT OR IGNORE INTO entry_preference_scores
-                (id, entryId, preferenceId, score, createdAt, updatedAt)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """
-        buf = []
-        for row in row_gen:
-            buf.append(row)
-            if len(buf) >= args.insert_chunk_size:
-                con.executemany(insert_sql, buf)
-                buf.clear()
-        if buf:
-            con.executemany(insert_sql, buf)
-
-        del scores_matrix
-        gc.collect()
-
-        total_scored += len(entries)
-        del entries
-
-        # Commit after each chunk so progress is preserved on interruption
-        con.commit()
-
-        # When --limit is set and there might be more entries, apply interval/stop logic
-        if args.limit > 0:
-            if args.interval > 0:
-                print(f"[info] Sleeping {args.interval}s before next batch ...")
-                time.sleep(args.interval)
-            else:
-                print("[info] Batch complete. Run again to process remaining entries.")
-                break
+        total_scored, batch_num = score_with_embeddings(con, prefs, args)
 
     con.close()
     print(f"[info] Done. Scored {total_scored} entry/entries in {batch_num} chunk(s).")
