@@ -17,6 +17,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV DATABASE_URL="file:./prisma/dev.db"
+ENV NODE_OPTIONS="--max-old-space-size=8192"
 
 RUN pnpm build
 
