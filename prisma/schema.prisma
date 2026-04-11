@@ -48,6 +48,9 @@ model Entry {
   @@unique([feedId, guid])
   @@index([publishedAt(sort: Desc)])
   @@index([feedId])
+  @@index([effectedDate(sort: Desc)])
+  @@index([link])
+  @@index([feedId, publishedAt(sort: Desc)])
   @@map("entries")
 }
 
@@ -61,6 +64,7 @@ model EntryMeta {
 
   entry        Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
 
+  @@index([isRead])
   @@map("entry_metas")
 }
 
