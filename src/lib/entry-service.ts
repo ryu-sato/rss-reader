@@ -145,7 +145,7 @@ export async function findManyEntries(query: GetEntriesQuery) {
     ? [{ publishedAt: 'asc' as const }, { createdAt: 'asc' as const }]
     : afterId
       ? [{ publishedAt: 'desc' as const }, { createdAt: 'desc' as const }]
-      : [{ publishedAt: sortOrder as const }, { createdAt: sortOrder as const }]
+      : [{ publishedAt: sortOrder }, { createdAt: sortOrder }]
 
   const [rawEntries, total] = await Promise.all([
     prisma.entry.findMany({
