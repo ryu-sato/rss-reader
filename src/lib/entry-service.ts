@@ -102,11 +102,11 @@ const ENTRY_INCLUDE = {
 } as const
 
 export async function findManyEntries(query: GetEntriesQuery) {
-  const { feedId, tagId, search, page = 1, limit = 20, afterId, beforeId, isReadLater, isUnread, userPreferenceId, isAnyPreferred } = query
+  const { feedId, tagId, search, page = 1, limit = 20, afterId, beforeId, isReadLater, isUnread, userPreferenceId, isAnyPreferred, sortOrder = 'desc' } = query
 
   // feedId 未指定 & ページネーション時は URL 重複排除を適用
   if (!feedId && !afterId && !beforeId) {
-    return findManyEntriesDedup({ tagId, search, page, limit, isReadLater, isUnread, userPreferenceId, isAnyPreferred })
+    return findManyEntriesDedup({ tagId, search, page, limit, isReadLater, isUnread, userPreferenceId, isAnyPreferred, sortOrder })
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -143,7 +143,9 @@ export async function findManyEntries(query: GetEntriesQuery) {
   // beforeId の場合は昇順で取得し、直近の1件を確実に取る（逆順で最近傍エントリを得るため）
   const orderBy = beforeId
     ? [{ publishedAt: 'asc' as const }, { createdAt: 'asc' as const }]
-    : [{ publishedAt: 'desc' as const }, { createdAt: 'desc' as const }]
+    : afterId
+      ? [{ publishedAt: 'desc' as const }, { createdAt: 'desc' as const }]
+      : [{ publishedAt: sortOrder as const }, { createdAt: sortOrder as const }]
 
   const [rawEntries, total] = await Promise.all([
     prisma.entry.findMany({
@@ -181,8 +183,9 @@ async function findManyEntriesDedup(query: {
   isUnread?: boolean
   userPreferenceId?: string
   isAnyPreferred?: boolean
+  sortOrder?: 'asc' | 'desc'
 }) {
-  const { tagId, search, page, limit, isReadLater, isUnread, userPreferenceId, isAnyPreferred } = query;
+  const { tagId, search, page, limit, isReadLater, isUnread, userPreferenceId, isAnyPreferred, sortOrder = 'desc' } = query;
   const skip = (page - 1) * limit;
 
   const where: Record<string, any> = {};
@@ -196,7 +199,7 @@ async function findManyEntriesDedup(query: {
   const entries = await prisma.entry.findMany({
     where,
     distinct: ['link'], // link URL で重複排除
-    orderBy: { effectedDate: 'desc' },
+    orderBy: { effectedDate: sortOrder },
     include: ENTRY_INCLUDE,
     skip,
     take: limit,

@@ -6,8 +6,10 @@ import { getAllTags } from '@/lib/tag-service'
 import { getAllFeeds } from '@/lib/feed-service'
 import { EntryCardGrid } from '@/components/entry-card-grid'
 import { ReadFilter } from '@/components/read-filter'
+import { SortToggle } from '@/components/sort-toggle'
 import { EntryFilterBar } from '@/components/entry-filter-bar'
 import type { ReadFilterValue } from '@/components/read-filter'
+import type { SortOrderValue } from '@/components/sort-toggle'
 
 interface PageProps {
   searchParams: Promise<{
@@ -15,6 +17,7 @@ interface PageProps {
     tagId?: string
     search?: string
     filter?: string
+    sortOrder?: string
   }>
 }
 
@@ -22,6 +25,7 @@ export default async function Home({ searchParams }: PageProps) {
   const params = await searchParams
   const filter: ReadFilterValue = params.filter === 'all' ? 'all' : 'unread'
   const isUnread = filter === 'unread'
+  const sortOrder: SortOrderValue = params.sortOrder === 'asc' ? 'asc' : 'desc'
 
   const [{ entries, pagination }, allTags, allFeeds] = await Promise.all([
     findManyEntries({
@@ -30,6 +34,7 @@ export default async function Home({ searchParams }: PageProps) {
       search: params.search,
       page: 1,
       isUnread,
+      sortOrder,
     }),
     getAllTags(),
     getAllFeeds(),
@@ -42,9 +47,14 @@ export default async function Home({ searchParams }: PageProps) {
           <span className="text-xs text-muted-foreground">
             {pagination.total === 0 ? '記事なし' : `${pagination.total} 件`}
           </span>
-          <Suspense>
-            <ReadFilter value={filter} />
-          </Suspense>
+          <div className="flex items-center gap-2">
+            <Suspense>
+              <ReadFilter value={filter} />
+            </Suspense>
+            <Suspense>
+              <SortToggle value={sortOrder} />
+            </Suspense>
+          </div>
         </div>
         <Suspense>
           <EntryFilterBar
@@ -55,13 +65,14 @@ export default async function Home({ searchParams }: PageProps) {
       </div>
       <Suspense>
         <EntryCardGrid
-          key={`${params.feedId ?? ''}-${params.tagId ?? ''}-${params.search ?? ''}-${filter}`}
+          key={`${params.feedId ?? ''}-${params.tagId ?? ''}-${params.search ?? ''}-${filter}-${sortOrder}`}
           initialEntries={entries}
           initialPagination={pagination}
           feedId={params.feedId}
           tagId={params.tagId}
           search={params.search}
           isUnread={isUnread}
+          sortOrder={sortOrder}
           allTags={allTags}
         />
       </Suspense>

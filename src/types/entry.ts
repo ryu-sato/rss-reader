@@ -59,6 +59,7 @@ export interface GetEntriesQuery {
   isUnread?: boolean
   userPreferenceId?: string
   isAnyPreferred?: boolean
+  sortOrder?: 'asc' | 'desc'
 }
 
 export interface GetEntriesResponse {

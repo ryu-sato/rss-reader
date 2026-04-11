@@ -32,6 +32,7 @@ interface EntryCardGridProps {
   isPreferred?: boolean
   userPreferenceId?: string
   isAnyPreferred?: boolean
+  sortOrder?: 'asc' | 'desc'
   basePath?: string
   allTags: Array<{ id: string; name: string; createdAt: Date }>
 }
@@ -47,6 +48,7 @@ export function EntryCardGrid({
   isPreferred,
   userPreferenceId,
   isAnyPreferred,
+  sortOrder,
   basePath = '/',
   allTags,
 }: EntryCardGridProps) {
@@ -204,6 +206,7 @@ export function EntryCardGrid({
       if (isPreferred) params.set('isPreferred', 'true')
       if (userPreferenceId) params.set('userPreferenceId', userPreferenceId)
       if (isAnyPreferred) params.set('isAnyPreferred', 'true')
+      if (sortOrder) params.set('sortOrder', sortOrder)
 
       const res = await fetch(`/api/entries?${params.toString()}`)
       if (!res.ok) return
@@ -214,7 +217,7 @@ export function EntryCardGrid({
     } finally {
       setIsLoading(false)
     }
-  }, [isLoading, hasMore, page, feedId, tagId, search, isReadLater, isUnread, isPreferred, userPreferenceId, isAnyPreferred, initialPagination.limit])
+  }, [isLoading, hasMore, page, feedId, tagId, search, isReadLater, isUnread, isPreferred, userPreferenceId, isAnyPreferred, sortOrder, initialPagination.limit])
 
   // モーダルナビ用の次ページを読み込み、navEntries と entries の両方を更新する。
   // 要件：次の記事を取得する際は、本来の記事リスト（entries）と
@@ -239,6 +242,7 @@ export function EntryCardGrid({
       if (isPreferred) params.set('isPreferred', 'true')
       if (userPreferenceId) params.set('userPreferenceId', userPreferenceId)
       if (isAnyPreferred) params.set('isAnyPreferred', 'true')
+      if (sortOrder) params.set('sortOrder', sortOrder)
 
       const res = await fetch(`/api/entries?${params.toString()}`)
       if (!res.ok) return
@@ -254,7 +258,7 @@ export function EntryCardGrid({
     } finally {
       setIsNavLoading(false)
     }
-  }, [isNavLoading, navHasMore, navPage, feedId, tagId, search, isReadLater, isUnread, isPreferred, userPreferenceId, isAnyPreferred, initialPagination.limit])
+  }, [isNavLoading, navHasMore, navPage, feedId, tagId, search, isReadLater, isUnread, isPreferred, userPreferenceId, isAnyPreferred, sortOrder, initialPagination.limit])
 
   // Infinite scroll via IntersectionObserver (card grid only)
   useEffect(() => {
