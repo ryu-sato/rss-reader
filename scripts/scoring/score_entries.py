@@ -11,8 +11,17 @@ Usage:
                             [--batch-size N] [--limit N] [--interval SECONDS]
 
 Environment variables:
-    DATABASE_URL: SQLite database URL (e.g. file:./prisma/dev.db)
-                  Can also be a plain file path.
+    DATABASE_URL:          SQLite database URL (e.g. file:./prisma/dev.db)
+                           Can also be a plain file path.
+    SCORE_METHOD:          Scoring method: 'embeddings' or 'bm25'
+    SCORE_MODEL:           Sentence-transformers model name
+    SCORE_BATCH_SIZE:      Encoding batch size for embeddings method
+    SCORE_FORCE:           Set to '1' or 'true' to re-score all entries
+    SCORE_LIMIT:           Max entries to score per batch (0 = unlimited)
+    SCORE_INTERVAL:        Seconds to sleep between batches
+    SCORE_CHUNK_SIZE:      Entries per internal chunk (embeddings method only)
+    SCORE_MAX_TEXT_CHARS:  Max characters per entry text before truncation
+    SCORE_INSERT_CHUNK_SIZE: Score rows per executemany call
 """
 
 import argparse
@@ -27,8 +36,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+def _env_bool(name: str) -> bool:
+    """Return True if environment variable is set to '1' or 'true' (case-insensitive)."""
+    return os.environ.get(name, "").lower() in ("1", "true")
+
+
 def parse_args():
-    parser = argparse.ArgumentParser(description="Score entries against user preferences")
+    parser = argparse.ArgumentParser(
+        description="Score entries against user preferences",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument(
         "--db-path",
         default=None,
@@ -36,66 +53,71 @@ def parse_args():
     )
     parser.add_argument(
         "--method",
-        default="embeddings",
+        default=os.environ.get("SCORE_METHOD", "embeddings"),
         choices=["embeddings", "bm25"],
-        help="Scoring method: 'embeddings' (sentence-transformers) or 'bm25' (default: embeddings)",
+        help="Scoring method: 'embeddings' (sentence-transformers) or 'bm25' [env: SCORE_METHOD]",
     )
     parser.add_argument(
         "--model",
-        default="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-        help="Sentence-transformers model name (embeddings method only)",
+        default=os.environ.get(
+            "SCORE_MODEL",
+            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        ),
+        help="Sentence-transformers model name (embeddings method only) [env: SCORE_MODEL]",
     )
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=64,
-        help="Encoding batch size for embeddings method (default: 64)",
+        default=int(os.environ.get("SCORE_BATCH_SIZE", "64")),
+        help="Encoding batch size for embeddings method [env: SCORE_BATCH_SIZE]",
     )
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Re-score entries even if a score already exists",
+        default=_env_bool("SCORE_FORCE"),
+        help="Re-score entries even if a score already exists [env: SCORE_FORCE=1]",
     )
     parser.add_argument(
         "--limit",
         type=int,
-        default=0,
-        help="Max entries to score per batch (default: 0 = unlimited)",
+        default=int(os.environ.get("SCORE_LIMIT", "0")),
+        help="Max entries to score per batch (0 = unlimited) [env: SCORE_LIMIT]",
     )
     parser.add_argument(
         "--interval",
         type=float,
-        default=0,
+        default=float(os.environ.get("SCORE_INTERVAL", "0")),
         help=(
             "Seconds to sleep between batches when --limit is set. "
-            "If 0 (default), process one batch and exit."
+            "If 0 (default), process one batch and exit. [env: SCORE_INTERVAL]"
         ),
     )
     parser.add_argument(
         "--chunk-size",
         type=int,
-        default=200,
+        default=int(os.environ.get("SCORE_CHUNK_SIZE", "200")),
         help=(
             "Number of entries to process per internal chunk when --limit is 0 "
-            "(embeddings method only, default: 200)."
+            "(embeddings method only) [env: SCORE_CHUNK_SIZE]"
         ),
     )
     parser.add_argument(
         "--max-text-chars",
         type=int,
-        default=2000,
+        default=int(os.environ.get("SCORE_MAX_TEXT_CHARS", "2000")),
         help=(
-            "Maximum characters per entry text before truncation (default: 2000). "
-            "Reduces memory and speeds up encoding."
+            "Maximum characters per entry text before truncation. "
+            "Reduces memory and speeds up encoding. [env: SCORE_MAX_TEXT_CHARS]"
         ),
     )
     parser.add_argument(
         "--insert-chunk-size",
         type=int,
-        default=500,
+        default=int(os.environ.get("SCORE_INSERT_CHUNK_SIZE", "500")),
         help=(
-            "Number of score rows to insert per executemany call (default: 500). "
-            "Prevents large in-memory row lists when entries × prefs is high."
+            "Number of score rows to insert per executemany call. "
+            "Prevents large in-memory row lists when entries × prefs is high. "
+            "[env: SCORE_INSERT_CHUNK_SIZE]"
         ),
     )
     return parser.parse_args()
