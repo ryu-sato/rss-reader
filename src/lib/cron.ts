@@ -6,7 +6,7 @@ import { fetchAllFeedsEntries } from './entry-service'
 function runScoreEntries(): Promise<void> {
   return new Promise((resolve, reject) => {
     const scriptPath = path.resolve(process.cwd(), 'scripts/scoring/score_entries.py')
-    const child = spawn('python3', [scriptPath, '--batch-size', '8', '--limit', '100', '--method', 'bm25'], { stdio: 'inherit' })
+    const child = spawn('python3', [scriptPath], { stdio: 'inherit', env: process.env })
     child.on('close', (code, signal) => {
       if (code === 0) {
         resolve()
