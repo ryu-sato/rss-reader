@@ -170,7 +170,8 @@ def tokenize(text: str) -> list[str]:
 
 
 def now_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    dt = datetime.now(timezone.utc)
+    return dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond // 1000:03d}Z"
 
 
 def fetch_pending_entries(con: sqlite3.Connection, limit: int) -> list:
