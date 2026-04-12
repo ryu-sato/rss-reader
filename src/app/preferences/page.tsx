@@ -1,10 +1,14 @@
 export const dynamic = 'force-dynamic'
 
 import { getAllPreferences } from '@/lib/preference-service'
+import { getAppSettings } from '@/lib/settings-service'
 import PreferencesClient from './preferences-client'
 
 export default async function PreferencesPage() {
-  const preferences = await getAllPreferences()
+  const [preferences, settings] = await Promise.all([
+    getAllPreferences(),
+    getAppSettings(),
+  ])
 
   return (
     <div className="h-full overflow-y-auto">
@@ -20,7 +24,10 @@ export default async function PreferencesPage() {
             お好みのテキストを登録すると、記事のスコアリングに使用されます。
           </p>
         </div>
-        <PreferencesClient initialPreferences={preferences} />
+        <PreferencesClient
+          initialPreferences={preferences}
+          initialScoreThreshold={settings.preferredScoreThreshold}
+        />
       </div>
     </div>
   )

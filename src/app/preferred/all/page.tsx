@@ -3,12 +3,14 @@ export const dynamic = 'force-dynamic'
 import { Suspense } from 'react'
 import { getAllTags } from '@/lib/tag-service'
 import { findManyEntries } from '@/lib/entry-service'
+import { getAppSettings } from '@/lib/settings-service'
 import { EntryCardGrid } from '@/components/entry-card-grid'
 import { ReadFilter } from '@/components/read-filter'
+import { ScoreThresholdSlider } from '@/components/score-threshold-slider'
 import type { ReadFilterValue } from '@/components/read-filter'
 
 interface PageProps {
-  searchParams: Promise<{ filter?: string }>
+  searchParams: Promise<{ filter?: string; score?: string }>
 }
 
 export default async function PreferredAllPage({ searchParams }: PageProps) {
@@ -16,8 +18,12 @@ export default async function PreferredAllPage({ searchParams }: PageProps) {
   const filter: ReadFilterValue = params.filter === 'all' ? 'all' : 'unread'
   const isUnread = filter === 'unread'
 
+  const settings = await getAppSettings()
+  const scoreThreshold =
+    params.score !== undefined ? Number(params.score) : settings.preferredScoreThreshold
+
   const [{ entries, pagination }, allTags] = await Promise.all([
-    findManyEntries({ isAnyPreferred: true, isUnread, page: 1 }),
+    findManyEntries({ isAnyPreferred: true, isUnread, page: 1, scoreThreshold }),
     getAllTags(),
   ])
 
@@ -29,16 +35,20 @@ export default async function PreferredAllPage({ searchParams }: PageProps) {
           {pagination.total === 0 ? '記事なし' : `${pagination.total} 件`}
         </span>
         <Suspense>
+          <ScoreThresholdSlider value={scoreThreshold} />
+        </Suspense>
+        <Suspense>
           <ReadFilter value={filter} />
         </Suspense>
       </div>
       <Suspense>
         <EntryCardGrid
-          key={filter}
+          key={`${filter}-${scoreThreshold}`}
           initialEntries={entries}
           initialPagination={pagination}
           isAnyPreferred
           isUnread={isUnread}
+          scoreThreshold={scoreThreshold}
           basePath="/preferred/all"
           allTags={allTags}
         />

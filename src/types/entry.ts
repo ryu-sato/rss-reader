@@ -60,6 +60,7 @@ export interface GetEntriesQuery {
   userPreferenceId?: string
   isAnyPreferred?: boolean
   sortOrder?: 'asc' | 'desc'
+  scoreThreshold?: number
 }
 
 export interface GetEntriesResponse {

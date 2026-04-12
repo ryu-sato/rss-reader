@@ -171,6 +171,14 @@ model UserPreference {
   @@map("user_preferences")
 }
 
+model AppSettings {
+  id                    String   @id @default("singleton")
+  preferredScoreThreshold Float  @default(0.5)
+  updatedAt             DateTime @updatedAt
+
+  @@map("app_settings")
+}
+
 model EntryPreferenceScore {
   id           String   @id @default(uuid())
   entryId      String

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Plus, Pencil, Trash2, Check, X, SlidersHorizontal, Loader2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, SlidersHorizontal, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -14,9 +14,10 @@ interface Preference {
 
 interface PreferencesClientProps {
   initialPreferences: Preference[]
+  initialScoreThreshold: number
 }
 
-export default function PreferencesClient({ initialPreferences }: PreferencesClientProps) {
+export default function PreferencesClient({ initialPreferences, initialScoreThreshold }: PreferencesClientProps) {
   const [preferences, setPreferences] = useState<Preference[]>(initialPreferences)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingText, setEditingText] = useState('')
@@ -27,6 +28,39 @@ export default function PreferencesClient({ initialPreferences }: PreferencesCli
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const newTextareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const [scoreThreshold, setScoreThreshold] = useState(initialScoreThreshold)
+  const [isSavingThreshold, setIsSavingThreshold] = useState(false)
+  const [thresholdError, setThresholdError] = useState<string | null>(null)
+  const [thresholdSaved, setThresholdSaved] = useState(false)
+
+  const handleThresholdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setScoreThreshold(Number(e.target.value))
+    setThresholdSaved(false)
+  }
+
+  const handleThresholdSave = async () => {
+    setIsSavingThreshold(true)
+    setThresholdError(null)
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preferredScoreThreshold: scoreThreshold }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setThresholdError(data.error?.message || '保存に失敗しました')
+        return
+      }
+      setThresholdSaved(true)
+      setTimeout(() => setThresholdSaved(false), 2000)
+    } catch {
+      setThresholdError('予期しないエラーが発生しました')
+    } finally {
+      setIsSavingThreshold(false)
+    }
+  }
 
   const handleStartAdd = () => {
     setIsAdding(true)
@@ -129,7 +163,52 @@ export default function PreferencesClient({ initialPreferences }: PreferencesCli
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
+      {/* スコア閾値設定 */}
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold">スコア閾値</h2>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          お好みの記事として表示する最低スコアを設定します。値が高いほど厳しくフィルタリングされます。
+        </p>
+        <div className="flex items-center gap-3">
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={scoreThreshold}
+            onChange={handleThresholdChange}
+            className="flex-1 h-1.5 accent-primary cursor-pointer"
+          />
+          <span className="text-sm font-mono tabular-nums w-10 text-right">
+            {scoreThreshold.toFixed(2)}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={handleThresholdSave}
+            disabled={isSavingThreshold}
+            className="gap-1.5 cursor-pointer"
+          >
+            {isSavingThreshold
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <Check className="h-3.5 w-3.5" />
+            }
+            {thresholdSaved ? '保存しました' : 'デフォルトとして保存'}
+          </Button>
+        </div>
+        {thresholdError && (
+          <p role="alert" className="text-xs text-destructive bg-destructive/10 border border-destructive/20 px-3 py-2 rounded-lg">
+            {thresholdError}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-3">
       {error && (
         <p role="alert" className="text-sm text-destructive bg-destructive/10 border border-destructive/20 px-3 py-2.5 rounded-lg">
           {error}
@@ -276,6 +355,7 @@ export default function PreferencesClient({ initialPreferences }: PreferencesCli
           好みを追加
         </Button>
       )}
+      </div>
     </div>
   )
 }

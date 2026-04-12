@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
     const isAnyPreferred = searchParams.get('isAnyPreferred') === 'true' ? true : undefined
     const sortOrderParam = searchParams.get('sortOrder')
     const sortOrder = sortOrderParam === 'asc' ? 'asc' : sortOrderParam === 'desc' ? 'desc' : undefined
+    const scoreThresholdParam = searchParams.get('scoreThreshold')
+    const scoreThreshold = scoreThresholdParam !== null ? Number(scoreThresholdParam) : undefined
 
     if (isNaN(page) || page < 1) {
       return NextResponse.json(
@@ -25,7 +27,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const result = await findManyEntries({ feedId, tagId, search, page, limit, afterId, beforeId, isReadLater, isUnread, userPreferenceId, isAnyPreferred, sortOrder })
+    const result = await findManyEntries({ feedId, tagId, search, page, limit, afterId, beforeId, isReadLater, isUnread, userPreferenceId, isAnyPreferred, sortOrder, scoreThreshold })
     return NextResponse.json({ success: true, data: result.entries, pagination: result.pagination })
   } catch (error) {
     console.error('GET /api/entries error:', error)

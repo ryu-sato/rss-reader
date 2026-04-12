@@ -5,13 +5,15 @@ import { notFound } from 'next/navigation'
 import { getAllTags } from '@/lib/tag-service'
 import { findManyEntries } from '@/lib/entry-service'
 import { getAllPreferences } from '@/lib/preference-service'
+import { getAppSettings } from '@/lib/settings-service'
 import { EntryCardGrid } from '@/components/entry-card-grid'
 import { ReadFilter } from '@/components/read-filter'
+import { ScoreThresholdSlider } from '@/components/score-threshold-slider'
 import type { ReadFilterValue } from '@/components/read-filter'
 
 interface PageProps {
   params: Promise<{ preferenceId: string }>
-  searchParams: Promise<{ filter?: string }>
+  searchParams: Promise<{ filter?: string; score?: string }>
 }
 
 export default async function PreferredByPreferencePage({ params, searchParams }: PageProps) {
@@ -20,8 +22,14 @@ export default async function PreferredByPreferencePage({ params, searchParams }
   const filter: ReadFilterValue = resolvedSearchParams.filter === 'all' ? 'all' : 'unread'
   const isUnread = filter === 'unread'
 
+  const settings = await getAppSettings()
+  const scoreThreshold =
+    resolvedSearchParams.score !== undefined
+      ? Number(resolvedSearchParams.score)
+      : settings.preferredScoreThreshold
+
   const [{ entries, pagination }, allTags, preferences] = await Promise.all([
-    findManyEntries({ userPreferenceId: preferenceId, isUnread, page: 1 }),
+    findManyEntries({ userPreferenceId: preferenceId, isUnread, page: 1, scoreThreshold }),
     getAllTags(),
     getAllPreferences(),
   ])
@@ -37,16 +45,20 @@ export default async function PreferredByPreferencePage({ params, searchParams }
           {pagination.total === 0 ? '記事なし' : `${pagination.total} 件`}
         </span>
         <Suspense>
+          <ScoreThresholdSlider value={scoreThreshold} />
+        </Suspense>
+        <Suspense>
           <ReadFilter value={filter} />
         </Suspense>
       </div>
       <Suspense>
         <EntryCardGrid
-          key={filter}
+          key={`${filter}-${scoreThreshold}`}
           initialEntries={entries}
           initialPagination={pagination}
           userPreferenceId={preferenceId}
           isUnread={isUnread}
+          scoreThreshold={scoreThreshold}
           basePath={`/preferred/${preferenceId}`}
           allTags={allTags}
         />
