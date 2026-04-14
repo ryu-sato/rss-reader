@@ -23,8 +23,8 @@ export function ScoreThresholdSlider({ value }: ScoreThresholdSliderProps) {
   )
 
   const handleCommit = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = Number(e.target.value)
+    (e: React.MouseEvent<HTMLInputElement> | React.TouchEvent<HTMLInputElement>) => {
+      const newValue = Number(e.currentTarget.value)
       setLocalValue(newValue)
       const params = new URLSearchParams(searchParams.toString())
       params.set('score', String(newValue))
