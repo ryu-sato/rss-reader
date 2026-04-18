@@ -7,7 +7,7 @@ export type HotkeyAction =
   | 'openOriginal'
 
 export const DEFAULT_HOTKEYS: Record<HotkeyAction, string> = {
-  readLater: 'b',
+  readLater: 'f',
   toggleRead: 'm',
   closeModal: 'Escape',
   prevArticle: 'ArrowLeft',
