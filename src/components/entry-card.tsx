@@ -58,30 +58,40 @@ export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, o
       onClick={() => onClick(entry.id)}
       onKeyDown={(e) => e.key === 'Enter' && onClick(entry.id)}
       className={cn(
-        'group flex flex-col rounded-xl border border-border bg-card cursor-pointer transition-all duration-200',
-        'hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 hover:border-border/60',
-        isSelected && 'ring-2 ring-primary border-primary shadow-md shadow-primary/10',
+        'group relative flex flex-col overflow-hidden rounded-2xl cursor-pointer bg-card',
+        'border transition-all duration-300 ease-out will-change-transform',
+        'hover:-translate-y-1 hover:shadow-xl hover:shadow-black/10',
+        isSelected
+          ? 'border-primary/50 shadow-lg ring-2 ring-primary/25 ring-offset-2 ring-offset-background'
+          : 'border-border/60 hover:border-primary/20 shadow-sm',
         isRead && 'opacity-60'
       )}
     >
+      {/* Unread left accent stripe — clipped by parent overflow-hidden */}
+      {!isRead && (
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0 left-0 w-[3px] bg-primary/40 z-10"
+        />
+      )}
+
       {/* Image */}
-      <div className="relative w-full aspect-video overflow-hidden rounded-t-xl shrink-0">
+      <div className="relative w-full aspect-[16/10] overflow-hidden rounded-t-2xl shrink-0">
         {showImage ? (
           <>
             <Image
               src={entry.imageUrl!}
               alt=""
               fill
-              className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+              className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]"
               onError={() => setImgError(true)}
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               unoptimized
             />
-            {/* Subtle gradient overlay at bottom */}
-            <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
           </>
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/60">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-accent/30">
             <svg
               className="h-8 w-8 text-muted-foreground/25"
               viewBox="0 0 24 24"
@@ -98,12 +108,7 @@ export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, o
           </div>
         )}
 
-        {/* Unread dot */}
-        {!isRead && (
-          <span className="absolute top-2 left-2 h-2 w-2 rounded-full bg-primary shadow-sm ring-2 ring-card/80" />
-        )}
-
-        {/* Read/Unread toggle button (visible on hover) */}
+        {/* Read/Unread toggle */}
         <Tooltip>
           <TooltipTrigger
             render={
@@ -114,8 +119,10 @@ export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, o
                 disabled={isUpdating}
                 aria-label={isRead ? '未読にする' : '既読にする'}
                 className={cn(
-                  'absolute top-2 right-2 bg-background/85 backdrop-blur-sm border border-white/20 shadow-sm hover:scale-110',
-                  'opacity-0 group-hover:opacity-100 focus:opacity-100',
+                  'absolute top-2 right-2 z-10',
+                  'bg-background/85 backdrop-blur-md border border-border/50 shadow-sm',
+                  'hover:scale-110 hover:bg-background',
+                  'opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-200',
                 )}
               />
             }
@@ -133,19 +140,23 @@ export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, o
       </div>
 
       {/* Body */}
-      <div className="flex flex-col gap-2 p-3 flex-1">
+      <div className="flex flex-col gap-2 px-3.5 pt-3 pb-3 flex-1">
         <p
           className={cn(
-            'text-sm leading-snug line-clamp-2',
-            isRead ? 'font-normal text-muted-foreground' : 'font-semibold text-foreground'
+            'text-[13px] leading-snug line-clamp-2',
+            isRead
+              ? 'font-normal text-muted-foreground'
+              : 'font-semibold text-foreground'
           )}
         >
           {entry.title}
         </p>
         <div className="flex items-center gap-1.5 mt-auto">
-          <span className="text-[11px] text-muted-foreground/80 truncate">{entry.feed.title}</span>
-          <span className="text-[11px] text-muted-foreground/40 shrink-0">·</span>
-          <time className="text-[11px] text-muted-foreground/70 shrink-0 tabular-nums">{displayDate}</time>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/65 truncate">
+            {entry.feed.title}
+          </span>
+          <span className="text-[10px] text-muted-foreground/35 shrink-0">·</span>
+          <time className="text-[10px] text-muted-foreground/55 shrink-0 tabular-nums">{displayDate}</time>
         </div>
       </div>
     </article>
