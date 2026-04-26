@@ -83,10 +83,10 @@ export function EntryFilterBar({ allFeeds, allTags }: EntryFilterBarProps) {
   const hasFilters = currentFeedId || currentTagId || currentSearch
 
   return (
-    <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-border bg-background/95 backdrop-blur-sm">
+    <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-border bg-background/95 backdrop-blur-sm">
       {/* Title search */}
       <div className="relative flex-1 min-w-40">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none z-10" />
+        <Search className={`absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none z-10 transition-colors duration-150 ${searchInput ? 'text-primary' : 'text-muted-foreground'}`} />
         <Input
           type="text"
           placeholder="タイトルで検索..."
@@ -94,7 +94,7 @@ export function EntryFilterBar({ allFeeds, allTags }: EntryFilterBarProps) {
           onChange={(e) => handleSearchChange(e.target.value)}
           onCompositionStart={() => { isComposingRef.current = true }}
           onCompositionEnd={(e) => handleCompositionEnd(e.currentTarget.value)}
-          className="pl-8 pr-7 text-xs h-8"
+          className={`pl-8 pr-7 text-xs h-8 transition-all duration-150 ${searchInput ? 'border-primary/40 bg-primary/5' : ''}`}
         />
         {searchInput && (
           <button
@@ -111,7 +111,7 @@ export function EntryFilterBar({ allFeeds, allTags }: EntryFilterBarProps) {
         value={currentFeedId || '__all__'}
         onValueChange={(v) => updateParam('feedId', v === '__all__' ? null : v)}
       >
-        <SelectTrigger className="h-8 text-xs flex-1 sm:flex-none sm:min-w-28 sm:max-w-44">
+        <SelectTrigger className={`h-8 text-xs flex-1 sm:flex-none sm:min-w-28 sm:max-w-44 transition-all duration-150 ${currentFeedId ? 'border-primary/40 bg-primary/5 text-primary font-medium' : ''}`}>
           <SelectValue>
             {currentFeedId
               ? (allFeeds.find((f) => f.id === currentFeedId)?.title ?? currentFeedId)
@@ -134,7 +134,7 @@ export function EntryFilterBar({ allFeeds, allTags }: EntryFilterBarProps) {
           value={currentTagId || '__all__'}
           onValueChange={(v) => updateParam('tagId', v === '__all__' ? null : v)}
         >
-          <SelectTrigger className="h-8 text-xs flex-1 sm:flex-none sm:min-w-28 sm:max-w-44">
+          <SelectTrigger className={`h-8 text-xs flex-1 sm:flex-none sm:min-w-28 sm:max-w-44 transition-all duration-150 ${currentTagId ? 'border-primary/40 bg-primary/5 text-primary font-medium' : ''}`}>
             <SelectValue>
               {currentTagId
                 ? (allTags.find((t) => t.id === currentTagId)?.name ?? currentTagId)
@@ -166,7 +166,7 @@ export function EntryFilterBar({ allFeeds, allTags }: EntryFilterBarProps) {
             params.delete('entryId')
             router.push(`${pathname}?${params.toString()}`, { scroll: false })
           }}
-          className="h-8 px-2.5 text-xs text-muted-foreground"
+          className="h-8 px-2.5 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors duration-150"
         >
           <X className="h-3 w-3" />
           クリア

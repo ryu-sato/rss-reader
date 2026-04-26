@@ -44,13 +44,17 @@ export default async function Home({ searchParams }: PageProps) {
     <div className="h-full overflow-y-auto">
       <div className="sticky top-0 z-10">
         <div className="h-11 border-b border-border flex items-center justify-between px-4 bg-background/95 backdrop-blur">
-          <span className="text-xs text-muted-foreground">
-            {pagination.total === 0 ? '記事なし' : `${pagination.total} 件`}
-          </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-baseline gap-1">
+            <span className="text-sm font-semibold tabular-nums text-foreground">
+              {pagination.total === 0 ? '0' : pagination.total.toLocaleString()}
+            </span>
+            <span className="text-xs text-muted-foreground">件</span>
+          </div>
+          <div className="flex items-center gap-1.5">
             <Suspense>
               <ReadFilter value={filter} />
             </Suspense>
+            <div className="w-px h-3.5 bg-border/70 mx-0.5" />
             <Suspense>
               <SortToggle value={sortOrder} />
             </Suspense>

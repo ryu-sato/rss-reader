@@ -25,23 +25,23 @@ export function SortToggle({ value }: SortToggleProps) {
   }
 
   return (
-    <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
+    <div className="flex items-center bg-muted/70 rounded-lg p-0.5 gap-px">
       <button
         onClick={() => setSort('desc')}
-        className={`text-xs px-2.5 py-1 rounded transition-colors ${
+        className={`text-xs px-3 py-1 rounded-md font-medium transition-all duration-150 ${
           value === 'desc'
-            ? 'bg-background text-foreground shadow-sm'
-            : 'text-muted-foreground hover:text-foreground'
+            ? 'bg-background text-primary shadow-sm ring-1 ring-border/50'
+            : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
         }`}
       >
         新しい順
       </button>
       <button
         onClick={() => setSort('asc')}
-        className={`text-xs px-2.5 py-1 rounded transition-colors ${
+        className={`text-xs px-3 py-1 rounded-md font-medium transition-all duration-150 ${
           value === 'asc'
-            ? 'bg-background text-foreground shadow-sm'
-            : 'text-muted-foreground hover:text-foreground'
+            ? 'bg-background text-primary shadow-sm ring-1 ring-border/50'
+            : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
         }`}
       >
         古い順
