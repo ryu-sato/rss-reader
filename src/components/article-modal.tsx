@@ -38,13 +38,26 @@ export function ArticleModal({
   const [isUpdatingRead, setIsUpdatingRead] = useState(false)
   const [swipeX, setSwipeX] = useState(0)
   const [swipeTransition, setSwipeTransition] = useState(false)
+  const [readingProgress, setReadingProgress] = useState(0)
   const swipeStartRef = useRef<{ x: number; y: number; active: boolean } | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const { config } = useHotkeyConfig()
 
-  // Reset swipe when entry changes
+  // Reset swipe, scroll, and progress when entry changes
   useEffect(() => {
     setSwipeX(0)
+    setReadingProgress(0)
+    if (scrollRef.current) scrollRef.current.scrollTop = 0
   }, [entryId])
+
+  // Reading progress tracking
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const { scrollTop, scrollHeight, clientHeight } = el
+    const progress = scrollHeight <= clientHeight ? 100 : (scrollTop / (scrollHeight - clientHeight)) * 100
+    setReadingProgress(progress)
+  }, [])
 
   // Swipe handlers
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -194,7 +207,7 @@ export function ArticleModal({
         className="flex items-center gap-2 w-full sm:max-w-[960px]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Prev button — hidden on mobile */}
+        {/* Prev button — desktop only */}
         <button
           onClick={onPrev}
           disabled={!hasPrev}
@@ -206,7 +219,7 @@ export function ArticleModal({
 
         {/* Modal */}
         <div
-          className="flex-1 min-w-0 h-[92dvh] sm:h-[85vh] bg-background sm:rounded-2xl rounded-t-2xl border border-border shadow-2xl flex flex-col overflow-hidden"
+          className="flex-1 min-w-0 h-[92dvh] sm:h-[88vh] bg-background sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden ring-1 ring-black/10 dark:ring-white/10"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -217,49 +230,58 @@ export function ArticleModal({
           }}
         >
           {/* Toolbar */}
-          <div className="h-11 border-b border-border flex items-center justify-between px-4 shrink-0 gap-2">
-            {/* Prev/Next — mobile only (desktop shows outside modal) */}
-            <div className="flex items-center gap-0.5 sm:hidden shrink-0">
-              <button
-                onClick={onPrev}
-                disabled={!hasPrev}
-                aria-label="前の記事"
-                className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                onClick={onNext}
-                disabled={!hasNext}
-                aria-label="次の記事"
-                className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="text-xs text-muted-foreground truncate hidden sm:block">
+          <div className="h-12 border-b border-border/60 flex items-center justify-between px-3 sm:px-4 shrink-0 gap-2">
+            {/* Left: mobile prev/next + feed info */}
+            <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+              <div className="flex items-center sm:hidden shrink-0">
+                <button
+                  onClick={onPrev}
+                  disabled={!hasPrev}
+                  aria-label="前の記事"
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={onNext}
+                  disabled={!hasNext}
+                  aria-label="次の記事"
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+
               {entry ? (
-                <span className="font-medium text-primary">{entry.feed.title}</span>
+                <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                  <span className="text-xs font-semibold text-primary truncate max-w-[160px] sm:max-w-[240px]">
+                    {entry.feed.title}
+                  </span>
+                  {entry.publishedAt && (
+                    <>
+                      <span className="text-muted-foreground/40 text-xs shrink-0">·</span>
+                      <time
+                        className="text-xs text-muted-foreground shrink-0 hidden sm:block"
+                        dateTime={entry.publishedAt.toString()}
+                      >
+                        {new Date(entry.publishedAt).toLocaleString('ja-JP', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </time>
+                    </>
+                  )}
+                </div>
               ) : (
-                <span className="text-muted-foreground/50">読み込み中…</span>
-              )}
-              {entry?.publishedAt && (
-                <>
-                  <span className="mx-1.5">·</span>
-                  <time dateTime={entry.publishedAt.toString()}>
-                    {new Date(entry.publishedAt).toLocaleString('ja-JP', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </time>
-                </>
+                <span className="text-xs text-muted-foreground/50">読み込み中…</span>
               )}
             </div>
 
-            <div className="flex items-center gap-1 shrink-0">
+            {/* Right: actions */}
+            <div className="flex items-center gap-0.5 shrink-0">
               {entry && (
                 <>
                   <Tooltip>
@@ -271,7 +293,7 @@ export function ArticleModal({
                           onClick={toggleRead}
                           disabled={isUpdatingRead}
                           aria-label={isRead ? '未読に戻す' : '既読にする'}
-                          className="h-7 w-7 sm:w-auto sm:gap-1.5 sm:px-2 p-0 text-xs"
+                          className="h-8 w-8 sm:w-auto sm:gap-1.5 sm:px-2.5 p-0 text-xs rounded-lg"
                         />
                       }
                     >
@@ -288,6 +310,7 @@ export function ArticleModal({
                       {isRead ? '未読に戻す' : '既読にする'} ({config.toggleRead.toUpperCase()})
                     </TooltipContent>
                   </Tooltip>
+
                   <Tooltip>
                     <TooltipTrigger
                       render={
@@ -297,7 +320,7 @@ export function ArticleModal({
                           onClick={toggleReadLater}
                           disabled={isUpdating}
                           aria-label={isReadLater ? '保存済み' : 'あとで読む'}
-                          className="h-7 w-7 sm:w-auto sm:gap-1.5 sm:px-2 p-0 text-xs"
+                          className="h-8 w-8 sm:w-auto sm:gap-1.5 sm:px-2.5 p-0 text-xs rounded-lg"
                         />
                       }
                     >
@@ -308,6 +331,7 @@ export function ArticleModal({
                       あとで読む ({config.readLater.toUpperCase()})
                     </TooltipContent>
                   </Tooltip>
+
                   <Tooltip>
                     <TooltipTrigger
                       render={
@@ -317,7 +341,7 @@ export function ArticleModal({
                           rel="noopener noreferrer"
                           aria-label="元の記事を開く"
                           onClick={(e) => handleExternalLink(e, entry.link)}
-                          className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                         />
                       }
                     >
@@ -337,7 +361,7 @@ export function ArticleModal({
                       size="icon-sm"
                       onClick={onClose}
                       aria-label="閉じる"
-                      className="text-muted-foreground hover:text-foreground"
+                      className="text-muted-foreground hover:text-foreground rounded-lg"
                     />
                   }
                 >
@@ -348,59 +372,113 @@ export function ArticleModal({
             </div>
           </div>
 
+          {/* Reading progress bar */}
+          <div className="h-[2px] bg-border/40 shrink-0 overflow-hidden">
+            <div
+              className="h-full bg-primary/60 transition-[width] duration-100 ease-out"
+              style={{ width: `${readingProgress}%` }}
+            />
+          </div>
+
           {/* Content */}
           {!entry ? (
-            <div className="overflow-y-auto flex-1 px-4 py-4 sm:px-8 sm:py-6 max-w-3xl mx-auto w-full">
-              {/* Skeleton loading */}
-              <div className="h-7 bg-muted rounded-lg animate-pulse mb-2 w-full" />
-              <div className="h-7 bg-muted rounded-lg animate-pulse mb-5 w-3/4" />
-              <div className="aspect-video bg-muted rounded-xl animate-pulse mb-6" />
-              <div className="space-y-2.5">
-                <div className="h-4 bg-muted rounded animate-pulse w-full" />
-                <div className="h-4 bg-muted rounded animate-pulse w-full" />
-                <div className="h-4 bg-muted rounded animate-pulse w-5/6" />
-                <div className="h-4 bg-muted rounded animate-pulse w-full" />
-                <div className="h-4 bg-muted rounded animate-pulse w-4/5" />
+            <div className="overflow-y-auto flex-1 px-5 py-7 sm:px-12 sm:py-10 max-w-3xl mx-auto w-full">
+              {/* Skeleton: title */}
+              <div className="h-8 bg-muted rounded-lg animate-pulse mb-2.5 w-full" />
+              <div className="h-8 bg-muted rounded-lg animate-pulse mb-6 w-2/3" />
+              {/* Skeleton: meta */}
+              <div className="flex gap-2.5 mb-7">
+                <div className="h-5 bg-muted rounded-md animate-pulse w-28" />
+                <div className="h-5 bg-muted rounded animate-pulse w-24" />
+                <div className="h-5 bg-muted rounded animate-pulse w-20" />
+              </div>
+              {/* Skeleton: image */}
+              <div className="aspect-video bg-muted rounded-xl animate-pulse mb-9" />
+              {/* Skeleton: body */}
+              <div className="space-y-3">
+                {[1, 0.96, 0.9, 1, 0.88, 0.94, 1, 0.85].map((w, i) => (
+                  <div
+                    key={i}
+                    className="h-[19px] bg-muted rounded animate-pulse"
+                    style={{ width: `${w * 100}%` }}
+                  />
+                ))}
               </div>
             </div>
           ) : (
-            <div className="overflow-y-auto flex-1 px-4 py-4 sm:px-8 sm:py-6 max-w-3xl mx-auto w-full">
-              <h2 className="text-xl font-bold leading-snug mb-5 text-foreground">
+            <div
+              ref={scrollRef}
+              onScroll={handleScroll}
+              className="overflow-y-auto flex-1 px-5 py-7 sm:px-12 sm:py-10 max-w-3xl mx-auto w-full"
+            >
+              {/* Title */}
+              <h2 className="font-reading text-[1.6rem] sm:text-[2rem] font-bold leading-[1.25] mb-4 text-foreground tracking-tight">
                 <a
                   href={entry.link}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => handleExternalLink(e, entry.link)}
-                  className="hover:underline"
+                  className="hover:text-primary transition-colors duration-150"
                 >
                   {entry.title}
                 </a>
               </h2>
 
+              {/* Meta: feed badge + date + reading time */}
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mb-8">
+                <span className="text-[0.75rem] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-md leading-5">
+                  {entry.feed.title}
+                </span>
+                {entry.publishedAt && (
+                  <>
+                    <span className="text-muted-foreground/40 text-xs">·</span>
+                    <time
+                      className="text-xs text-muted-foreground"
+                      dateTime={entry.publishedAt.toString()}
+                    >
+                      {new Date(entry.publishedAt).toLocaleDateString('ja-JP', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </time>
+                  </>
+                )}
+              </div>
+
+              {/* Image */}
               {entry.imageUrl && (
-                <div className="mb-5">
+                <div className="mb-8 rounded-xl overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={entry.imageUrl}
                     alt=""
-                    className="w-full rounded-lg object-cover max-h-64"
+                    className="w-full object-cover max-h-72 sm:max-h-80"
                   />
                 </div>
               )}
 
-              <div className="prose prose-sm max-w-none text-foreground leading-relaxed mb-6">
+              {/* Body */}
+              <div className="font-reading prose prose-base max-w-none dark:prose-invert text-foreground/90 leading-[1.85] mb-10
+                prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-foreground
+                prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+                prose-strong:text-foreground prose-strong:font-semibold
+                prose-code:text-sm prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:font-mono">
                 <p className="whitespace-pre-wrap">{entry.content ?? entry.description ?? ''}</p>
               </div>
 
-              <div className="border-t border-border pt-4">
-                <p className="text-xs font-medium text-muted-foreground mb-2">タグ</p>
+              {/* Tags */}
+              <div className="border-t border-border/50 pt-6">
+                <p className="text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
+                  タグ
+                </p>
                 <TagInput entryId={entry.id} initialTags={entryTags} allTags={allTags} />
               </div>
             </div>
           )}
         </div>
 
-        {/* Next button — hidden on mobile */}
+        {/* Next button — desktop only */}
         <button
           onClick={onNext}
           disabled={!hasNext}
