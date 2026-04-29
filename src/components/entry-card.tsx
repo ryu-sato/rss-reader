@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { memo, useEffect, useState } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, CheckCircle2, Circle } from 'lucide-react'
 import type { EntryListItem } from '@/types/entry'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -13,9 +13,12 @@ interface EntryCardProps {
   isSelected?: boolean
   onClick: (entryId: string) => void
   onToggleRead?: (entryId: string, newIsRead: boolean) => void
+  isSelectionMode?: boolean
+  isChecked?: boolean
+  onToggleSelect?: (entryId: string) => void
 }
 
-export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, onToggleRead }: EntryCardProps) {
+export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, onToggleRead, isSelectionMode, isChecked, onToggleSelect }: EntryCardProps) {
   const [imgError, setImgError] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const isRead = entry.meta?.isRead ?? false
@@ -51,28 +54,55 @@ export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, o
     }
   }
 
+  const handleClick = () => {
+    if (isSelectionMode) {
+      onToggleSelect?.(entry.id)
+    } else {
+      onClick(entry.id)
+    }
+  }
+
   return (
     <article
       role="button"
       tabIndex={0}
-      onClick={() => onClick(entry.id)}
-      onKeyDown={(e) => e.key === 'Enter' && onClick(entry.id)}
+      onClick={handleClick}
+      onKeyDown={(e) => e.key === 'Enter' && handleClick()}
       className={cn(
         'group relative flex flex-col overflow-hidden rounded-2xl cursor-pointer bg-card',
         'border transition-all duration-300 ease-out will-change-transform',
         'hover:-translate-y-1 hover:shadow-xl hover:shadow-black/10',
-        isSelected
-          ? 'border-primary/50 shadow-lg ring-2 ring-primary/25 ring-offset-2 ring-offset-background'
-          : 'border-border/60 hover:border-primary/20 shadow-sm',
-        isRead && 'opacity-60'
+        isChecked
+          ? 'border-primary/60 shadow-lg ring-2 ring-primary/30 ring-offset-2 ring-offset-background'
+          : isSelected
+            ? 'border-primary/50 shadow-lg ring-2 ring-primary/25 ring-offset-2 ring-offset-background'
+            : 'border-border/60 hover:border-primary/20 shadow-sm',
+        isRead && !isChecked && 'opacity-60'
       )}
     >
       {/* Unread left accent stripe — clipped by parent overflow-hidden */}
-      {!isRead && (
+      {!isRead && !isSelectionMode && (
         <span
           aria-hidden="true"
           className="absolute inset-y-0 left-0 w-[3px] bg-primary/40 z-10"
         />
+      )}
+
+      {/* Selection mode checkbox overlay */}
+      {isSelectionMode && (
+        <span
+          aria-hidden="true"
+          className={cn(
+            'absolute top-2 left-2 z-20 transition-all duration-200',
+            isChecked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          )}
+        >
+          {isChecked ? (
+            <CheckCircle2 className="h-5 w-5 text-primary drop-shadow-sm" />
+          ) : (
+            <Circle className="h-5 w-5 text-white/80 drop-shadow-sm" />
+          )}
+        </span>
       )}
 
       {/* Image */}

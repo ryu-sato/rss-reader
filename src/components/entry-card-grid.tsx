@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Rss, Trash2 } from 'lucide-react'
+import { Rss, Tags, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import type { Entry, EntryDetail, EntryListItem } from '@/types/entry'
 import dynamic from 'next/dynamic'
 import { EntryCard } from '@/components/entry-card'
+import { BulkTagBar } from '@/components/bulk-tag-bar'
+import { Button } from '@/components/ui/button'
 
 const ArticleModal = dynamic(
   () => import('@/components/article-modal').then((m) => m.ArticleModal),
@@ -75,6 +77,10 @@ export function EntryCardGrid({
   // Prefetch cache for adjacent entry details
   const prefetchCacheRef = useRef<Map<string, EntryDetail>>(new Map())
   const prefetchingRef = useRef<Set<string>>(new Set())
+
+  // Selection mode for batch tagging
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   // entryId はローカル state で管理し、history.pushState で URL を更新する。
   // router.push を使うと Next.js ナビゲーションが発火して SSR が再実行されるため。
@@ -321,6 +327,49 @@ export function EntryCardGrid({
     }
   }, [navEntries, pendingNavigateNext, selectedEntryId, basePath])
 
+  const enterSelectionMode = () => {
+    setIsSelectionMode(true)
+    setSelectedIds(new Set())
+  }
+
+  const exitSelectionMode = () => {
+    setIsSelectionMode(false)
+    setSelectedIds(new Set())
+  }
+
+  const toggleSelectEntry = useCallback((entryId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(entryId)) {
+        next.delete(entryId)
+      } else {
+        next.add(entryId)
+      }
+      return next
+    })
+  }, [])
+
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(entries.map((e) => e.id)))
+  }, [entries])
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set())
+  }, [])
+
+  const applyBatchTag = useCallback(async (tagName: string) => {
+    if (selectedIds.size === 0) return
+    const res = await fetch('/api/tags/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: tagName, entryIds: Array.from(selectedIds) }),
+    })
+    if (res.ok) {
+      const { data } = await res.json()
+      window.dispatchEvent(new CustomEvent('entry:tags-updated', { detail: { entryId: null, tags: [], batchTagId: data.id } }))
+    }
+  }, [selectedIds])
+
   const openEntry = useCallback((entryId: string) => {
     const params = new URLSearchParams(window.location.search)
     params.set('entryId', entryId)
@@ -402,14 +451,36 @@ export function EntryCardGrid({
 
   return (
     <>
+      {/* Selection mode toggle */}
+      <div className="flex justify-end px-4 pt-2 pb-0">
+        {isSelectionMode ? (
+          <span className="text-xs text-muted-foreground py-1">
+            クリックして記事を選択
+          </span>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={enterSelectionMode}
+            className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+          >
+            <Tags className="h-3.5 w-3.5" />
+            一括タグ付け
+          </Button>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
         {entries.map((entry) => (
           <EntryCard
             key={entry.id}
             entry={entry}
-            isSelected={selectedEntryId === entry.id}
+            isSelected={!isSelectionMode && selectedEntryId === entry.id}
             onClick={openEntry}
             onToggleRead={handleToggleRead}
+            isSelectionMode={isSelectionMode}
+            isChecked={selectedIds.has(entry.id)}
+            onToggleSelect={toggleSelectEntry}
           />
         ))}
       </div>
@@ -424,7 +495,7 @@ export function EntryCardGrid({
       )}
 
       {/* Article modal */}
-      {selectedEntryId && (
+      {selectedEntryId && !isSelectionMode && (
         <ArticleModal
           entryId={selectedEntryId}
           prefetchedEntry={prefetchCacheRef.current.get(selectedEntryId) ?? null}
@@ -434,6 +505,19 @@ export function EntryCardGrid({
           onClose={closeEntry}
           onPrev={goToPrev}
           onNext={goToNext}
+        />
+      )}
+
+      {/* Bulk tag bar (shown in selection mode) */}
+      {isSelectionMode && (
+        <BulkTagBar
+          selectedCount={selectedIds.size}
+          totalCount={entries.length}
+          allTags={allTags}
+          onApplyTag={applyBatchTag}
+          onSelectAll={selectAll}
+          onClearSelection={clearSelection}
+          onExitSelectionMode={exitSelectionMode}
         />
       )}
     </>
