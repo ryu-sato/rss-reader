@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { Prisma } from '@/generated/prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,10 +21,8 @@ export async function POST(request: NextRequest) {
       update: {},
     })
 
-    await prisma.entryTag.createMany({
-      data: (entryIds as string[]).map((entryId) => ({ entryId, tagId: tag.id })),
-      skipDuplicates: true,
-    })
+    const rows = (entryIds as string[]).map((entryId) => Prisma.sql`(${entryId}, ${tag.id})`)
+    await prisma.$executeRaw`INSERT OR IGNORE INTO entry_tags (entry_id, tag_id) VALUES ${Prisma.join(rows)}`
 
     return NextResponse.json({ success: true, data: tag }, { status: 201 })
   } catch (error) {
