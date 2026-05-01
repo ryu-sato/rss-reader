@@ -85,7 +85,7 @@ export function EntryFilterBar({ allFeeds, allTags }: EntryFilterBarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-border bg-background/95 backdrop-blur-sm">
       {/* Title search */}
-      <div className="relative flex-1 min-w-40">
+      <div className="relative flex-1 min-w-28 sm:min-w-40">
         <Search className={`absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none z-10 transition-colors duration-150 ${searchInput ? 'text-primary' : 'text-muted-foreground'}`} />
         <Input
           type="text"

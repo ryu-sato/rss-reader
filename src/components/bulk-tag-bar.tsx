@@ -74,7 +74,7 @@ export function BulkTagBar({
           }}
           placeholder="タグ名を入力..."
           disabled={isLoading || selectedCount === 0}
-          className="h-8 text-xs w-36 sm:w-44"
+          className="h-8 text-xs w-28 sm:w-36 md:w-44"
           aria-label="一括タグ名入力"
         />
         {showSuggestions && suggestions.length > 0 && (

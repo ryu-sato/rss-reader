@@ -36,7 +36,7 @@ export default function FeedsPage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <main className="px-8 py-8 max-w-2xl">
+      <main className="px-4 py-6 sm:px-8 sm:py-8 max-w-2xl">
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">フィード管理</h1>
@@ -99,7 +99,7 @@ export default function FeedsPage() {
                 <div className="flex items-center gap-1 shrink-0 ml-2">
                   <Link
                     href={`/feeds/${feed.id}/edit`}
-                    className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+                    className="flex items-center justify-center h-10 w-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
                     title="編集"
                   >
                     <Pencil className="h-3.5 w-3.5" />
@@ -107,7 +107,7 @@ export default function FeedsPage() {
                   <button
                     onClick={() => handleDelete(feed.id, feed.title)}
                     disabled={deletingId === feed.id}
-                    className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 cursor-pointer"
+                    className="flex items-center justify-center h-10 w-10 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 cursor-pointer"
                     title="削除"
                   >
                     <Trash2 className="h-3.5 w-3.5" />

@@ -255,7 +255,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
               {preferences.length > 0 && (
                 <button
                   onClick={() => setPreferredOpen(!preferredOpen)}
-                  className="h-5 w-5 flex items-center justify-center text-sidebar-foreground/30 hover:text-sidebar-foreground transition-colors"
+                  className="h-7 w-7 flex items-center justify-center text-sidebar-foreground/30 hover:text-sidebar-foreground transition-colors"
                 >
                   <ChevronDown
                     className={cn(
@@ -337,14 +337,14 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
                 <Link
                   href="/feeds/new"
                   title="フィードを追加"
-                  className="h-5 w-5 flex items-center justify-center rounded hover:bg-sidebar-accent text-sidebar-foreground/35 hover:text-sidebar-foreground transition-colors"
+                  className="h-7 w-7 flex items-center justify-center rounded hover:bg-sidebar-accent text-sidebar-foreground/35 hover:text-sidebar-foreground transition-colors"
                 >
                   <Plus className="h-3 w-3" />
                 </Link>
                 <Link
                   href="/feeds"
                   title="フィードを管理"
-                  className="h-5 w-5 flex items-center justify-center rounded hover:bg-sidebar-accent text-sidebar-foreground/35 hover:text-sidebar-foreground transition-colors"
+                  className="h-7 w-7 flex items-center justify-center rounded hover:bg-sidebar-accent text-sidebar-foreground/35 hover:text-sidebar-foreground transition-colors"
                 >
                   <ListFilter className="h-3 w-3" />
                 </Link>
@@ -417,14 +417,14 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
                         />
                         <button
                           onClick={() => handleRenameTag(tag.id)}
-                          className="h-5 w-5 flex items-center justify-center rounded hover:bg-sidebar-accent text-sidebar-foreground/35 hover:text-sidebar-foreground shrink-0"
+                          className="h-7 w-7 flex items-center justify-center rounded hover:bg-sidebar-accent text-sidebar-foreground/35 hover:text-sidebar-foreground shrink-0"
                           title="保存"
                         >
                           <Check className="h-3 w-3" />
                         </button>
                         <button
                           onClick={() => setEditingTagId(null)}
-                          className="h-5 w-5 flex items-center justify-center rounded hover:bg-sidebar-accent text-sidebar-foreground/35 hover:text-sidebar-foreground shrink-0"
+                          className="h-7 w-7 flex items-center justify-center rounded hover:bg-sidebar-accent text-sidebar-foreground/35 hover:text-sidebar-foreground shrink-0"
                           title="キャンセル"
                         >
                           <X className="h-3 w-3" />
@@ -450,14 +450,14 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
                               setEditingTagId(tag.id)
                               setEditingTagName(tag.name)
                             }}
-                            className="h-5 w-5 flex items-center justify-center rounded hover:bg-sidebar-accent text-sidebar-foreground/35 hover:text-sidebar-foreground"
+                            className="h-7 w-7 flex items-center justify-center rounded hover:bg-sidebar-accent text-sidebar-foreground/35 hover:text-sidebar-foreground"
                             title="タグ名を変更"
                           >
                             <Pencil className="h-3 w-3" />
                           </button>
                           <button
                             onClick={() => handleDeleteTag(tag.id)}
-                            className="h-5 w-5 flex items-center justify-center rounded hover:bg-sidebar-accent text-sidebar-foreground/35 hover:text-destructive"
+                            className="h-7 w-7 flex items-center justify-center rounded hover:bg-sidebar-accent text-sidebar-foreground/35 hover:text-destructive"
                             title="タグを削除"
                           >
                             <Trash2 className="h-3 w-3" />

@@ -31,7 +31,7 @@ export default function SettingsPage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <main className="px-8 py-8 max-w-2xl">
+      <main className="px-4 py-6 sm:px-8 sm:py-8 max-w-2xl">
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight">設定</h1>
           <p className="text-sm text-muted-foreground mt-1.5">アプリの動作をカスタマイズします</p>
