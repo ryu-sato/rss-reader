@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Rss, Tags, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import type { Entry, EntryDetail, EntryListItem } from '@/types/entry'
+import type { EntryDetail, EntryListItem } from '@/types/entry'
 import dynamic from 'next/dynamic'
 import { EntryCard } from '@/components/entry-card'
 import { BulkTagBar } from '@/components/bulk-tag-bar'
@@ -219,8 +219,8 @@ export function EntryCardGrid({
 
       const res = await fetch(`/api/entries?${params.toString()}`)
       if (!res.ok) return
-      const json = await res.json() as {data: Entry[], pagination: Pagination};
-      setEntries((prev) => [...prev, ...(json.data.map((entry) => ({ ...entry, meta: null, feed: { id: '', title: '' } })))])
+      const json = await res.json() as {data: EntryListItem[], pagination: Pagination};
+      setEntries((prev) => [...prev, ...json.data])
       setPage(nextPage)
       setHasMore(json.pagination.hasNext)
     } finally {
