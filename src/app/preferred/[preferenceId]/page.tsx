@@ -40,7 +40,7 @@ export default async function PreferredByPreferencePage({ params, searchParams }
   return (
     <div className="h-full overflow-y-auto">
       <div className="h-11 border-b border-border flex items-center px-4 gap-2 sticky top-0 bg-background/95 backdrop-blur z-10">
-        <span className="text-sm font-medium flex-1 truncate">{preference.text}</span>
+        <span className="text-sm font-medium flex-1 min-w-0 truncate">{preference.text}</span>
         <span className="text-xs text-muted-foreground shrink-0">
           {pagination.total === 0 ? '記事なし' : `${pagination.total} 件`}
         </span>

@@ -38,7 +38,7 @@ export function ScoreThresholdSlider({ value }: ScoreThresholdSliderProps) {
 
   return (
     <div className="flex items-center gap-2 shrink-0">
-      <span className="text-xs text-muted-foreground whitespace-nowrap">スコア</span>
+      <span className="hidden sm:inline text-xs text-muted-foreground whitespace-nowrap">スコア</span>
       <input
         type="range"
         min="0"
@@ -48,7 +48,7 @@ export function ScoreThresholdSlider({ value }: ScoreThresholdSliderProps) {
         onChange={handleChange}
         onMouseUp={handleCommit}
         onTouchEnd={handleCommit}
-        className="w-24 h-1.5 accent-primary cursor-pointer"
+        className="w-16 sm:w-24 h-1.5 accent-primary cursor-pointer"
         title={`スコア閾値: ${localValue.toFixed(2)}`}
       />
       <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">

@@ -25,10 +25,10 @@ export function ReadFilter({ value }: ReadFilterProps) {
   }
 
   return (
-    <div className="flex items-center bg-muted/70 rounded-lg p-0.5 gap-px">
+    <div className="flex items-center bg-muted/70 rounded-lg p-0.5 gap-px shrink-0">
       <button
         onClick={() => setFilter('unread')}
-        className={`text-xs px-3 py-1.5 rounded-md font-medium transition-all duration-150 ${
+        className={`whitespace-nowrap text-xs px-3 py-1.5 rounded-md font-medium transition-all duration-150 ${
           value === 'unread'
             ? 'bg-background text-primary shadow-sm ring-1 ring-border/50'
             : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
@@ -38,7 +38,7 @@ export function ReadFilter({ value }: ReadFilterProps) {
       </button>
       <button
         onClick={() => setFilter('all')}
-        className={`text-xs px-3 py-1.5 rounded-md font-medium transition-all duration-150 ${
+        className={`whitespace-nowrap text-xs px-3 py-1.5 rounded-md font-medium transition-all duration-150 ${
           value === 'all'
             ? 'bg-background text-primary shadow-sm ring-1 ring-border/50'
             : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
