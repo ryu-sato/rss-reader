@@ -220,7 +220,11 @@ export function EntryCardGrid({
       const res = await fetch(`/api/entries?${params.toString()}`)
       if (!res.ok) return
       const json = await res.json() as {data: EntryListItem[], pagination: Pagination};
-      setEntries((prev) => [...prev, ...json.data])
+      setEntries((prev) => {
+        const existingIds = new Set(prev.map((e) => e.id))
+        const newEntries = json.data.filter((e) => !existingIds.has(e.id))
+        return newEntries.length > 0 ? [...prev, ...newEntries] : prev
+      })
       setPage(nextPage)
       setHasMore(json.pagination.hasNext)
     } finally {
@@ -228,13 +232,11 @@ export function EntryCardGrid({
     }
   }, [isLoading, hasMore, page, feedId, tagId, search, isReadLater, isUnread, isPreferred, userPreferenceId, isAnyPreferred, sortOrder, scoreThreshold, initialPagination.limit])
 
-  // モーダルナビ用の次ページを読み込み、navEntries と entries の両方を更新する。
-  // 要件：次の記事を取得する際は、本来の記事リスト（entries）と
-  // モーダル表示開始時用の記事リスト（navEntries）の両方を更新すること。
-  // 背景：「あとで読む」リストで閲覧中に「あとで読む」を解除しながら「次へ」を押すと
-  // リストの先頭に戻ってしまうのを防ぐため、モーダル表示中は navEntries を
-  // スナップショットとして独立管理している。しかし次ページ読み込み時は
-  // entries も同時に更新して無限スクロールとの整合性を維持する必要がある。
+  // モーダルナビ用の次ページを読み込む。
+  // navEntries/navPage/navHasMore（ナビ専用状態）を更新し、entries にも追記する。
+  // page/hasMore はカードグリッドの無限スクロール（loadMore）が管理するため更新しない。
+  // loadNavMore が setPage を呼ぶと loadMore が進めた page を巻き戻し、
+  // 同じページを再取得する原因になるため。
   const loadNavMore = useCallback(async () => {
     if (isNavLoading || !navHasMore) return
     setIsNavLoading(true)
@@ -261,10 +263,14 @@ export function EntryCardGrid({
       setNavEntries((prev) => [...prev, ...json.data])
       setNavPage(nextPage)
       setNavHasMore(json.pagination.hasNext)
-      // 本来の記事リストと無限スクロール状態も同時に更新し、二重読み込みを防ぐ
-      setEntries((prev) => [...prev, ...json.data])
-      setPage(nextPage)
-      setHasMore(json.pagination.hasNext)
+      // 本来の記事リストにも追記（重複は id で除去）。
+      // page/hasMore は loadMore（IntersectionObserver）が管理するため更新しない。
+      // loadNavMore が setPage を巻き戻すと loadMore が同じページを再取得するため。
+      setEntries((prev) => {
+        const existingIds = new Set(prev.map((e) => e.id))
+        const newEntries = json.data.filter((e: { id: string }) => !existingIds.has(e.id))
+        return newEntries.length > 0 ? [...prev, ...newEntries] : prev
+      })
     } finally {
       setIsNavLoading(false)
     }
