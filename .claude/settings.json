@@ -5,31 +5,30 @@
     "allow": [
       "Bash",
       "Read",
-      "Write",
+      "Edit",
       "WebFetch",
       "WebSearch"
     ],
     "deny": [
-      "Write(.claude/rules/*)",
-      "Write(.claude/settings.json)",
+      "Edit(.claude/rules/*)",
+      "Edit(.claude/settings.json)",
       "Read(./.env*)",
       "Read(./secrets/**)",
-      "Write(.claude/*)",
-      "Write(.next/*)",
-      "Write(.pnpm-store/*)",
-      "Write(node_modules/*)",
-      "Write(.env)",
-      "Write(pnpm-lock.yaml)",
-      "Write(skills-lock.json)"
+      "Edit(.claude/*)",
+      "Edit(.next/*)",
+      "Edit(.pnpm-store/*)",
+      "Edit(node_modules/*)",
+      "Edit(.env)",
+      "Edit(pnpm-lock.yaml)",
+      "Edit(skills-lock.json)"
     ],
     "ask": [
-      "Write(.agents/*)",
+      "Edit(.agents/*)",
       "Bash(rm*)"
     ],
     "defaultMode": "acceptEdits"
   },
   "enabledPlugins": {
-    "tsumiki@tsumiki": true
   },
   "sandbox": {
     "enabled": true,
