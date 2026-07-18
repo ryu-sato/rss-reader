@@ -59,14 +59,19 @@ export function EntryCardGrid({
   const router = useRouter()
 
   const [entries, setEntries] = useState<EntryListItem[]>(initialEntries)
-  const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(initialPagination.hasNext)
   const [isLoading, setIsLoading] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
+  // loadMore の afterId 算出用。entries を直接 useCallback の依存に入れると
+  // 記事一覧が更新されるたびに loadMore(延いては IntersectionObserver) が
+  // 作り直されてしまうため、ref 経由で最新値だけを参照する。
+  const entriesRef = useRef(entries)
+  useEffect(() => { entriesRef.current = entries }, [entries])
 
   const [navEntries, setNavEntries] = useState<EntryListItem[]>([])
-  const [navPage, setNavPage] = useState(1)
   const [navHasMore, setNavHasMore] = useState(false)
+  const navEntriesRef = useRef(navEntries)
+  useEffect(() => { navEntriesRef.current = navEntries }, [navEntries])
   const [isNavLoading, setIsNavLoading] = useState(false)
   const [pendingNavigateNext, setPendingNavigateNext] = useState(false)
   const hasNavSnapshotRef = useRef(false)
@@ -96,7 +101,6 @@ export function EntryCardGrid({
   useEffect(() => {
     if (!selectedEntryId) {
       setEntries(initialEntries)
-      setPage(1)
       setHasMore(initialPagination.hasNext)
     }
   }, [initialEntries, initialPagination, selectedEntryId])
@@ -105,12 +109,10 @@ export function EntryCardGrid({
     if (selectedEntryId && !hasNavSnapshotRef.current) {
       hasNavSnapshotRef.current = true
       setNavEntries([...entries])
-      setNavPage(page)
       setNavHasMore(hasMore)
     } else if (!selectedEntryId && hasNavSnapshotRef.current) {
       hasNavSnapshotRef.current = false
       setNavEntries([])
-      setNavPage(1)
       setNavHasMore(false)
       setPendingNavigateNext(false)
       prefetchCacheRef.current.clear()
@@ -183,9 +185,9 @@ export function EntryCardGrid({
     if (isLoading || !hasMore) return
     setIsLoading(true)
     try {
-      const nextPage = page + 1
+      const afterId = entriesRef.current[entriesRef.current.length - 1]?.id
       const params = new URLSearchParams()
-      params.set('page', String(nextPage))
+      if (afterId) params.set('afterId', afterId)
       params.set('limit', String(initialPagination.limit))
       if (feedId) params.set('feedId', feedId)
       if (tagId) params.set('tagId', tagId)
@@ -206,20 +208,24 @@ export function EntryCardGrid({
         const newEntries = json.data.filter((e) => !existingIds.has(e.id))
         return newEntries.length > 0 ? [...prev, ...newEntries] : prev
       })
-      setPage(nextPage)
       setHasMore(json.pagination.hasNext)
     } finally {
       setIsLoading(false)
     }
-  }, [isLoading, hasMore, page, feedId, tagId, search, isReadLater, isUnread, isPreferred, userPreferenceId, isAnyPreferred, sortOrder, scoreThreshold, initialPagination.limit])
+  // entries.length を依存に含めるのは、ページ読み込み成功後に IntersectionObserver を
+  // 作り直させるため。実ブラウザでも observe() 呼び出しは現在の交差状態を即座に通知するため、
+  // これがビューポート内にセンチネルが留まったまま次ページを連続で読み込むための仕組みになる。
+  // entries を丸ごと依存に入れると既読トグル等の更新でも作り直しが走ってしまうため length のみ見る。
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, hasMore, entries.length, feedId, tagId, search, isReadLater, isUnread, isPreferred, userPreferenceId, isAnyPreferred, sortOrder, scoreThreshold, initialPagination.limit])
 
   const loadNavMore = useCallback(async () => {
     if (isNavLoading || !navHasMore) return
     setIsNavLoading(true)
     try {
-      const nextPage = navPage + 1
+      const afterId = navEntriesRef.current[navEntriesRef.current.length - 1]?.id
       const params = new URLSearchParams()
-      params.set('page', String(nextPage))
+      if (afterId) params.set('afterId', afterId)
       params.set('limit', String(initialPagination.limit))
       if (feedId) params.set('feedId', feedId)
       if (tagId) params.set('tagId', tagId)
@@ -240,7 +246,6 @@ export function EntryCardGrid({
         const newEntries = json.data.filter((e: { id: string }) => !existingIds.has(e.id))
         return [...prev, ...newEntries]
       })
-      setNavPage(nextPage)
       setNavHasMore(json.pagination.hasNext)
       setEntries((prev) => {
         const existingIds = new Set(prev.map((e) => e.id))
@@ -250,11 +255,11 @@ export function EntryCardGrid({
     } finally {
       setIsNavLoading(false)
     }
-  }, [isNavLoading, navHasMore, navPage, feedId, tagId, search, isReadLater, isUnread, isPreferred, userPreferenceId, isAnyPreferred, sortOrder, scoreThreshold, initialPagination.limit])
+  }, [isNavLoading, navHasMore, feedId, tagId, search, isReadLater, isUnread, isPreferred, userPreferenceId, isAnyPreferred, sortOrder, scoreThreshold, initialPagination.limit])
 
   useEffect(() => {
     const sentinel = sentinelRef.current
-    if (!sentinel) return
+    if (!sentinel || typeof IntersectionObserver === 'undefined') return
     const observer = new IntersectionObserver(
       (observations) => { if (observations[0].isIntersecting) loadMore() },
       { rootMargin: '200px' }

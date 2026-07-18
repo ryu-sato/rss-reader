@@ -17,37 +17,45 @@ export async function findManyEntries(query: GetEntriesQuery) {
   const threshold = scoreThreshold ?? PREFRRED_SCORE_THRESHOLD
 
   // feedId 未指定 & ページネーション時は URL 重複排除を適用
-  if (!feedId && !afterId && !beforeId) {
-    return findManyEntriesDedup({ tagId, search, page, limit, isReadLater, isUnread, userPreferenceId, isAnyPreferred, sortOrder, scoreThreshold: threshold })
+  if (!feedId) {
+    return findManyEntriesDedup({ tagId, search, page, limit, afterId, isReadLater, isUnread, userPreferenceId, isAnyPreferred, sortOrder, scoreThreshold: threshold })
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: Record<string, any> = {}
-  if (feedId) where.feedId = feedId
-  if (tagId) where.tags = { some: { tagId } }
-  if (search) where.title = { contains: search }
-  if (isReadLater) where.meta = { isReadLater: true }
-  if (isUnread) where.OR = [{ meta: null }, { meta: { isRead: false } }]
-  if (userPreferenceId) where.scores = { and: [{ userPreferenceId }, { score: { gte: threshold } }] };
-  if (isAnyPreferred) where.scores = { some: { score: { gte: threshold } } };
+  const baseWhere: Record<string, any> = {}
+  if (feedId) baseWhere.feedId = feedId
+  if (tagId) baseWhere.tags = { some: { tagId } }
+  if (search) baseWhere.title = { contains: search }
+  if (isReadLater) baseWhere.meta = { isReadLater: true }
+  if (isUnread) baseWhere.OR = [{ meta: null }, { meta: { isRead: false } }]
+  if (userPreferenceId) baseWhere.scores = { and: [{ userPreferenceId }, { score: { gte: threshold } }] };
+  if (isAnyPreferred) baseWhere.scores = { some: { score: { gte: threshold } } };
 
-  // カーソルベースの前後ナビ
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let where: Record<string, any> = baseWhere
+
+  // カーソルベースの前後ナビ。isUnread 等のフィルタは既読化のような副作用で
+  // マッチする集合が縮むことがあるため、offset(skip) ではなく直前に見たエントリの
+  // 日時を基準にした比較で「まだ見ていない次の1件」を確実に取得する。
   if (afterId || beforeId) {
     const pivotId = (afterId ?? beforeId)!
     const pivot = await prisma.entry.findUnique({ where: { id: pivotId } })
     if (pivot) {
       const pivotDate = pivot.publishedAt ?? pivot.createdAt
-      if (afterId) {
-        where.OR = [
-          { publishedAt: { lt: pivotDate } },
-          { publishedAt: null, createdAt: { lt: pivot.createdAt } },
-        ]
-      } else {
-        where.OR = [
-          { publishedAt: { gt: pivotDate } },
-          { publishedAt: null, createdAt: { gt: pivot.createdAt } },
-        ]
-      }
+      const cursorCond = afterId
+        ? {
+            OR: [
+              { publishedAt: { lt: pivotDate } },
+              { publishedAt: null, createdAt: { lt: pivot.createdAt } },
+            ],
+          }
+        : {
+            OR: [
+              { publishedAt: { gt: pivotDate } },
+              { publishedAt: null, createdAt: { gt: pivot.createdAt } },
+            ],
+          }
+      where = { AND: [baseWhere, cursorCond] }
     }
   }
 
@@ -62,14 +70,17 @@ export async function findManyEntries(query: GetEntriesQuery) {
     prisma.entry.findMany({
       where,
       orderBy,
-      take: limit,
+      take: limit + 1,
       skip,
       include: ENTRY_INCLUDE,
     }),
-    prisma.entry.count({ where }),
+    prisma.entry.count({ where: baseWhere }),
   ])
 
-  const entries = beforeId ? rawEntries.reverse() : rawEntries
+  // limit+1 件取得して、実際に次があるかを直接判定する(集合が縮んでも狂わない)
+  const hasMore = rawEntries.length > limit
+  const sliced = hasMore ? rawEntries.slice(0, limit) : rawEntries
+  const entries = beforeId ? sliced.reverse() : sliced
 
   return {
     entries,
@@ -77,7 +88,7 @@ export async function findManyEntries(query: GetEntriesQuery) {
       page,
       limit,
       total,
-      hasNext: total > page * limit,
+      hasNext: hasMore,
       hasPrev: page > 1,
     },
   }
@@ -89,6 +100,7 @@ async function findManyEntriesDedup(query: {
   search?: string
   page: number
   limit: number
+  afterId?: string
   isReadLater?: boolean
   isUnread?: boolean
   userPreferenceId?: string
@@ -96,35 +108,67 @@ async function findManyEntriesDedup(query: {
   sortOrder?: 'asc' | 'desc'
   scoreThreshold?: number
 }) {
-  const { tagId, search, page, limit, isReadLater, isUnread, userPreferenceId, isAnyPreferred, sortOrder = 'desc', scoreThreshold = PREFRRED_SCORE_THRESHOLD } = query;
-  const skip = (page - 1) * limit;
+  const { tagId, search, page, limit, afterId, isReadLater, isUnread, userPreferenceId, isAnyPreferred, sortOrder = 'desc', scoreThreshold = PREFRRED_SCORE_THRESHOLD } = query;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: Record<string, any> = {};
-  if (tagId) where.tags = { some: { tagId } };
-  if (search) where.title = { contains: search };
-  if (isReadLater) where.meta = { isReadLater: true };
-  if (isUnread) where.OR = [{ meta: null }, { meta: { isRead: false } }];
-  if (userPreferenceId) where.scores = { some: { preferenceId: userPreferenceId, score: { gte: scoreThreshold } } };
-  if (isAnyPreferred) where.scores = { some: { score: { gte: scoreThreshold } } };
+  const baseWhere: Record<string, any> = {};
+  if (tagId) baseWhere.tags = { some: { tagId } };
+  if (search) baseWhere.title = { contains: search };
+  if (isReadLater) baseWhere.meta = { isReadLater: true };
+  if (isUnread) baseWhere.OR = [{ meta: null }, { meta: { isRead: false } }];
+  if (userPreferenceId) baseWhere.scores = { some: { preferenceId: userPreferenceId, score: { gte: scoreThreshold } } };
+  if (isAnyPreferred) baseWhere.scores = { some: { score: { gte: scoreThreshold } } };
 
-  const entries = await prisma.entry.findMany({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let where: Record<string, any> = baseWhere
+  let skip = (page - 1) * limit
+
+  // カーソルベースの次頁取得。isUnread のように「開くと対象集合から外れる」フィルタでは、
+  // offset(skip) は既読化のたびにページ境界がずれて未読記事を永久に読み飛ばしてしまうため、
+  // 直前に見たエントリの effectedDate/id を基準に「まだ見ていない次の1件」を確実に取得する。
+  // effectedDate は一意でない(同時刻投入があり得る)ため id をタイブレーカーに使う。
+  if (afterId) {
+    const pivot = await prisma.entry.findUnique({ where: { id: afterId }, select: { effectedDate: true, id: true } })
+    if (pivot) {
+      const cursorCond = sortOrder === 'asc'
+        ? {
+            OR: [
+              { effectedDate: { gt: pivot.effectedDate } },
+              { effectedDate: pivot.effectedDate, id: { gt: pivot.id } },
+            ],
+          }
+        : {
+            OR: [
+              { effectedDate: { lt: pivot.effectedDate } },
+              { effectedDate: pivot.effectedDate, id: { lt: pivot.id } },
+            ],
+          }
+      where = { AND: [baseWhere, cursorCond] }
+      skip = 0
+    }
+  }
+
+  const rawEntries = await prisma.entry.findMany({
     where,
     distinct: ['link'],
-    orderBy: { effectedDate: sortOrder },
+    orderBy: [{ effectedDate: sortOrder }, { id: sortOrder }],
     include: ENTRY_INCLUDE,
     skip,
-    take: limit,
+    take: limit + 1,
   });
   const aggregate = await prisma.entry.aggregate({
-    where,
+    where: baseWhere,
     _count: { link: true },
   });
   const total = aggregate._count.link;
 
+  // limit+1 件取得して、実際に次があるかを直接判定する(集合が縮んでも狂わない)
+  const hasMore = rawEntries.length > limit
+  const entries = hasMore ? rawEntries.slice(0, limit) : rawEntries
+
   return {
     entries,
-    pagination: { page, limit, total, hasNext: total > page * limit, hasPrev: page > 1 },
+    pagination: { page, limit, total, hasNext: hasMore, hasPrev: page > 1 },
   }
 }
 
