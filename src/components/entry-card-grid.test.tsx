@@ -9,7 +9,7 @@ import type { EntryListItem } from '@/types/entry'
 // ------------------------------------------------------------
 
 // ArticleModal のテスト代替 — hasNext/hasPrev の状態と現在の entryId を DOM に公開する
-vi.mock('@/components/article-modal', () => ({
+vi.mock('@/features/entry-viewing/components/article-modal', () => ({
   ArticleModal: ({
     entryId,
     hasNext,
@@ -61,7 +61,7 @@ vi.mock('next/dynamic', () => ({
 }))
 
 // EntryCard のテスト代替 — next/image や Base UI Tooltip の jsdom 非互換を回避する
-vi.mock('@/components/entry-card', () => ({
+vi.mock('@/features/entry-viewing/components/entry-card', () => ({
   EntryCard: ({
     entry,
     onClick,
