@@ -235,7 +235,11 @@ export function EntryCardGrid({
       const res = await fetch(`/api/entries?${params.toString()}`)
       if (!res.ok) return
       const json = await res.json()
-      setNavEntries((prev) => [...prev, ...json.data])
+      setNavEntries((prev) => {
+        const existingIds = new Set(prev.map((e) => e.id))
+        const newEntries = json.data.filter((e: { id: string }) => !existingIds.has(e.id))
+        return [...prev, ...newEntries]
+      })
       setNavPage(nextPage)
       setNavHasMore(json.pagination.hasNext)
       setEntries((prev) => {
