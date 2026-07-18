@@ -274,6 +274,7 @@ export function EntryCardGrid({
       fetch(`/api/entries/${id}`)
         .then((r) => r.json())
         .then((json) => { if (json.success) prefetchCacheRef.current.set(id, json.data) })
+        .catch(() => {})
         .finally(() => prefetchingRef.current.delete(id))
     }
   }, [navIndex, navEntries, selectedEntryId])
