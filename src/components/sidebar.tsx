@@ -215,7 +215,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0 scrollbar-hide">
         <nav className="py-2">
           <Link
             href="/"
