@@ -65,7 +65,7 @@ describe('EntryList', () => {
 
   it('shows empty message when no entries', () => {
     render(<EntryList entries={[]} pagination={{ ...samplePagination, total: 0 }} />)
-    expect(screen.getByText('No entries found. Add some feeds to get started.')).toBeDefined()
+    expect(screen.getByText('記事がありません')).toBeDefined()
   })
 
   it('opens modal on entry click by updating URL', () => {
@@ -75,20 +75,21 @@ describe('EntryList', () => {
   })
 
   it('shows Previous button disabled on page 1', () => {
-    render(<EntryList entries={sampleEntries} pagination={{ ...samplePagination, hasPrev: false }} />)
-    const prevBtn = screen.getByRole('button', { name: 'Previous' })
+    // ページネーションバーは hasPrev/hasNext のどちらかが true でないと表示されない
+    render(<EntryList entries={sampleEntries} pagination={{ ...samplePagination, hasPrev: false, hasNext: true }} />)
+    const prevBtn = screen.getByRole('button', { name: '前のページ' })
     expect(prevBtn.hasAttribute('disabled')).toBe(true)
   })
 
   it('shows Next button disabled when no next page', () => {
-    render(<EntryList entries={sampleEntries} pagination={{ ...samplePagination, hasNext: false }} />)
-    const nextBtn = screen.getByRole('button', { name: 'Next' })
+    render(<EntryList entries={sampleEntries} pagination={{ ...samplePagination, hasPrev: true, hasNext: false }} />)
+    const nextBtn = screen.getByRole('button', { name: '次のページ' })
     expect(nextBtn.hasAttribute('disabled')).toBe(true)
   })
 
   it('navigates to next page on Next button click', () => {
     render(<EntryList entries={sampleEntries} pagination={{ ...samplePagination, hasNext: true }} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    fireEvent.click(screen.getByRole('button', { name: '次のページ' }))
     expect(mockPush).toHaveBeenCalledWith(expect.stringContaining('page=2'))
   })
 

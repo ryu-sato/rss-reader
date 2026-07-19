@@ -14,35 +14,35 @@ beforeEach(() => {
 describe('FeedForm', () => {
   it('renders URL input and submit button', () => {
     render(<FeedForm />)
-    expect(screen.getByLabelText(/RSS Feed URL/i)).toBeDefined()
-    expect(screen.getByRole('button', { name: /Register Feed/i })).toBeDefined()
+    expect(screen.getByLabelText(/フィードURL/)).toBeDefined()
+    expect(screen.getByRole('button', { name: /フィードを登録/ })).toBeDefined()
   })
 
   it('shows loading state while submitting', async () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
     render(<FeedForm />)
 
-    const input = screen.getByLabelText(/RSS Feed URL/i)
-    const button = screen.getByRole('button', { name: /Register Feed/i })
+    const input = screen.getByLabelText(/フィードURL/)
+    const button = screen.getByRole('button', { name: /フィードを登録/ })
 
     await userEvent.type(input, 'https://example.com/feed.xml')
     fireEvent.click(button)
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Registering/i })).toBeDefined()
+      expect(screen.getByRole('button', { name: /登録中/ })).toBeDefined()
     })
   })
 
   it('shows error when URL does not start with http/https', async () => {
     render(<FeedForm />)
 
-    const input = screen.getByLabelText(/RSS Feed URL/i)
+    const input = screen.getByLabelText(/フィードURL/)
     await userEvent.type(input, 'not-a-url')
     fireEvent.submit(input.closest('form')!)
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeDefined()
-      expect(screen.getByText(/URL must start with http/)).toBeDefined()
+      expect(screen.getByText(/http:\/\/またはhttps:\/\/で始まる必要があります/)).toBeDefined()
     })
   })
 
@@ -53,7 +53,7 @@ describe('FeedForm', () => {
     }))
     render(<FeedForm />)
 
-    const input = screen.getByLabelText(/RSS Feed URL/i)
+    const input = screen.getByLabelText(/フィードURL/)
     await userEvent.type(input, 'https://example.com/feed.xml')
     fireEvent.submit(input.closest('form')!)
 
@@ -74,7 +74,7 @@ describe('FeedForm', () => {
     }))
     render(<FeedForm />)
 
-    const input = screen.getByLabelText(/RSS Feed URL/i) as HTMLInputElement
+    const input = screen.getByLabelText(/フィードURL/) as HTMLInputElement
     await userEvent.type(input, 'https://example.com/feed.xml')
     fireEvent.submit(input.closest('form')!)
 

@@ -9,12 +9,12 @@ vi.mock('next/navigation', () => ({
 describe('NewFeedPage', () => {
   it('renders page title and back link', () => {
     render(<NewFeedPage />)
-    expect(screen.getByText('Add New Feed')).toBeDefined()
-    expect(screen.getByText(/Back to feeds/i)).toBeDefined()
+    expect(screen.getByText('フィードを追加')).toBeDefined()
+    expect(screen.getByText(/フィード管理に戻る/)).toBeDefined()
   })
 
   it('renders feed form', () => {
     render(<NewFeedPage />)
-    expect(screen.getByLabelText(/RSS Feed URL/i)).toBeDefined()
+    expect(screen.getByLabelText(/フィードURL/)).toBeDefined()
   })
 })

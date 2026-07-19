@@ -5,6 +5,7 @@ import { EntryModal } from './entry-modal'
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
   useSearchParams: () => new URLSearchParams(),
+  usePathname: () => '/',
 }))
 
 const sampleEntry = {

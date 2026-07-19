@@ -30,13 +30,13 @@ describe('EditFeedForm', () => {
   it('shows existing values as initial state', () => {
     render(<EditFeedForm feed={sampleFeed} />)
 
-    const titleInput = screen.getByLabelText(/Title/i) as HTMLInputElement
+    const titleInput = screen.getByLabelText(/タイトル/) as HTMLInputElement
     expect(titleInput.value).toBe('Example Blog')
 
-    const descInput = screen.getByLabelText(/Description/i) as HTMLTextAreaElement
+    const descInput = screen.getByLabelText(/説明/) as HTMLTextAreaElement
     expect(descInput.value).toBe('Blog description')
 
-    const memoInput = screen.getByLabelText(/Memo/i) as HTMLTextAreaElement
+    const memoInput = screen.getByLabelText(/メモ/) as HTMLTextAreaElement
     expect(memoInput.value).toBe('My note')
   })
 
@@ -54,7 +54,7 @@ describe('EditFeedForm', () => {
 
     render(<EditFeedForm feed={sampleFeed} />)
 
-    const titleInput = screen.getByLabelText(/Title/i)
+    const titleInput = screen.getByLabelText(/タイトル/)
     await userEvent.clear(titleInput)
     await userEvent.type(titleInput, 'New Title')
 
@@ -65,20 +65,20 @@ describe('EditFeedForm', () => {
         '/api/feeds/feed-1',
         expect.objectContaining({ method: 'PUT' })
       )
-      expect(mockPush).toHaveBeenCalledWith('/')
+      expect(mockPush).toHaveBeenCalledWith('/feeds')
     })
   })
 
   it('shows error when title is empty', async () => {
     render(<EditFeedForm feed={sampleFeed} />)
 
-    const titleInput = screen.getByLabelText(/Title/i)
+    const titleInput = screen.getByLabelText(/タイトル/)
     await userEvent.clear(titleInput)
     fireEvent.submit(titleInput.closest('form')!)
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeDefined()
-      expect(screen.getByText(/Title cannot be empty/)).toBeDefined()
+      expect(screen.getByText(/タイトルを入力してください/)).toBeDefined()
     })
   })
 })

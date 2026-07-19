@@ -22,7 +22,7 @@ describe('FeedList', () => {
 
   it('shows empty message when no feeds', () => {
     render(<FeedList feeds={[]} />)
-    expect(screen.getByText(/No feeds registered yet/)).toBeDefined()
+    expect(screen.getByText(/No feeds yet/)).toBeDefined()
   })
 
   it('has edit links for each feed', () => {

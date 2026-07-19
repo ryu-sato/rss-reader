@@ -12,6 +12,11 @@ vi.mock('@/lib/db', () => ({
       findMany: vi.fn(),
       deleteMany: vi.fn(),
     },
+    entryMeta: {
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
+    },
   },
 }))
 
@@ -19,18 +24,19 @@ vi.mock('@/lib/ssrf-guard', () => ({
   validateUrl: vi.fn(),
 }))
 
-vi.mock('@/lib/entry-fetcher', () => ({
+vi.mock('@/features/feed-management/lib/entry-fetcher', () => ({
   fetchEntries: vi.fn(),
 }))
 
 import { prisma } from '@/lib/db'
 import { validateUrl } from '@/lib/ssrf-guard'
-import { fetchEntries } from '@/lib/entry-fetcher'
+import { fetchEntries } from '@/features/feed-management/lib/entry-fetcher'
 import { saveEntries, enforceEntryLimit, fetchAllFeedsEntries } from '../entry-service'
-import type { FetchedEntryData } from '@/types/entry'
+import type { FetchedEntryData } from '@/features/entry-viewing/types/entry'
 
 const mockEntry = vi.mocked(prisma.entry)
 const mockFeed = vi.mocked(prisma.feed)
+const mockEntryMeta = vi.mocked(prisma.entryMeta)
 const mockValidateUrl = vi.mocked(validateUrl)
 const mockFetchEntries = vi.mocked(fetchEntries)
 
@@ -68,6 +74,9 @@ const sampleFeed = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // 同一 link の既読連動チェック用。デフォルトでは「メタなし・既読な兄弟なし」を返す
+  mockEntryMeta.findUnique.mockResolvedValue(null)
+  mockEntryMeta.findFirst.mockResolvedValue(null)
 })
 
 describe('saveEntries', () => {

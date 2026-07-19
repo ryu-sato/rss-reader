@@ -9,6 +9,7 @@ vi.mock('@/lib/db', () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    $queryRaw: vi.fn(),
   },
 }))
 
@@ -16,17 +17,18 @@ vi.mock('@/lib/ssrf-guard', () => ({
   validateUrl: vi.fn(),
 }))
 
-vi.mock('@/lib/rss-fetcher', () => ({
+vi.mock('@/features/feed-management/lib/rss-fetcher', () => ({
   fetchFeed: vi.fn(),
 }))
 
 import { prisma } from '@/lib/db'
 import { validateUrl } from '@/lib/ssrf-guard'
-import { fetchFeed } from '@/lib/rss-fetcher'
+import { fetchFeed } from '@/features/feed-management/lib/rss-fetcher'
 import { createFeed, getAllFeeds, getFeedById, updateFeed, deleteFeed } from './feed-service'
 import { ConflictError, NotFoundError, SSRFError } from './errors'
 
 const mockFeed = vi.mocked(prisma.feed)
+const mockQueryRaw = vi.mocked(prisma.$queryRaw)
 const mockValidateUrl = vi.mocked(validateUrl)
 const mockFetchFeed = vi.mocked(fetchFeed)
 
@@ -76,20 +78,22 @@ describe('createFeed', () => {
 })
 
 describe('getAllFeeds', () => {
-  it('returns feeds ordered by createdAt desc', async () => {
-    const feeds = [
-      { id: '1', title: 'Feed 1', url: 'https://a.com', createdAt: new Date('2026-01-02'), updatedAt: new Date() },
-      { id: '2', title: 'Feed 2', url: 'https://b.com', createdAt: new Date('2026-01-01'), updatedAt: new Date() },
-    ]
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockFeed.findMany.mockResolvedValue(feeds as any)
+  it('returns feeds with unreadCount, ordered by lastPublishedAt desc', async () => {
+    mockFeed.findMany.mockResolvedValue([
+      { id: '1', title: 'Feed 1', url: 'https://a.com', faviconUrl: null, createdAt: new Date('2026-01-02'), updatedAt: new Date('2026-01-02'), _count: { entries: 3 } },
+      { id: '2', title: 'Feed 2', url: 'https://b.com', faviconUrl: null, createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-01-01'), _count: { entries: 0 } },
+    ] as never)
+    mockQueryRaw.mockResolvedValue([
+      { feedId: '1', lastPublishedAt: '2026-01-05T00:00:00.000Z' },
+      { feedId: '2', lastPublishedAt: '2026-01-10T00:00:00.000Z' },
+    ] as never)
 
     const result = await getAllFeeds()
-    expect(result).toEqual(feeds)
-    expect(mockFeed.findMany).toHaveBeenCalledWith({
-      orderBy: { createdAt: 'desc' },
-      select: { id: true, title: true, url: true, faviconUrl: true, createdAt: true, updatedAt: true },
-    })
+
+    // feed-2 の方が lastPublishedAt が新しいので先頭に来る
+    expect(result.map((f) => f.id)).toEqual(['2', '1'])
+    expect(result[0].unreadCount).toBe(0)
+    expect(result[1].unreadCount).toBe(3)
   })
 })
 

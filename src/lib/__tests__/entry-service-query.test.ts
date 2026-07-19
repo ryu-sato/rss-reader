@@ -6,13 +6,13 @@ vi.mock('@/lib/db', () => ({
       findMany: vi.fn(),
       findUnique: vi.fn(),
       count: vi.fn(),
+      aggregate: vi.fn(),
     },
     entryMeta: {
       upsert: vi.fn(),
       update: vi.fn(),
       findUnique: vi.fn(),
     },
-    $queryRawUnsafe: vi.fn(),
   },
 }))
 
@@ -21,7 +21,6 @@ import { findManyEntries, getEntryById, updateEntryMeta } from '../entry-service
 
 const mockEntry = vi.mocked(prisma.entry)
 const mockEntryMeta = vi.mocked(prisma.entryMeta)
-const mockQueryRawUnsafe = vi.mocked(prisma.$queryRawUnsafe as (...args: unknown[]) => Promise<unknown>)
 
 const sampleEntry = {
   id: 'entry-1',
@@ -44,12 +43,10 @@ beforeEach(() => {
 })
 
 describe('findManyEntries', () => {
-  // feedId 未指定 → 重複排除パス ($queryRawUnsafe を使用)
+  // feedId 未指定 → 重複排除パス (prisma.entry.findMany distinct: ['link'] を使用)
   it('returns entries with pagination (default page=1, limit=20)', async () => {
-    mockQueryRawUnsafe
-      .mockResolvedValueOnce([{ id: 'entry-1' }] as never) // IDs query
-      .mockResolvedValueOnce([{ count: BigInt(1) }] as never) // count query
-    mockEntry.findMany.mockResolvedValue([sampleEntry] as never)
+    mockEntry.findMany.mockResolvedValue([sampleEntry] as never) // limit(20)+1 未満 → hasNext=false
+    mockEntry.aggregate.mockResolvedValue({ _count: { link: 1 } } as never)
 
     const result = await findManyEntries({})
 
@@ -77,18 +74,17 @@ describe('findManyEntries', () => {
   })
 
   it('filters by tagId when provided', async () => {
-    mockQueryRawUnsafe
-      .mockResolvedValueOnce([] as never) // IDs query
-      .mockResolvedValueOnce([{ count: BigInt(0) }] as never) // count query
+    mockEntry.findMany.mockResolvedValue([] as never)
+    mockEntry.aggregate.mockResolvedValue({ _count: { link: 0 } } as never)
 
     await findManyEntries({ tagId: 'tag-1' })
 
-    // tagId は raw SQL の EXISTS 句で適用される
-    expect(mockQueryRawUnsafe).toHaveBeenCalledWith(
-      expect.stringContaining('entry_tags'),
-      'tag-1',
-      expect.any(Number),
-      expect.any(Number)
+    // feedId 未指定時は distinct(重複排除)しつつ tags リレーションで絞り込む
+    expect(mockEntry.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ tags: { some: { tagId: 'tag-1' } } }),
+        distinct: ['link'],
+      })
     )
   })
 
@@ -110,22 +106,20 @@ describe('findManyEntries', () => {
   })
 
   it('sets hasNext=true when total exceeds page*limit', async () => {
-    mockQueryRawUnsafe
-      .mockResolvedValueOnce(Array(20).fill({ id: 'entry-1' }) as never)
-      .mockResolvedValueOnce([{ count: BigInt(25) }] as never)
-    mockEntry.findMany.mockResolvedValue(Array(20).fill(sampleEntry) as never)
+    // limit+1 件取得して次があるかを判定するため、limit(20)+1=21件を返す
+    mockEntry.findMany.mockResolvedValue(Array(21).fill(sampleEntry) as never)
+    mockEntry.aggregate.mockResolvedValue({ _count: { link: 25 } } as never)
 
     const result = await findManyEntries({ page: 1, limit: 20 })
 
+    expect(result.entries).toHaveLength(20)
     expect(result.pagination.hasNext).toBe(true)
     expect(result.pagination.hasPrev).toBe(false)
   })
 
   it('sets hasPrev=true on page 2+', async () => {
-    mockQueryRawUnsafe
-      .mockResolvedValueOnce([{ id: 'entry-1' }] as never)
-      .mockResolvedValueOnce([{ count: BigInt(25) }] as never)
     mockEntry.findMany.mockResolvedValue([sampleEntry] as never)
+    mockEntry.aggregate.mockResolvedValue({ _count: { link: 25 } } as never)
 
     const result = await findManyEntries({ page: 2, limit: 20 })
 
@@ -133,11 +127,9 @@ describe('findManyEntries', () => {
     expect(result.pagination.page).toBe(2)
   })
 
-  it('includes feed, meta, tags in response', async () => {
-    mockQueryRawUnsafe
-      .mockResolvedValueOnce([{ id: 'entry-1' }] as never)
-      .mockResolvedValueOnce([{ count: BigInt(1) }] as never)
+  it('includes feed, meta in response', async () => {
     mockEntry.findMany.mockResolvedValue([sampleEntry] as never)
+    mockEntry.aggregate.mockResolvedValue({ _count: { link: 1 } } as never)
 
     await findManyEntries({})
 
@@ -146,7 +138,6 @@ describe('findManyEntries', () => {
         include: expect.objectContaining({
           feed: expect.any(Object),
           meta: true,
-          tags: expect.any(Object),
         }),
       })
     )
