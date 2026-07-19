@@ -139,8 +139,12 @@ export function EntryCardGrid({
       // モーダル表示中に溜めておいた変更をここでまとめて反映し、
       // 現在のフィルタ（未読のみ／あとで読む）を適用し直す。
       isModalOpenRef.current = false
-      const metaPatches = pendingMetaPatchesRef.current
+      // setEntries の更新関数は非同期に実行されるため、ref をそのまま渡すと
+      // 直後の clear() が先に効いてしまう。呼び出し時点の内容をコピーして使う。
+      const metaPatches = new Map(pendingMetaPatchesRef.current)
       const appended = pendingAppendEntriesRef.current
+      pendingMetaPatchesRef.current = new Map()
+      pendingAppendEntriesRef.current = []
       setEntries((prev) => {
         let next = prev
         if (appended.length > 0) {
@@ -158,8 +162,6 @@ export function EntryCardGrid({
         if (isReadLater) next = next.filter((entry) => entry.meta?.isReadLater)
         return next
       })
-      metaPatches.clear()
-      pendingAppendEntriesRef.current = []
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEntryId, isUnread, isReadLater])
