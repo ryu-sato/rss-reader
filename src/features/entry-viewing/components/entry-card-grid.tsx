@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Rss, Tags, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import type { EntryDetail, EntryListItem } from '@/features/entry-viewing/types/entry'
+import type { EntryDetail, EntryListItem, EntryMeta, UpdateEntryMetaInput } from '@/features/entry-viewing/types/entry'
 import dynamic from 'next/dynamic'
 import { EntryCard } from '@/features/entry-viewing/components/entry-card'
 import { BulkTagBar } from '@/features/tag-management/components/bulk-tag-bar'
@@ -14,6 +14,23 @@ const ArticleModal = dynamic(
   () => import('@/features/entry-viewing/components/article-modal').then((m) => m.ArticleModal),
   { ssr: false }
 )
+
+// meta が未作成（null）のエントリーにもパッチを反映できるよう、必要なフィールドを補って生成する。
+// meta が null = 未読/あとで読む未登録 という意味なので、isRead/isReadLater 以外はダミー値でよい。
+function applyMetaPatch(entry: EntryListItem, patch: UpdateEntryMetaInput): EntryListItem {
+  const meta: EntryMeta = entry.meta
+    ? { ...entry.meta, ...patch }
+    : {
+        id: '',
+        entryId: entry.id,
+        isRead: false,
+        isReadLater: false,
+        createdAt: entry.createdAt,
+        updatedAt: entry.createdAt,
+        ...patch,
+      }
+  return { ...entry, meta }
+}
 
 interface Pagination {
   page: number
@@ -76,6 +93,13 @@ export function EntryCardGrid({
   const [pendingNavigateNext, setPendingNavigateNext] = useState(false)
   const hasNavSnapshotRef = useRef(false)
 
+  // モーダル表示中（開始〜終了、prev/next での遷移も含む）は背後の一覧を更新せず、
+  // 発生した変更（既読/あとで読むの切り替え、ページ送りで新たに読み込んだ記事）を
+  // ここに溜めておき、モーダルが閉じたタイミングでまとめて反映する。
+  const isModalOpenRef = useRef(false)
+  const pendingMetaPatchesRef = useRef<Map<string, UpdateEntryMetaInput>>(new Map())
+  const pendingAppendEntriesRef = useRef<EntryListItem[]>([])
+
   const prefetchCacheRef = useRef<Map<string, EntryDetail>>(new Map())
   const prefetchingRef = useRef<Set<string>>(new Set())
 
@@ -99,15 +123,9 @@ export function EntryCardGrid({
   const navIndex = selectedEntryId ? navEntries.findIndex((e) => e.id === selectedEntryId) : -1
 
   useEffect(() => {
-    if (!selectedEntryId) {
-      setEntries(initialEntries)
-      setHasMore(initialPagination.hasNext)
-    }
-  }, [initialEntries, initialPagination, selectedEntryId])
-
-  useEffect(() => {
     if (selectedEntryId && !hasNavSnapshotRef.current) {
       hasNavSnapshotRef.current = true
+      isModalOpenRef.current = true
       setNavEntries([...entries])
       setNavHasMore(hasMore)
     } else if (!selectedEntryId && hasNavSnapshotRef.current) {
@@ -117,13 +135,45 @@ export function EntryCardGrid({
       setPendingNavigateNext(false)
       prefetchCacheRef.current.clear()
       prefetchingRef.current.clear()
+
+      // モーダル表示中に溜めておいた変更をここでまとめて反映し、
+      // 現在のフィルタ（未読のみ／あとで読む）を適用し直す。
+      isModalOpenRef.current = false
+      const metaPatches = pendingMetaPatchesRef.current
+      const appended = pendingAppendEntriesRef.current
+      setEntries((prev) => {
+        let next = prev
+        if (appended.length > 0) {
+          const existingIds = new Set(next.map((e) => e.id))
+          const toAppend = appended.filter((e) => !existingIds.has(e.id))
+          if (toAppend.length > 0) next = [...next, ...toAppend]
+        }
+        if (metaPatches.size > 0) {
+          next = next.map((entry) => {
+            const patch = metaPatches.get(entry.id)
+            return patch ? applyMetaPatch(entry, patch) : entry
+          })
+        }
+        if (isUnread) next = next.filter((entry) => !entry.meta?.isRead)
+        if (isReadLater) next = next.filter((entry) => entry.meta?.isReadLater)
+        return next
+      })
+      metaPatches.clear()
+      pendingAppendEntriesRef.current = []
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedEntryId])
+  }, [selectedEntryId, isUnread, isReadLater])
 
   useEffect(() => {
     const markRead = (e: Event) => {
       const { entryId: readEntryId } = (e as CustomEvent<{ entryId: string; feedId: string }>).detail
+      if (isModalOpenRef.current) {
+        pendingMetaPatchesRef.current.set(readEntryId, {
+          ...pendingMetaPatchesRef.current.get(readEntryId),
+          isRead: true,
+        })
+        return
+      }
       setEntries((prev) =>
         prev.map((entry) =>
           entry.id === readEntryId
@@ -134,6 +184,13 @@ export function EntryCardGrid({
     }
     const markUnread = (e: Event) => {
       const { entryId: readEntryId } = (e as CustomEvent<{ entryId: string; feedId: string }>).detail
+      if (isModalOpenRef.current) {
+        pendingMetaPatchesRef.current.set(readEntryId, {
+          ...pendingMetaPatchesRef.current.get(readEntryId),
+          isRead: false,
+        })
+        return
+      }
       setEntries((prev) =>
         prev.map((entry) =>
           entry.id === readEntryId
@@ -165,6 +222,13 @@ export function EntryCardGrid({
         e as CustomEvent<{ entryId: string; isReadLater: boolean }>
       ).detail
       prefetchCacheRef.current.delete(updatedId)
+      if (isModalOpenRef.current) {
+        pendingMetaPatchesRef.current.set(updatedId, {
+          ...pendingMetaPatchesRef.current.get(updatedId),
+          isReadLater: newIsReadLater,
+        })
+        return
+      }
       if (isReadLater && !newIsReadLater) {
         setEntries((prev) => prev.filter((entry) => entry.id !== updatedId))
       } else {
@@ -203,11 +267,16 @@ export function EntryCardGrid({
       const res = await fetch(`/api/entries?${params.toString()}`)
       if (!res.ok) return
       const json = await res.json() as {data: EntryListItem[], pagination: Pagination};
-      setEntries((prev) => {
-        const existingIds = new Set(prev.map((e) => e.id))
-        const newEntries = json.data.filter((e) => !existingIds.has(e.id))
-        return newEntries.length > 0 ? [...prev, ...newEntries] : prev
-      })
+      if (isModalOpenRef.current) {
+        const existingIds = new Set(entriesRef.current.map((e) => e.id))
+        pendingAppendEntriesRef.current.push(...json.data.filter((e) => !existingIds.has(e.id)))
+      } else {
+        setEntries((prev) => {
+          const existingIds = new Set(prev.map((e) => e.id))
+          const newEntries = json.data.filter((e) => !existingIds.has(e.id))
+          return newEntries.length > 0 ? [...prev, ...newEntries] : prev
+        })
+      }
       setHasMore(json.pagination.hasNext)
     } finally {
       setIsLoading(false)
@@ -247,11 +316,12 @@ export function EntryCardGrid({
         return [...prev, ...newEntries]
       })
       setNavHasMore(json.pagination.hasNext)
-      setEntries((prev) => {
-        const existingIds = new Set(prev.map((e) => e.id))
-        const newEntries = json.data.filter((e: { id: string }) => !existingIds.has(e.id))
-        return newEntries.length > 0 ? [...prev, ...newEntries] : prev
-      })
+      // モーダル表示中（prev/next でのページ送り）は背後の一覧を直接更新せず、
+      // モーダルが閉じた時にまとめて反映できるようバッファに退避する。
+      const existingIds = new Set(entriesRef.current.map((e) => e.id))
+      pendingAppendEntriesRef.current.push(
+        ...json.data.filter((e: { id: string }) => !existingIds.has(e.id))
+      )
     } finally {
       setIsNavLoading(false)
     }
