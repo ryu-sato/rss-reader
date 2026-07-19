@@ -22,6 +22,9 @@ export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, o
   const [imgError, setImgError] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const isRead = entry.meta?.isRead ?? false
+  const isReadLater = entry.meta?.isReadLater ?? false
+  // あとで読むに登録された記事は既読でも未読と同じ見た目にする
+  const showAsRead = isRead && !isReadLater
   const dateStr = entry.publishedAt ?? entry.createdAt
   const showImage = !!entry.imageUrl && !imgError
   const [displayDate, setDisplayDate] = useState('')
@@ -77,11 +80,11 @@ export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, o
           : isSelected
             ? 'border-primary/50 shadow-lg ring-2 ring-primary/25 ring-offset-2 ring-offset-background'
             : 'border-border/60 hover:border-primary/20 shadow-sm',
-        isRead && !isChecked && 'opacity-60'
+        showAsRead && !isChecked && 'opacity-60'
       )}
     >
       {/* Unread left accent stripe — clipped by parent overflow-hidden */}
-      {!isRead && !isSelectionMode && (
+      {!showAsRead && !isSelectionMode && (
         <span
           aria-hidden="true"
           className="absolute inset-y-0 left-0 w-[3px] bg-primary/40 z-10"
@@ -174,7 +177,7 @@ export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, o
         <p
           className={cn(
             'text-[13px] leading-snug line-clamp-2',
-            isRead
+            showAsRead
               ? 'font-normal text-muted-foreground'
               : 'font-semibold text-foreground'
           )}
