@@ -42,7 +42,6 @@ export function ArticleModal({
   const [isRead, setIsRead] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isUpdatingRead, setIsUpdatingRead] = useState(false)
-  const [readingProgress, setReadingProgress] = useState(0)
   const [heroImageLoaded, setHeroImageLoaded] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
@@ -53,6 +52,8 @@ export function ArticleModal({
   const x = useMotionValue(0)
   const y = useMotionValue(0)
   const backdropOpacity = useTransform(y, [0, 240], [1, 0.4])
+  const readingProgress = useMotionValue(0)
+  const readingProgressWidth = useTransform(readingProgress, (p) => `${p}%`)
   const xControls = useRef<ReturnType<typeof animate> | null>(null)
   const yControls = useRef<ReturnType<typeof animate> | null>(null)
 
@@ -66,7 +67,7 @@ export function ArticleModal({
     yControls.current?.stop()
     x.set(0)
     y.set(0)
-    setReadingProgress(0)
+    readingProgress.set(0)
     setHeroImageLoaded(false)
     if (scrollRef.current) scrollRef.current.scrollTop = 0
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -78,8 +79,8 @@ export function ArticleModal({
     if (!el) return
     const { scrollTop, scrollHeight, clientHeight } = el
     const progress = scrollHeight <= clientHeight ? 100 : (scrollTop / (scrollHeight - clientHeight)) * 100
-    setReadingProgress(progress)
-  }, [])
+    readingProgress.set(progress)
+  }, [readingProgress])
 
   // Drag handlers — 水平は前/次記事への直接操作、垂直(モバイルのボトムシートのみ)は下スワイプで閉じる。
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -442,9 +443,9 @@ export function ArticleModal({
 
           {/* Reading progress bar */}
           <div className="h-[2px] bg-border/40 shrink-0 overflow-hidden">
-            <div
-              className="h-full bg-primary/60 transition-[width] duration-100 ease-out"
-              style={{ width: `${readingProgress}%` }}
+            <motion.div
+              className="h-full bg-primary/60"
+              style={{ width: readingProgressWidth }}
             />
           </div>
 
