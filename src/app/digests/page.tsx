@@ -19,7 +19,7 @@ export default async function DigestsPage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="h-11 border-b border-border flex items-center px-4 sticky top-0 bg-background/95 backdrop-blur z-10 justify-between">
+      <div className="h-11 border-b border-border/70 flex items-center px-4 sticky top-0 material-chrome z-10 justify-between">
         <span className="text-xs text-muted-foreground">
           {total === 0 ? 'ダイジェストなし' : `${total} 件`}
         </span>

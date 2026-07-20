@@ -139,4 +139,52 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* 半透明マテリアル層。浮遊するツールバー/サイドバー/シートに使う。
+     prefers-reduced-transparency ではほぼ不透明にフォールバックする(下記)。 */
+  .material-chrome {
+    background: color-mix(in oklch, var(--background) 82%, transparent);
+    backdrop-filter: blur(16px) saturate(160%);
+  }
+  .material-panel {
+    background: color-mix(in oklch, var(--sidebar) 88%, transparent);
+    backdrop-filter: blur(20px) saturate(160%);
+  }
+  .material-overlay {
+    background: color-mix(in oklch, var(--background) 62%, transparent);
+    backdrop-filter: blur(8px);
+  }
+}
+
+/* 視差効果を減らす設定: スプリング/スライド/パララックスの代わりに
+   ほぼ瞬時のクロスフェードにする。オパシティ/カラーの変化自体は残す。 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 透明度を下げる設定: マテリアル層をほぼ不透明にしてぼかしを外す。 */
+@media (prefers-reduced-transparency: reduce) {
+  .material-chrome,
+  .material-panel,
+  .material-overlay {
+    background: var(--background) !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* コントラストを上げる設定: 境界線をはっきりさせる。 */
+@media (prefers-contrast: more) {
+  :root {
+    --border: oklch(0.6 0.03 290);
+  }
+  .dark {
+    --border: oklch(0.75 0.03 290 / 40%);
+  }
 }

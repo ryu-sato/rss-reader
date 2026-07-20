@@ -169,6 +169,8 @@ export function EntryCardGrid({
   useEffect(() => {
     const markRead = (e: Event) => {
       const { entryId: readEntryId } = (e as CustomEvent<{ entryId: string; feedId: string }>).detail
+      // 事前取得キャッシュに残った古い既読状態を、モーダルで再訪した時に見せてしまわないよう破棄する
+      prefetchCacheRef.current.delete(readEntryId)
       if (isModalOpenRef.current) {
         pendingMetaPatchesRef.current.set(readEntryId, {
           ...pendingMetaPatchesRef.current.get(readEntryId),
@@ -186,6 +188,7 @@ export function EntryCardGrid({
     }
     const markUnread = (e: Event) => {
       const { entryId: readEntryId } = (e as CustomEvent<{ entryId: string; feedId: string }>).detail
+      prefetchCacheRef.current.delete(readEntryId)
       if (isModalOpenRef.current) {
         pendingMetaPatchesRef.current.set(readEntryId, {
           ...pendingMetaPatchesRef.current.get(readEntryId),

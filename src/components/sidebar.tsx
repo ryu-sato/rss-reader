@@ -3,11 +3,16 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { motion, type PanInfo } from 'motion/react'
 import { Rss, Bookmark, BookOpen, ChevronDown, Plus, Settings, Tag, RefreshCw, ListFilter, Pencil, Trash2, Check, X, ThumbsUp, SlidersHorizontal, Layers, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { signOut } from '@/lib/auth-client'
 import { Separator } from '@/components/ui/separator'
 import { Input } from '@/components/ui/input'
+import { useReducedMotion } from '@/hooks/use-media-preference'
+import { SPRINGS, project, withReducedMotion } from '@/lib/motion'
+
+const SIDEBAR_WIDTH = 256 // w-64
 
 function FeedFavicon({ faviconUrl, feedUrl }: { faviconUrl: string | null; feedUrl: string }) {
   const [index, setIndex] = useState(0)
@@ -61,7 +66,7 @@ interface PreferenceItem {
 
 const navActive = 'bg-primary/10 text-primary font-semibold'
 const navInactive = 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/70 cursor-pointer'
-const navBase = 'relative flex items-center gap-2.5 px-3 py-[7px] mx-1.5 rounded-lg text-sm transition-all duration-150'
+const navBase = 'relative flex items-center gap-2.5 px-3 py-[7px] mx-1.5 rounded-lg text-sm transition-all duration-150 active:scale-[0.98] active:bg-sidebar-accent active:duration-100'
 
 function NavIndicator({ show }: { show: boolean }) {
   return (
@@ -194,15 +199,36 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
 
   const makeFeedLink = (feedId: string) => `/?feedId=${feedId}`
   const makeTagLink = (tagId: string) => `/?tagId=${tagId}`
+  const reducedMotion = useReducedMotion()
+  const [isDesktop, setIsDesktop] = useState(false)
+
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 768px)')
+    const update = () => setIsDesktop(mql.matches)
+    update()
+    mql.addEventListener('change', update)
+    return () => mql.removeEventListener('change', update)
+  }, [])
+
+  const handleDragEnd = useCallback((_e: PointerEvent | MouseEvent | TouchEvent, info: PanInfo) => {
+    const projected = info.offset.x + project(info.velocity.x)
+    if (projected < -SIDEBAR_WIDTH / 3) onMobileClose?.()
+  }, [onMobileClose])
 
   return (
-    <aside
+    <motion.aside
       className={cn(
-        'bg-sidebar border-r border-sidebar-border flex flex-col overflow-hidden',
-        'fixed top-0 bottom-0 left-0 z-40 w-64 transition-transform duration-300 ease-in-out',
-        mobileOpen ? 'translate-x-0' : '-translate-x-full',
-        'md:relative md:translate-x-0 md:w-56 md:shrink-0 md:h-screen md:z-auto'
+        'material-panel border-r border-sidebar-border flex flex-col overflow-hidden',
+        'fixed top-0 bottom-0 left-0 z-40 w-64',
+        'md:relative md:w-56 md:shrink-0 md:h-screen md:z-auto'
       )}
+      animate={{ x: isDesktop || mobileOpen ? 0 : '-100%' }}
+      transition={withReducedMotion(SPRINGS.drawer, reducedMotion)}
+      drag={!isDesktop && mobileOpen && !reducedMotion ? 'x' : false}
+      dragDirectionLock
+      dragConstraints={{ left: -SIDEBAR_WIDTH, right: 0 }}
+      dragElastic={{ left: 0.1, right: 0.55 }}
+      onDragEnd={handleDragEnd}
     >
       {/* Logo */}
       <div className="h-[52px] flex items-center px-4 border-b border-sidebar-border shrink-0">
@@ -505,6 +531,6 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
           <span>サインアウト</span>
         </button>
       </div>
-    </aside>
+    </motion.aside>
   )
 }

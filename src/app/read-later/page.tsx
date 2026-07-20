@@ -24,7 +24,7 @@ export default async function ReadLaterPage({ searchParams }: PageProps) {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="h-11 border-b border-border flex items-center justify-between px-4 sticky top-0 bg-background/95 backdrop-blur z-10">
+      <div className="h-11 border-b border-border/70 flex items-center justify-between px-4 sticky top-0 material-chrome z-10">
         <span className="text-xs text-muted-foreground">
           {pagination.total === 0 ? '記事なし' : `${pagination.total} 件`}
         </span>

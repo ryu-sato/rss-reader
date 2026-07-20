@@ -1,12 +1,16 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { motion, useMotionValue, useTransform, animate } from 'motion/react'
 import { X, ChevronLeft, ChevronRight, Bookmark, ExternalLink, Eye, EyeOff } from 'lucide-react'
 import type { EntryDetail } from '@/features/entry-viewing/types/entry'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { TagInput } from '@/features/tag-management/components/tag-input'
 import { useHotkeyConfig } from '@/hooks/use-hotkey-config'
+import { useReducedMotion } from '@/hooks/use-media-preference'
+import { SPRINGS, rubberband, project, withReducedMotion, VelocityTracker } from '@/lib/motion'
+import { cn } from '@/lib/utils'
 
 interface ArticleModalProps {
   entryId: string
@@ -19,7 +23,9 @@ interface ArticleModalProps {
   onNext: () => void
 }
 
-const SWIPE_THRESHOLD = 60
+// 位置だけでなく速度による projection でも判定するため、閾値は控えめでよい
+const SWIPE_COMMIT = 80
+const DISMISS_COMMIT = 110
 
 export function ArticleModal({
   entryId,
@@ -36,18 +42,34 @@ export function ArticleModal({
   const [isRead, setIsRead] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isUpdatingRead, setIsUpdatingRead] = useState(false)
-  const [swipeX, setSwipeX] = useState(0)
-  const [swipeTransition, setSwipeTransition] = useState(false)
   const [readingProgress, setReadingProgress] = useState(0)
-  const swipeStartRef = useRef<{ x: number; y: number; active: boolean } | null>(null)
+  const [heroImageLoaded, setHeroImageLoaded] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
   const { config } = useHotkeyConfig()
+  const reducedMotion = useReducedMotion()
 
-  // Reset swipe, scroll, and progress when entry changes
+  // ドラッグの現在値。モーダル本体(x/y)と背景の暗さ(y から派生)を直接駆動する。
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  const backdropOpacity = useTransform(y, [0, 240], [1, 0.4])
+  const xControls = useRef<ReturnType<typeof animate> | null>(null)
+  const yControls = useRef<ReturnType<typeof animate> | null>(null)
+
+  type DragState = { x: number; y: number; active: boolean; axis: 'x' | 'y' | null; isSheet: boolean }
+  const dragRef = useRef<DragState | null>(null)
+  const velocityTracker = useRef(new VelocityTracker())
+
+  // Reset drag position, scroll, and progress when entry changes
   useEffect(() => {
-    setSwipeX(0)
+    xControls.current?.stop()
+    yControls.current?.stop()
+    x.set(0)
+    y.set(0)
     setReadingProgress(0)
+    setHeroImageLoaded(false)
     if (scrollRef.current) scrollRef.current.scrollTop = 0
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entryId])
 
   // Reading progress tracking
@@ -59,34 +81,78 @@ export function ArticleModal({
     setReadingProgress(progress)
   }, [])
 
-  // Swipe handlers
+  // Drag handlers — 水平は前/次記事への直接操作、垂直(モバイルのボトムシートのみ)は下スワイプで閉じる。
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (reducedMotion) return
     if ((e.target as HTMLElement).closest('button, a, input, textarea')) return
-    swipeStartRef.current = { x: e.clientX, y: e.clientY, active: false }
-  }, [])
+    // 割り込み: 進行中のスプリングを止め、その場(presentation value)から再開する
+    xControls.current?.stop()
+    yControls.current?.stop()
+    velocityTracker.current.reset()
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    dragRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      active: false,
+      axis: null,
+      isSheet: window.matchMedia('(max-width: 639px)').matches,
+    }
+  }, [reducedMotion])
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!swipeStartRef.current) return
-    const dx = e.clientX - swipeStartRef.current.x
-    const dy = e.clientY - swipeStartRef.current.y
-    if (!swipeStartRef.current.active) {
-      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
-      if (Math.abs(dy) >= Math.abs(dx)) { swipeStartRef.current = null; return }
-      swipeStartRef.current.active = true
-    }
-    setSwipeX(dx)
-  }, [])
+    const start = dragRef.current
+    if (!start) return
+    const dx = e.clientX - start.x
+    const dy = e.clientY - start.y
 
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    if (!swipeStartRef.current?.active) { swipeStartRef.current = null; return }
-    const dx = e.clientX - swipeStartRef.current.x
-    swipeStartRef.current = null
-    setSwipeTransition(true)
-    setSwipeX(0)
-    setTimeout(() => setSwipeTransition(false), 200)
-    if (dx > SWIPE_THRESHOLD && hasPrev) onPrev()
-    else if (dx < -SWIPE_THRESHOLD && hasNext) onNext()
-  }, [hasPrev, hasNext, onPrev, onNext])
+    if (!start.active) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
+      const wantsVertical = Math.abs(dy) > Math.abs(dx)
+      if (wantsVertical && !start.isSheet) { dragRef.current = null; return }
+      start.axis = wantsVertical ? 'y' : 'x'
+      start.active = true
+    }
+
+    if (start.axis === 'x') {
+      const width = modalRef.current?.getBoundingClientRect().width ?? 400
+      const atLeadingEdge = dx > 0 && !hasPrev
+      const atTrailingEdge = dx < 0 && !hasNext
+      const nx = atLeadingEdge || atTrailingEdge ? rubberband(dx, width) : dx
+      x.set(nx)
+      velocityTracker.current.push(nx, e.timeStamp)
+    } else {
+      const height = modalRef.current?.getBoundingClientRect().height ?? 600
+      // 上方向には実質動かせない(強い抵抗)、下方向はそのまま追従させる
+      const ny = dy < 0 ? rubberband(dy, height, 0.15) : dy
+      y.set(ny)
+      velocityTracker.current.push(ny, e.timeStamp)
+    }
+  }, [hasPrev, hasNext, x, y])
+
+  const handlePointerUp = useCallback(() => {
+    const start = dragRef.current
+    if (!start?.active) { dragRef.current = null; return }
+    const axis = start.axis
+    dragRef.current = null
+    const v = velocityTracker.current.velocity()
+
+    if (axis === 'x') {
+      const projected = x.get() + project(v)
+      if (projected <= -SWIPE_COMMIT && hasNext) onNext()
+      else if (projected >= SWIPE_COMMIT && hasPrev) onPrev()
+      xControls.current = animate(x, 0, { ...withReducedMotion(SPRINGS.settle, reducedMotion), velocity: v })
+    } else {
+      const height = modalRef.current?.getBoundingClientRect().height ?? 600
+      const projected = y.get() + project(v)
+      if (projected > DISMISS_COMMIT) {
+        const controls = animate(y, height, { ...withReducedMotion(SPRINGS.momentum, reducedMotion), velocity: v })
+        yControls.current = controls
+        controls.then(onClose)
+      } else {
+        yControls.current = animate(y, 0, { ...withReducedMotion(SPRINGS.settle, reducedMotion), velocity: v })
+      }
+    }
+  }, [hasPrev, hasNext, onPrev, onNext, onClose, x, y, reducedMotion])
 
   // Fetch entry detail when entryId changes (use prefetched data if available)
   useEffect(() => {
@@ -198,8 +264,9 @@ export function ArticleModal({
 
   return (
     /* Backdrop */
-    <div
+    <motion.div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4"
+      style={{ opacity: backdropOpacity }}
       onClick={onClose}
     >
       {/* Prev / Modal / Next row */}
@@ -218,16 +285,17 @@ export function ArticleModal({
         </button>
 
         {/* Modal */}
-        <div
-          className="flex-1 min-w-0 h-[92dvh] sm:h-[88vh] bg-background sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden ring-1 ring-black/10 dark:ring-white/10"
+        <motion.div
+          ref={modalRef}
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={withReducedMotion(SPRINGS.settle, reducedMotion)}
+          className="flex-1 min-w-0 h-[92dvh] sm:h-[88vh] bg-background sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden ring-1 ring-black/10 dark:ring-white/10 touch-pan-y"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          style={{
-            transform: `translateX(${swipeX}px)`,
-            transition: swipeTransition ? 'transform 0.2s ease' : 'none',
-          }}
+          style={{ x, y }}
         >
           {/* Toolbar */}
           <div className="h-12 border-b border-border/60 flex items-center justify-between px-3 sm:px-4 shrink-0 gap-2">
@@ -446,14 +514,24 @@ export function ArticleModal({
                 )}
               </div>
 
-              {/* Image */}
+              {/* Image — 記事ごとに縦横比が異なっても高さを揃え、
+                  読み込み中は前の記事の画像を残さずスケルトンを見せてからフェードインする */}
               {entry.imageUrl && (
-                <div className="mb-8 rounded-xl overflow-hidden">
+                <div className="mb-8 rounded-xl overflow-hidden aspect-video relative bg-muted">
+                  {!heroImageLoaded && (
+                    <div className="absolute inset-0 animate-pulse bg-muted" />
+                  )}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
+                    key={entry.id}
                     src={entry.imageUrl}
                     alt=""
-                    className="w-full object-cover max-h-72 sm:max-h-80"
+                    onLoad={() => setHeroImageLoaded(true)}
+                    onError={() => setHeroImageLoaded(true)}
+                    className={cn(
+                      'w-full h-full object-cover transition-opacity duration-300 ease-out',
+                      heroImageLoaded ? 'opacity-100' : 'opacity-0'
+                    )}
                   />
                 </div>
               )}
@@ -476,7 +554,7 @@ export function ArticleModal({
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Next button — desktop only */}
         <button
@@ -488,6 +566,6 @@ export function ArticleModal({
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
-    </div>
+    </motion.div>
   )
 }

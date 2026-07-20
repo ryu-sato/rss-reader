@@ -9,7 +9,7 @@ export default async function PreferredPage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="h-11 border-b border-border flex items-center px-4 sticky top-0 bg-background/95 backdrop-blur z-10">
+      <div className="h-11 border-b border-border/70 flex items-center px-4 sticky top-0 material-chrome z-10">
         <span className="text-sm font-medium">お好みの記事</span>
       </div>
       <div className="p-4 space-y-2">

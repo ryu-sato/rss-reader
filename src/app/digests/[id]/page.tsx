@@ -35,7 +35,7 @@ export default async function DigestDetailPage({ params }: { params: Promise<{ i
   return (
     <div className="h-full overflow-y-auto">
       {/* Sticky header */}
-      <div className="h-11 border-b border-border flex items-center px-4 sticky top-0 bg-background/95 backdrop-blur z-10">
+      <div className="h-11 border-b border-border/70 flex items-center px-4 sticky top-0 material-chrome z-10">
         <Link
           href="/digests"
           className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"

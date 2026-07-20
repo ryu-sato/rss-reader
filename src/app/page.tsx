@@ -43,7 +43,7 @@ export default async function Home({ searchParams }: PageProps) {
   return (
     <div className="h-full overflow-y-auto">
       <div className="sticky top-0 z-10">
-        <div className="h-11 border-b border-border flex items-center justify-between px-4 bg-background/95 backdrop-blur">
+        <div className="h-11 border-b border-border/70 flex items-center justify-between px-4 material-chrome">
           <div className="flex items-baseline gap-1">
             <span className="text-sm font-semibold tabular-nums text-foreground">
               {pagination.total === 0 ? '0' : pagination.total.toLocaleString()}

@@ -75,6 +75,7 @@ export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, o
         'group relative flex flex-col overflow-hidden rounded-2xl cursor-pointer bg-card',
         'border transition-all duration-300 ease-out will-change-transform',
         'hover:-translate-y-1 hover:shadow-xl hover:shadow-black/10',
+        'active:translate-y-0 active:scale-[0.98] active:duration-100',
         isChecked
           ? 'border-primary/60 shadow-lg ring-2 ring-primary/30 ring-offset-2 ring-offset-background'
           : isSelected
@@ -154,7 +155,7 @@ export const EntryCard = memo(function EntryCard({ entry, isSelected, onClick, o
                 className={cn(
                   'absolute top-2 right-2 z-10',
                   'bg-background/85 backdrop-blur-md border border-border/50 shadow-sm',
-                  'hover:scale-110 hover:bg-background',
+                  'hover:scale-110 hover:bg-background active:scale-95 active:duration-100',
                   'opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-200',
                 )}
               />
