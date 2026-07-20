@@ -33,6 +33,6 @@ React/Next.jsの**パフォーマンスと実装品質**のレビュー・リフ
 
 ## メンテナンス
 
-- 実体は `.claude/skills/` と `.agents/skills/` に通常ファイルとしてミラーされている(vendored)。
-- `apple-design` は https://github.com/emilkowalski/skills から `git subtree` で取り込んだもの。`.git/config` に参照用remote `apple-design-skills` がある。更新は手編集ではなく、subtree split→pullの手順で行うこと。
+- 実体は `.claude/skills/` に通常ファイルとして格納されている(vendored)。以前は `.agents/skills/` との併用・シンボリックリンク構成だったが、Claude Code専用運用に一本化したため廃止した。
+- `apple-design` は https://github.com/emilkowalski/skills から `git subtree` で取り込んだもの(現在のprefixは `.claude/skills/apple-design`)。`.git/config` に参照用remote `apple-design-skills` がある。更新は手編集ではなく、subtree split→pullの手順で行うこと。
 - これらのSkill自体のルール内容を他のsteeringファイルに転記しない。参照する場合はSkill名でリンクする。
