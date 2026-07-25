@@ -7,23 +7,27 @@ import { getAppSettings } from '@/lib/settings-service'
 import { EntryCardGrid } from '@/components/entry-card-grid'
 import { ReadFilter } from '@/components/read-filter'
 import { ScoreThresholdSlider } from '@/components/score-threshold-slider'
+import { SortToggle } from '@/components/sort-toggle'
 import type { ReadFilterValue } from '@/components/read-filter'
+import type { SortOrderValue } from '@/components/sort-toggle'
 
 interface PageProps {
-  searchParams: Promise<{ filter?: string; score?: string }>
+  searchParams: Promise<{ filter?: string; score?: string; sortOrder?: string }>
 }
 
 export default async function PreferredAllPage({ searchParams }: PageProps) {
   const params = await searchParams
+  const resolvedSearchParams = await searchParams
   const filter: ReadFilterValue = params.filter === 'all' ? 'all' : 'unread'
   const isUnread = filter === 'unread'
+  const sortOrder: SortOrderValue = resolvedSearchParams.sortOrder === 'asc' ? 'asc' : 'desc'
 
   const settings = await getAppSettings()
   const scoreThreshold =
     params.score !== undefined ? Number(params.score) : settings.preferredScoreThreshold
 
   const [{ entries, pagination }, allTags] = await Promise.all([
-    findManyEntries({ isAnyPreferred: true, isUnread, page: 1, scoreThreshold }),
+    findManyEntries({ isAnyPreferred: true, isUnread, page: 1, scoreThreshold, sortOrder }),
     getAllTags(),
   ])
 
@@ -37,13 +41,19 @@ export default async function PreferredAllPage({ searchParams }: PageProps) {
         <Suspense>
           <ScoreThresholdSlider value={scoreThreshold} />
         </Suspense>
-        <Suspense>
-          <ReadFilter value={filter} />
-        </Suspense>
+        <div className="flex items-center gap-1.5">
+          <Suspense>
+            <ReadFilter value={filter} />
+          </Suspense>
+          <div className="w-px h-3.5 bg-border/70 mx-0.5" />
+          <Suspense>
+            <SortToggle value={sortOrder} />
+          </Suspense>
+        </div>
       </div>
       <Suspense>
         <EntryCardGrid
-          key={`${filter}-${scoreThreshold}`}
+          key={`${filter}-${scoreThreshold}-${sortOrder}`}
           initialEntries={entries}
           initialPagination={pagination}
           isAnyPreferred
