@@ -36,7 +36,7 @@ export default async function PreferredPage() {
                 className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border hover:bg-accent transition-colors"
               >
                 <ThumbsUp className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="text-sm">{p.text}</span>
+                <span className="text-sm">{p.name}</span>
               </Link>
             ))}
           </>

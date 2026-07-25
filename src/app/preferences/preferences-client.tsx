@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 interface Preference {
   id: string
   text: string
+  name: string
   createdAt: Date
   updatedAt: Date
 }

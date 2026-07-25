@@ -163,6 +163,7 @@ model Verification {
 model UserPreference {
   id        String   @id @default(uuid())
   text      String
+  name      String   @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
