@@ -14,7 +14,6 @@
       "Edit(.claude/settings.json)",
       "Read(./.env*)",
       "Read(./secrets/**)",
-      "Edit(.claude/*)",
       "Edit(.next/*)",
       "Edit(.pnpm-store/*)",
       "Edit(node_modules/*)",
