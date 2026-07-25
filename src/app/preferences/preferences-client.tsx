@@ -228,6 +228,7 @@ export default function PreferencesClient({ initialPreferences, initialScoreThre
         <div key={preference.id} className="rounded-xl border border-border bg-card">
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-muted/30 rounded-t-xl">
             <span className="text-xs font-medium text-muted-foreground">#{index + 1}</span>
+            <span className="text-xs font-semibold text-foreground truncate">{preference.name}</span>
           </div>
           <div className="p-4">
             {editingId === preference.id ? (

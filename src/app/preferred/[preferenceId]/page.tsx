@@ -51,10 +51,10 @@ export default async function PreferredByPreferencePage({ params, searchParams }
           <ScoreThresholdSlider value={scoreThreshold} />
         </Suspense>
         <Suspense>
-          <SortToggle value={sortOrder} />
+          <ReadFilter value={filter} />
         </Suspense>
         <Suspense>
-          <ReadFilter value={filter} />
+          <SortToggle value={sortOrder} />
         </Suspense>
       </div>
       <Suspense>
