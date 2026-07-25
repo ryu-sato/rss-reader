@@ -50,12 +50,15 @@ export default async function PreferredByPreferencePage({ params, searchParams }
         <Suspense>
           <ScoreThresholdSlider value={scoreThreshold} />
         </Suspense>
-        <Suspense>
-          <ReadFilter value={filter} />
-        </Suspense>
-        <Suspense>
-          <SortToggle value={sortOrder} />
-        </Suspense>
+        <div className="flex items-center gap-1.5">
+          <Suspense>
+            <ReadFilter value={filter} />
+          </Suspense>
+          <div className="w-px h-3.5 bg-border/70 mx-0.5" />
+          <Suspense>
+            <SortToggle value={sortOrder} />
+          </Suspense>
+        </div>
       </div>
       <Suspense>
         <EntryCardGrid
