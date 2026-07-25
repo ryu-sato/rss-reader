@@ -551,7 +551,7 @@ export function ArticleModal({
                 <p className="text-[0.6875rem] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
                   タグ
                 </p>
-                <TagInput entryId={entry.id} initialTags={entryTags} allTags={allTags} />
+                <TagInput key={entry.id} entryId={entry.id} initialTags={entryTags} allTags={allTags} />
               </div>
             </div>
           )}
