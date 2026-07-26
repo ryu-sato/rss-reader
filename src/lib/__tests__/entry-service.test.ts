@@ -4,8 +4,16 @@ import { prisma } from '@/lib/db';
 import { findManyEntries } from '../entry-service'
 
 describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
+    // 各テストが固定IDでFeed/Tag/UserPreferenceを作成するため、前のテストのデータを残さない
+    await prisma.entryPreferenceScore.deleteMany()
+    await prisma.entryTag.deleteMany()
+    await prisma.entryMeta.deleteMany()
+    await prisma.entry.deleteMany()
+    await prisma.tag.deleteMany()
+    await prisma.userPreference.deleteMany()
+    await prisma.feed.deleteMany()
   })
 
   it('limit以上のエントリーがある場合、ページネーションされる', async () => {

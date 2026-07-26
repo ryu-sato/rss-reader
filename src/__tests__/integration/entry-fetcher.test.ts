@@ -19,7 +19,9 @@ vi.mock('@/lib/db', () => ({
     entryMeta: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       create: vi.fn(),
+      createMany: vi.fn(),
     },
   },
 }))
@@ -72,6 +74,7 @@ beforeEach(() => {
   // 同一 link の既読連動チェック用。デフォルトでは「メタなし・既読な兄弟なし」を返す
   mockEntryMeta.findUnique.mockResolvedValue(null)
   mockEntryMeta.findFirst.mockResolvedValue(null)
+  mockEntryMeta.findMany.mockResolvedValue([])
 })
 
 describe('fetchAllFeedsEntries - normal flow (REQ-211)', () => {

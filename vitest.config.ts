@@ -9,6 +9,7 @@ export default defineConfig({
     globals: true,
     maxWorkers: 1,
     setupFiles: ['./vitest.setup.ts'],
+    exclude: ['**/node_modules/**', '**/.foundry/**'],
   },
   resolve: {
     alias: {
