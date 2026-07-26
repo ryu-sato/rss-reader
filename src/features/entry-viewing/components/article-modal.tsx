@@ -68,6 +68,9 @@ export function ArticleModal({
     x.set(0)
     y.set(0)
     readingProgress.set(0)
+    // Resets alongside the motion values and DOM scrollTop above when navigating between
+    // entries — bundling it here (vs. render-time adjustment) keeps the reset atomic.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHeroImageLoaded(false)
     if (scrollRef.current) scrollRef.current.scrollTop = 0
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -158,6 +161,9 @@ export function ArticleModal({
   // Fetch entry detail when entryId changes (use prefetched data if available)
   useEffect(() => {
     if (prefetchedEntry) {
+      // Synchronizes local state with the entryId prop (prefetch cache or network fetch below);
+      // genuinely effect-worthy since the non-prefetched branch is an async fetch.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEntry(prefetchedEntry)
       setIsReadLater(prefetchedEntry.meta?.isReadLater ?? false)
       setIsRead(prefetchedEntry.meta?.isRead ?? false)

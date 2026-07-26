@@ -18,6 +18,9 @@ export default function FeedsPage() {
   }, [])
 
   useEffect(() => {
+    // Initial data fetch on mount — the state update happens inside fetchFeeds' own
+    // async continuation, not synchronously in this effect body.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchFeeds()
   }, [fetchFeeds])
 

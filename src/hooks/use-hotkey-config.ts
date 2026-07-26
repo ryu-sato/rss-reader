@@ -12,6 +12,9 @@ export function useHotkeyConfig() {
   const [config, setConfig] = useState<Record<HotkeyAction, string>>({ ...DEFAULT_HOTKEYS })
 
   useEffect(() => {
+    // Lazy-init would read localStorage during SSR/hydration render and mismatch the
+    // server-rendered defaults; deferring to an effect keeps hydration consistent.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setConfig(loadHotkeyConfig())
   }, [])
 

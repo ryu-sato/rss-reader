@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
@@ -38,13 +38,15 @@ export function EntryFilterBar({ allFeeds, allTags }: EntryFilterBarProps) {
   const currentSearch = searchParams.get('search') ?? ''
 
   const [searchInput, setSearchInput] = useState(currentSearch)
+  const [syncedSearchParams, setSyncedSearchParams] = useState(searchParams)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isComposingRef = useRef(false)
 
   // Sync input if URL param changes externally (e.g. back/forward)
-  useEffect(() => {
-    setSearchInput(searchParams.get('search') ?? '')
-  }, [searchParams])
+  if (searchParams !== syncedSearchParams) {
+    setSyncedSearchParams(searchParams)
+    setSearchInput(currentSearch)
+  }
 
   const updateParam = (key: string, value: string | null) => {
     const params = new URLSearchParams(searchParams.toString())

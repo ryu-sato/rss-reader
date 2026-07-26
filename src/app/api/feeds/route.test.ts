@@ -31,7 +31,7 @@ beforeEach(() => {
 
 describe('GET /api/feeds', () => {
   it('returns 200 with feed list', async () => {
-    const feeds = [{ id: '1', title: 'Feed', url: 'https://a.com', faviconUrl: null, createdAt: new Date(), updatedAt: new Date() }]
+    const feeds = [{ id: '1', title: 'Feed', url: 'https://a.com', faviconUrl: null, createdAt: new Date(), updatedAt: new Date(), unreadCount: 0, lastPublishedAt: null }]
     mockGetAllFeeds.mockResolvedValue(feeds)
 
     const response = await GET()

@@ -8,10 +8,9 @@ type FeedOutput = Parser.Output<Record<string, unknown>> & {
   icon?: string
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const parser = new Parser<FeedOutput>({
   customFields: {
-    feed: [['icon', 'icon']] as any,
+    feed: ['icon'],
   },
 })
 

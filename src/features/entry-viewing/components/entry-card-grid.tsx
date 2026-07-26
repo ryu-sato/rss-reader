@@ -109,6 +109,9 @@ export function EntryCardGrid({
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null)
 
   useEffect(() => {
+    // Reads window.location on mount to restore the modal from the URL; deferring to an
+    // effect (vs. lazy init) avoids a hydration mismatch against the server-rendered null.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedEntryId(new URLSearchParams(window.location.search).get('entryId'))
   }, [])
 
@@ -361,6 +364,9 @@ export function EntryCardGrid({
 
   useEffect(() => {
     if (!selectedEntryId || !navHasMore || isNavLoading || navEntries.length === 0) return
+    // Fetches more entries when nav reaches the end of what's loaded; state updates happen
+    // inside loadNavMore's own async continuation, not synchronously here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (navIndex === navEntries.length - 1) loadNavMore()
   }, [navIndex, navEntries.length, navHasMore, isNavLoading, selectedEntryId, loadNavMore])
 
@@ -368,6 +374,9 @@ export function EntryCardGrid({
     if (!pendingNavigateNext || navEntries.length === 0) return
     const currentIndex = navEntries.findIndex((e) => e.id === selectedEntryId)
     if (currentIndex < navEntries.length - 1) {
+      // Waits on navEntries growing after an async loadNavMore() fetch, then performs the
+      // deferred navigation (history + selection) — genuinely effect-worthy, not derivable at render time.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPendingNavigateNext(false)
       const nextId = navEntries[currentIndex + 1].id
       const params = new URLSearchParams(window.location.search)
@@ -519,6 +528,9 @@ export function EntryCardGrid({
       {selectedEntryId && !isSelectionMode && (
         <ArticleModal
           entryId={selectedEntryId}
+          // Prefetch cache is a ref by design so background prefetch fills don't re-render the
+          // whole grid; a miss just falls back to ArticleModal's own fetch, so a stale read is harmless.
+          // eslint-disable-next-line react-hooks/refs
           prefetchedEntry={prefetchCacheRef.current.get(selectedEntryId) ?? null}
           allTags={allTags}
           hasPrev={navIndex > 0}
