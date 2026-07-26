@@ -91,3 +91,63 @@
 - **Gap 1**（削除経路の分岐とイベント発火の不整合）は、まず `requirements.md` 5.1/5.4 に空状態からの削除経路を追記して現状を正確に文書化することを推奨する（Option A）。実装統一（Option B）は優先度中で良い。
 - **Gap 2**（バッチAPIの「アトミック」表現）は、要件文言を実装に即した表現へ修正することを推奨する（Option A）。真にアトミックな処理が必要かどうかはプロダクト要件次第であり、現状の `upsert` + `INSERT OR IGNORE` のべき等性で実用上のデータ不整合が問題になっていないなら、`$transaction` 化（Option B）の優先度は低い。
 - **Gap 3**（テストカバレッジ）はtasks.mdとの整合性の問題であり、requirements.mdとのGapではない。次にtag-management配下を触るタイミングでrenameTag/deleteTagのユニットテストとbatch/[tagId]の統合テストを追加することを推奨する。
+
+---
+
+# Gap分析 追補: 2026-07-26 時点の再検証
+
+## 目的・スコープ
+
+本追補は、`spec.json` の `ready_for_implementation: true`（requirements/design/tasks すべて承認済み）を踏まえ、上記の2026-07-25付Gap分析からコミット1件分（約17時間）の間にコードベースへ変更が入っていないか、また前回分析時点で見落とされていた既存アセットがないかを再点検したものである。前回分析の内容（Gap 1〜3）を上書き・削除するものではなく、差分のみを報告する。
+
+## 1. Current State Investigation（差分確認）
+
+- 前回分析のコミット（`a5bc288`, 2026-07-25 14:37 UTC）以降、`main` には `93f0a6f`（2026-07-26 07:10 UTC, `feat(entry-sync): optimize entry saving and read status inheritance logic`）が1件のみ追加されている。このコミットは主目的が `entry-sync-service.ts` の最適化だが、副次的にリポジトリ全体の不要ファイル整理も含んでいた。
+- `tag-management` に直接関係する差分として、レガシー re-export シム（構造steeringが言う「移行済み機能は旧パスを1行シムとして残す」パターン）のうち以下2点が **削除された**:
+  - `src/components/bulk-tag-bar.tsx`（`export * from '@/features/tag-management/components/bulk-tag-bar'` のみの1行シム）
+  - `src/components/article-modal.tsx`（entry-viewing側のシムだが、`entry-card-grid.tsx` からのBulkTagBar/ArticleModal参照経路に関わるため確認対象に含めた）
+  - 削除後に旧パス（`@/components/bulk-tag-bar`, `@/components/article-modal`）を参照している箇所がないかを `grep` で確認済み（ヒットなし）。`entry-card-grid.tsx` は既に `@/features/tag-management/components/bulk-tag-bar` を直接importしており、影響はない。
+- `src/features/tag-management/lib/tag-service.ts`・`src/features/tag-management/components/tag-input.tsx`・`src/features/tag-management/components/bulk-tag-bar.tsx`・`src/app/api/tags/**`・`prisma/schema.prisma`（`Tag`・`EntryTag` モデル、`onDelete: Cascade` 設定含む）は前回分析時点から**変更なし**であることをファイル内容・`git log` の両方で確認した。前回報告した Gap 1（削除イベント発火の経路不整合）・Gap 2（batch APIの非アトミック性）・Gap 3（テストカバレッジ不足）はいずれも**現状のまま**であり、新たな解消や悪化は発生していない。
+
+## 2. 新規検出: Gap 4（軽微）— 死コード `entry-modal.tsx` がレガシーシム `tag-input.tsx` の完全撤去を妨げている
+
+- **分類**: Missing（前回分析で見落とされていた既存アセット）
+- **詳細**:
+  - `src/components/entry-modal.tsx`（207行）は、`src/features/entry-viewing/components/article-modal.tsx`（現行の記事モーダル実装）以前に存在していたと見られる旧実装で、`TagInput` を `@/components/tag-input`（tag-managementのレガシーシム）経由でimportしている（8行目: `import { TagInput } from '@/components/tag-input'`）。
+  - `grep` で全文検索した結果、`entry-modal.tsx` は自身のテストファイル `src/components/entry-modal.test.tsx` 以外のどこからも参照されていない（`/src/app/` 配下のページ・レイアウトからの参照もゼロ）。実質的に**未使用の死コード**である。
+  - 今回のコミット `93f0a6f` で `src/components/bulk-tag-bar.tsx`・`src/components/article-modal.tsx` のシムが削除されたのに対し、`src/components/tag-input.tsx` のシムだけが削除されずに残っている。その唯一の理由が、この死コード `entry-modal.tsx` が今も同シムをimportし続けているためと考えられる。
+  - tag-management自体の機能・要件充足には影響しない（`entry-modal.tsx` はどのルートからも到達不可能）。ただし、構造steering（`structure.md`）が明記する「移行済み機能はシムを経由せず実体を直接参照する」という設計方針の完全な達成、および将来的な `src/components/tag-input.tsx` シム撤去の妨げになっている。
+- **Research Needed**: `entry-modal.tsx`／`entry-modal.test.tsx` の削除は tag-management の所有範囲外（entry-viewing、あるいは横断的なクリーンアップ作業の担当領域）である可能性が高い。削除の実行主体をどちらのspecとするか、または独立したクリーンアップタスクとして扱うかの方針確認が必要。
+
+## Requirement-to-Asset Map（追補分）
+
+| 項目 | 状態 | 対応アセット |
+|---|---|---|
+| レガシーシム整理（要件本文には非記載、構造steeringの移行方針に基づく） | 一部完了 | `src/components/bulk-tag-bar.tsx`・`src/components/article-modal.tsx` は削除済み。`src/components/tag-input.tsx` は `entry-modal.tsx`（死コード）が唯一の参照元として残存 |
+
+## Implementation Approach Options（Gap 4）
+
+### Option A: 現状維持（記録のみ、tag-management specの対応範囲外として扱う）
+- ✅ `entry-modal.tsx` は entry-viewing 側の遺物であり、tag-managementのrequirements/designが所有する境界（「境界の明確化」節）に含まれない。tag-management側から手を出さないのが最も安全。
+- ❌ `src/components/tag-input.tsx` シムが不要に残り続け、`bulk-tag-bar.tsx`/`article-modal.tsx` と扱いが不揃いになる。
+
+### Option B: tag-management側で `entry-modal.tsx`・`entry-modal.test.tsx` を削除し、`tag-input.tsx` シムも合わせて撤去する
+- ✅ 死コード削除とシム撤去を1コミットで完結でき、`bulk-tag-bar.tsx`/`article-modal.tsx` の扱いと整合する。
+- ✅ 影響範囲はgrep確認済みでゼロ（テストのみが参照元）。
+- ❌ `entry-modal.tsx` はentry-viewingの実装物であり、tag-managementのrequirements.mdが定める所有範囲（TagService/APIルート/TagInput/BulkTagBar/サイドバーのタグUI）を超える。spec境界を越えた変更となるため、独断で実施すべきではない。
+
+### Option C: 横断的なクリーンアップタスクとして別枠で扱う（entry-viewing側 or 独立タスクとして提案）
+- ✅ spec境界を尊重しつつ、死コード除去自体は実施できる。
+- ✅ 次回entry-viewingのgap分析・design更新時に合わせて対応すれば、責任範囲が明確になる。
+- ❌ 対応が先送りされ、しばらく死コードとシムが残り続ける。
+
+## Effort & Risk（Gap 4）
+
+- **Effort**: S（削除対象は2ファイル、参照ゼロを確認済みのため調査コストも低い）。
+- **Risk**: Low（`entry-modal.tsx`・`entry-modal.test.tsx` を除き外部参照が存在しないことをgrepで確認済み。削除してもビルド・テストへの影響はないと推定されるが、実施前にビルド確認は必要）。
+
+## Recommendations（追補分）
+
+- 前回分析（2026-07-25付）のGap 1・Gap 2・Gap 3の推奨事項に変更はない。実装は1日の間で変化しておらず、design phaseへの示唆はそのまま有効。
+- 新規のGap 4は**tag-management spec自体の要件充足には影響しない**軽微な発見であり、design phaseでの必須対応事項ではない。ただし、シム撤去の一貫性という観点で、design.mdまたは次のクリーンアップ作業時に「`entry-modal.tsx` の削除是非をentry-viewing側と確認する」という申し送り事項として記録することを推奨する（Option C寄り）。
+- 全体として、tag-managementの実装は前回分析時点から安定しており、承認済みrequirements/design/tasksを覆すような新事実は今回の再検証では検出されなかった。

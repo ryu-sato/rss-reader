@@ -89,3 +89,63 @@
 - Gap 2（SortToggle統合）はentry-viewing spec側で既に`sortOrder`自体は要件化済みのため、preference-recommendations側では「Allowed Dependenciesへの追記」+「該当ページの受け入れ基準に並び替えUIの存在を追加」程度の軽微な更新で足りる。
 - サイドバーの `text`/`name` 不統一（Note参照）は、Gap 1の要件化と合わせてどちらを正とするか意思決定が必要。
 - テスト未整備（Note参照）はrequirements.mdとのgapではないため本レポートの主対象外だが、`/kiro-impl` 再実行時にtasks.md 8.1–8.3の消化状況として別途フォローすべき。
+
+---
+
+# Gap分析（再検証）: 2026-07-26時点での差分確認
+
+## 目的
+
+本specは `ready_for_implementation: true`（requirements/design/tasks すべて承認済み）のため、今回の分析は「前回分析（上記、`a5bc288` コミットで追加、2026-07-25）以降にコードベースが変化し、既存の前提を無効化していないか」の再検証に主眼を置く。あわせて、前回分析ではlib層のみを対象としていた `/src/features/preference-recommendations/` のディレクトリ構成を、コンポーネント層まで含めて再確認した。
+
+## 1. Current State Investigation（差分確認）
+
+- 前回分析（`a5bc288`, 2026-07-25 14:37 UTC）から本分析時点（2026-07-26）までの新規コミットは `93f0a6f`（`feat(entry-sync): optimize entry saving and read status inheritance logic`）の1件のみ。
+- `93f0a6f` の変更内容を確認: `src/features/feed-management/lib/entry-sync-service.ts` の既読連動ロジックをN+1クエリからバッチクエリに最適化したもの。加えて `src/components/ui/{badge,dialog,scroll-area,sonner}.tsx` ・`empty-panel.tsx` 等の未使用UIプリミティブ削除、`package.json`/`pnpm-lock.yaml` の依存整理を含む。
+- `preference-recommendations` フィーチャーへの影響を確認: `entry-sync-service.ts` はエントリー取り込み時の既読連動処理であり、`EntryPreferenceScore` ・嗜好フィルタリングロジック（`entry-service.ts` の `findManyEntries`）とは無関係。削除されたUIプリミティブ（badge/dialog/scroll-area/sonner）は `grep` で `src/features/preference-recommendations/` ・`src/app/preferences/` ・`src/app/preferred/` のいずれからも参照されていないことを確認済み。**→ 本フィーチャーへの機能的影響なし。**
+- `.kiro/specs/preference-recommendations/` 配下のファイル（requirements.md / design.md / tasks.md）に対するコミットは `a5bc288`（前回gap分析追加）以降存在しない。**→ 前回検出したGap 1・Gap 2は未解消のまま。**
+- `prisma/schema.prisma` の `UserPreference` / `AppSettings` / `EntryPreferenceScore` モデル定義は前回分析時点から変更なし（`name String @default("")` を含め同一）。
+- `src/features/preference-recommendations/lib/preference-service.ts` の `truncateName` / `generateUniqueName` ロジックも前回記述のとおりで変更なし。
+- `src/app/preferred/all/page.tsx` ・`src/app/preferred/[preferenceId]/page.tsx` を実装レベルで再読し、`ScoreThresholdSlider` ・`ReadFilter` ・`SortToggle` の3コンポーネントが横並びで表示され、`sortOrder` が `findManyEntries` に渡っていることを直接確認した（前回分析の記述と一致）。
+- `scripts/scoring/score_entries.py`（外部スコアリングエンジン）の存在を確認。design.mdのNon-Goals「エントリースコアリングロジックは対象外」と整合している。
+
+## 2. 新規検出Gap
+
+### Gap 3: `ScoreThresholdSlider` コンポーネントが `/src/features/preference-recommendations/` 配下に移行されておらず、他の移行済みフィーチャーと構成が一致しない
+
+- **分類**: Constraint / Missing（構造規約からの逸脱）
+- **詳細**:
+  - `.kiro/steering/structure.md` の「Feature Modules」節は、移行済みフィーチャーは `components/`, `lib/`, `types/` を feature フォルダ配下に持ち、legacy パスは re-export shim になると規定している。「Migrated so far」リストに `preference-recommendations` が無条件で含まれている。
+  - 実際には `src/features/preference-recommendations/` には `lib/`（`preference-service.ts`, `settings-service.ts`）のみが存在し、`components/` サブフォルダが存在しない。
+  - 一方、design.mdの「This Spec Owns」は `ScoreThresholdSlider` コンポーネントを本specの所有物として明記している（`ScoreThresholdSlider` はrequirements 3.4/4.3/6.6で要求される嗜好フィルタリング専用のビジネスコンポーネントであり、shadcn/uiのような汎用プリミティブではない）。しかし実体は `src/components/score-threshold-slider.tsx` に置かれたままで、`src/features/preference-recommendations/components/score-threshold-slider.tsx` への実体移動も re-export shim も存在しない。
+  - 比較として、他の移行済みフィーチャー（`entry-viewing`, `feed-management`, `read-status`, `tag-management`）はすべて `components/` サブフォルダを持つ（`find /src/features -maxdepth 2 -type d` で確認）。`preference-recommendations` のみ `lib/` のみの部分移行状態になっている。
+- **要件との関係**: requirements.md自体には直接の記載はないが、design.mdの「This Spec Owns: `ScoreThresholdSlider` コンポーネント」という記述と、steering（structure.md）が定める移行規約との間に矛盾がある。将来 `/kiro-impl` を本specに対して再実行する際、「どこにファイルを置くか」の判断を誤らせるリスクがある。
+- **Research Needed**: 意図的に `components/` 移行を見送ったのか（例: 単一コンポーネントのみで移行コストに見合わない）、あるいは移行漏れなのかは不明。`preferences-client.tsx` はルート直下（`src/app/preferences/`）にコロケートされたクライアントコンポーネントであり、feature-common ではないためこちらは移行対象外で妥当と判断できる。
+
+## 3. Implementation Approach Options（Gap 3への対応）
+
+### Option A: `score-threshold-slider.tsx` を `src/features/preference-recommendations/components/` に実体移動し、`src/components/score-threshold-slider.tsx` をre-export shimに変更
+- ✅ 他フィーチャーとの構成一貫性が取れ、structure.mdの記述と実態が一致する
+- ✅ import元（`src/app/preferred/all/page.tsx` 等）は `@/components/score-threshold-slider` のまま変更不要（shim経由）
+- ❌ ファイル移動そのものはコード変更を伴うため、Gap 1/2（ドキュメントのみの更新）より若干作業が増える
+
+### Option B: structure.mdの「Migrated so far」からpreference-recommendationsの完全移行済み扱いを修正し、「lib層のみ移行、componentsは移行対象外/未着手」と明記する
+- ✅ コード変更ゼロで整合性を回復できる
+- ❌ 単一コンポーネントのみが legacy パスに残る変則的な状態が固定化され、次の機能追加時にも同じ判断コストが発生する
+
+### Option C: 現状維持（次回この機能に手を入れるタイミングでまとめて移行）
+- ✅ 独立した価値を生まない小規模移動に今すぐ工数を割かない
+- ❌ Gap 1・Gap 2の解消（設計文書更新）と同時にやらないと、再度「後回し」になりやすい
+
+## 4. Effort & Risk（Gap 3）
+
+- **Effort**: S（1日未満）— 対象は単一ファイルの移動とimportパスの整理のみ。他フィーチャーで確立済みのshimパターンをそのまま踏襲できる。
+- **Risk**: Low — `@/components/score-threshold-slider` のpublic importパスをshim経由で維持すれば、呼び出し側（`preferred/all`, `preferred/[preferenceId]`）の変更は不要。
+
+## 5. Recommendations（design phase向け）
+
+- 前回分析のGap 1（`name`自動生成の未文書化）・Gap 2（`SortToggle`統合の未文書化）は本分析時点でも解消されておらず、引き続き有効。次回この機能に対して `/kiro-spec-design` 等でドキュメント更新を行う際は、本分析のGap 3と合わせて一括対応するのが効率的（同じ「実装が先行し仕様書が追従していない」という性質のGapであるため）。
+- Gap 3については Option A（実体移動 + shim化）を軽く推奨: 移行コストがS（1日未満）と小さく、他フィーチャーとの構成一貫性という steering 上の明確な便益があるため。ただし機能的な影響はゼロであり優先度はGap 1・2より低い。
+- 直近コミット（`93f0a6f`）は本フィーチャーの要件・実装のいずれにも影響しないことを確認済み。次回このgap分析を再実行する際は、`git log -- .kiro/specs/preference-recommendations/` と `git log --since=<前回分析日>` の差分のみを追えば十分（今回と同様の再検証アプローチで効率化できる）。
+- Research Needed（持ち越し）: Gap 3のcomponents未移行が意図的判断か移行漏れか、実装者・仕様オーナーへの確認が必要。
+

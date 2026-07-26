@@ -105,3 +105,83 @@ design.md 328行目の Implementation Notes は「`findManyEntriesDedup` はカ�
 - Gap 1（`userPreferenceId`+`feedId`併用時の不具合）は軽微な修正を推奨。修正コストが低く、将来の機能拡張（フィード別お好みフィルタなど）で踏み抜くのを防げる。あわせて `findManyEntries`/`findManyEntriesDedup` の統合テストに feedId+userPreferenceId 併用ケースを追加すると良い。
 - Gap 2・3 は「壊れている」のではなく「requirements.mdに書かれていない意図的な仕様」。次回 requirements.md を更新する機会（`/kiro-spec-requirements` の再実行等）に、1.3への `isReadLater` 例外の追記、7.2へのモーダルクローズ時再フィルタ挙動の追記を行うことを推奨。
 - Gap 4・5 は design.md のみの記述ズレ。次回design更新時に「ReadFilterはread-status feature配下」「dedupモードはafterIdカーソル対応・beforeId非対応」に修正するとよい。実装変更は不要。
+
+---
+
+# Gap分析（追補）: 2026-07-26 時点の差分調査
+
+## 目的・調査範囲
+
+本追補は、直前の `2026-07-25` 版Gap分析以降にリポジトリへ加わった変更（`git log` 上は本日 `93f0a6f feat(entry-sync): optimize entry saving and read status inheritance logic` の1コミットのみ）を対象に、requirements.md（承認済み・`ready_for_implementation: true`）に対する現行実装のズレを再点検したものである。あわせて、前回指摘した Gap 1（`userPreferenceId`+`feedId` 併用バグ）が未修正のまま残っているかを再確認した。既存の2026-07-25分析の内容は撤回・変更しない。
+
+## Current State Investigation（差分）
+
+- `93f0a6f` は主に3つの変更を含む:
+  1. `src/features/feed-management/lib/entry-sync-service.ts` の `saveEntries`/`inheritReadStatusByLink` をN+1クエリからバッチクエリへ最適化。
+  2. `src/components/article-modal.tsx` / `entry-card.tsx` / `bulk-tag-bar.tsx` / `empty-panel.tsx` という4つの旧パスre-exportシム（または未使用の旧実装）を削除。
+  3. `package.json` から `zod` / `react-hook-form` / `@hookform/resolvers` / `sonner` / `next-themes` / `dotenv` を削除し、`vitest.setup.ts` のDBリセット戦略を `beforeEach` → `beforeAll` に変更。
+- (1)(2) はentry-viewing requirements に直接関わるため、影響を精査した。(3) はentry-viewing機能そのものではないが、`tech.md` の記載との整合性・テスト基盤への影響があるため付記する。
+
+## Requirement-to-Asset Map（更新点のみ）
+
+| 要件 | 実装状況 | 対応アセット |
+|---|---|---|
+| 4.6 userPreferenceId フィルタ | **未修正のまま** — Gap 1（下記で再確認） | `src/features/entry-viewing/lib/entry-service.ts:31` |
+| 8.3 URLデデュプリケーション時の既読連動 | 実装済み・**バッチクエリへ最適化されて要件は引き続き充足**（下記Gap 6） | `src/features/feed-management/lib/entry-sync-service.ts` の `inheritReadStatusByLink` |
+| （新規発見）旧世代コンポーネント群 | **要件を満たす実装は既に `entry-viewing` 側にあり、旧実装はどこからも参照されないデッドコード**（下記Gap 7） | `src/components/entry-list.tsx`, `entry-modal.tsx`, `entry-filter.tsx` とそれぞれの `.test.tsx` |
+
+## 検出したGap（追補）
+
+### Gap 1 再確認: `userPreferenceId` + `feedId` フィルタ不具合は本日時点でも未修正
+
+2026-07-25分析で報告した `src/features/entry-viewing/lib/entry-service.ts:31`（`findManyEntries` の非dedupパス）の
+
+```ts
+if (userPreferenceId) baseWhere.scores = { and: [{ userPreferenceId }, { score: { gte: threshold } }] };
+```
+
+は本日のコミット後も変更されておらず、Prismaの論理結合子の誤り（`and` ではなく `AND`が正、かつこの位置では不要）とフィールド名の誤り（`userPreferenceId` ではなく `preferenceId` が正）がそのまま残存している。`findManyEntriesDedup`（119行目付近）は引き続き正しい実装のままで、非dedupパスのみ壊れている。UIから到達しないデッドコードパスである点、および `GetEntriesQuery` 型は定義済みだが `baseWhere: Record<string, any>` が型チェックをすり抜けさせている点も変わらない。→ **前回のOption A/B/CおよびEffort/Riskの評価はそのまま有効**。
+
+### Gap 6（新規／情報共有目的）: 要件8.3の実装はentry-viewingではなくfeed-management配下にあり、本日パフォーマンス最適化された
+
+要件8.3（「新規保存されたエントリーが既存の既読エントリーと同一linkを持つ場合、EntryMetaをisRead:trueで自動作成する」）を満たす実際のコードは `src/features/feed-management/lib/entry-sync-service.ts`（`saveEntries` 内で呼ばれる `inheritReadStatusByLink`）にある。本日のコミットで、エントリー1件ごとに `findUnique`/`findFirst`/`create` を発行していた実装から、`findMany`（既存meta判定）→`findMany`（同一link既読判定）→`createMany`（一括作成）の最大2〜3クエリにバッチ化する変更が行われた。ロジックを比較検証した結果、以下の理由で**要件8.3のセマンティクスは維持されている**:
+- 旧実装は `NOT: { id: saved.id }` で自己participantを除外していたが、新実装ではこの除外を省いている。ただし新実装の対象（`candidates`）は「まだEntryMetaを持たない」エントリーに限定されるため、既読判定クエリ（`isRead: true` のmetaを持つエントリー）に自分自身が含まれることは原理的にあり得ず、除外ロジック省略による退行はない。
+- `skipDuplicates: true` により、同一linkを共有する複数の新規エントリーが同時に保存された場合の重複作成も防止されている。
+
+`src/lib/entry-service.ts`（旧パス）は現在 `entry-viewing`・`feed-management`・`read-status` の3フィーチャーへのre-exportを束ねる集約シムになっており（`export * from '@/features/entry-viewing/lib/entry-service'` 他2行）、要件文面上は「Entry Service」という単一の主体として8.3を記述しているが、実装は取り込み時（feed-management: `saveEntries`）と表示時（entry-viewing: `findManyEntriesDedup` の8.1/8.2）に分かれている。requirements.md の Boundary Notes は「フィードの登録・削除・更新はfeed-management管轄」とのみ書かれており、「取り込み時の既読連動ロジックもfeed-management管轄である」ことは明示されていない。設計フェーズで、8.3の実装責務がfeed-management/entry-viewingのどちらの管轄か（あるいは両者にまたがる契約か）を明文化しておくと、将来の変更時に迷わない。
+
+### Gap 7（新規／リポジトリ衛生）: 旧世代の未使用コンポーネント群がデッドコードとして残存
+
+`src/components/entry-list.tsx`・`entry-modal.tsx`・`entry-filter.tsx`（およびそれぞれの `.test.tsx`）を発見した。最終更新は2026-04-01（`EntryCardGrid`/`ArticleModal`/`EntryFilterBar` への刷新以前）で、以下を確認した:
+- `EntryList` / `EntryModal` / `EntryFilter` というコンポーネント名を、テストファイル自身を除く全ソースから検索したが、参照は0件（`grep -rln "EntryList\b\|EntryModal\b\|EntryFilter\b"` で該当なし）。
+- 実装内容はページネーション方式が旧式（オフセットベース、カーソルなし）で、無限スクロール・スワイプ・プリフェッチ・一括タグ付けなど要件2・6・9・11を満たしていない。つまり要件を満たしているのは`entry-viewing`配下の現行実装のみで、これらは純粋な残骸である。
+- 同名だが紛らわしい命名（`EntryFilter` vs 現行の `EntryFilterBar`、`EntryModal` vs `ArticleModal`）のため、将来の開発者が誤って古い方を参照・編集するリスクがある。
+- 本日のコミットで `article-modal.tsx` 等のシムファイルが削除されたのと対照的に、この3ファイル（シムではなく実体を持つ旧コンポーネント）とそのテストはまだ削除されていない。
+
+requirements.mdの機能要件そのものには影響しないが、`.kiro/steering/structure.md` が謳う「移行中は旧パスをシムとして維持し、移行完了後は不要」という方針からすると、このファイル群は「シムですらない、参照されない実装＋テスト」であり、構造ドキュメントの移行方針からも外れた状態にある。
+
+### Gap 8（新規／ドキュメント整合性、軽微）: `tech.md` のテスト戦略記述が本日の変更で古くなった
+
+`tech.md` は「Database reset before each test (`beforeEach` in `vitest.setup.ts`)」と明記しているが、本日のコミットで `vitest.setup.ts` は `beforeEach` から `beforeAll`（テストスイート全体で1回のみDBリセット）に変更された。パフォーマンス改善が目的のコメントが付されており意図的な変更と見られるが、これにより同一テストファイル内の複数テスト間でDB状態が引き継がれるようになった。今回の調査では、本サンドボックス環境の権限制約により `prisma migrate reset --force` の実行がブロックされ、`npx vitest run` 経由での実行も同じ理由でセットアップ段階から失敗（`Unknown Error: 1`、詳細メッセージは `stdio: 'ignore'` により握りつぶされ確認不能）したため、この変更がentry-viewing関連の既存テスト（`entry-card-grid.test.tsx`, `entry-service*.test.ts` 等）に順序依存の副作用（あるテストが作成したデータを別テストが誤って参照する等）を生んでいないかを本調査だけでは確定できなかった。**Research Needed**: サンドボックス外のCI等でentry-viewing関連のテストスイートをフルパスさせ、`beforeAll`化によるテスト間干渉が無いことを確認し、あわせて `tech.md` の記述を実態に更新する必要がある。
+
+## Implementation Approach Options
+
+### Gap 7（デッドコード削除）への対応
+
+- **Option A（既存構造の中で削除のみ実施）**: `entry-list.tsx`/`entry-modal.tsx`/`entry-filter.tsx` とそのテストを削除するだけの単純作業。✅ 参照0件を確認済みで安全。✅ 1コミットで完結。❌ entry-viewing自体の設計・タスクには含まれない範囲外作業のため、別チケット/別コミットとして切り出す判断が必要。
+- **Option B（現状維持）**: 実害はないため放置。✅ 対応コスト0。❌ 命名混同によるヒューマンエラーリスクと、テスト実行時間の無駄な消費が残り続ける。
+- **Option C**: entry-viewing designのタスクの一部として明示的に「レガシーコード撤去」タスクを追加し、他のシム撤去（今回のコミットで行われた `article-modal.tsx` 等の削除）と歩調を合わせて計画的に片付ける。✅ 移行プロジェクト全体の一貫性が保てる。❌ entry-viewing spec のスコープをやや超える（他featureのシム撤去とタイミングを合わせる調整が必要）。
+
+## Effort & Risk（追補分）
+
+- Gap 1: 変更なし（Effort S / Risk Low、前回分析のまま）。
+- Gap 6: Effort なし（要件は充足済み、対応不要）。ドキュメント化のみ検討。Risk Low — ロジック検証の結果、退行は確認されなかった。
+- Gap 7: Effort S（1日未満、削除のみ）。Risk Low — 参照0件を確認済みのため削除によるリグレッションの可能性は低い。ただし削除前にCIでの全体テスト実行確認を推奨。
+- Gap 8: Effort 不明（Research Needed） — 修正が必要かどうか自体が「サンドボックス外での全テスト実行確認」に依存するため、現時点でEffortを見積もれない。Risk Medium — DB状態がテスト間で共有されることによる潜在的なテストの脆弱化（flakiness）は、実際に確認できるまでは楽観視すべきでない。
+
+## Recommendations（追補）
+
+- Gap 1は引き続き未対応。次のタスクサイクルで着手可能な小粒修正として温存を推奨（前回分析のOption Aのまま）。
+- Gap 6は実装上問題なし。次回requirements.md/design.md更新時に、8.3の実装責務がfeed-management（取り込み時）とentry-viewing（表示時）にまたがることを明記すると、今後の担当フィーチャーの迷いを防げる。
+- Gap 7（デッドコード）はentry-viewingの設計フェーズの本題ではないが、放置コストが低くないため、design.mdまたは別チケットで撤去を提案する。
+- Gap 8は **Research Needed** として設計フェーズ着手前にCI等サンドボックス外環境でのテストスイート全体実行を依頼し、`beforeAll`化によるテスト間干渉の有無を確認すること。問題なければ`tech.md`の記述更新のみで完了。問題があれば、entry-viewing関連テストのテストごとのデータ独立性（他テストが作成したエントリーIDに依存しない書き方）を見直すタスクが必要になる可能性がある。

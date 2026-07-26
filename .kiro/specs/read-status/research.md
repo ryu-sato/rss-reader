@@ -137,3 +137,97 @@
 - **Gap 2**: `article-modal.tsx` のキーボードショートカット `useEffect` の依存配列に `isUpdatingRead`, `toggleRead` を追加し、クリック操作と同等の動作に揃える。
 - **Gap 3**: `requirements.md` に既読/未読フィルタ機能の要件を追記するか（Option A推奨）、`ReadFilter` を entry-viewing に移す（Option B）か、次スペック更新時に方針を確定する。いずれにせよ現状の「実装済みだが仕様書に存在しない機能」という状態は解消すべき。
 - Research Needed として持ち越す項目: Gap 2の実際のユーザー影響（体感できる不具合の再現条件）の確認。
+
+---
+
+# Gap分析 追補: entry-sync 最適化コミット（93f0a6f）の影響調査（2026-07-26）
+
+## 目的
+
+上記のGap分析（2026-07-25、コミット `a5bc288`時点）の直後に、`93f0a6f feat(entry-sync): optimize entry saving and read status inheritance logic` がmainにマージされた。このコミットは要件3.2（新規エントリー既読連動）の実装箇所である `src/features/feed-management/lib/entry-sync-service.ts` の `saveEntries` を直接書き換えている。上記Gap分析はこの変更を反映していないため、本追補で最新状態を検証し直す。
+
+## 1. Current State Investigation（差分の実体）
+
+`git show 93f0a6f -- src/features/feed-management/lib/entry-sync-service.ts` を確認した結果、変更内容は次の通り。
+
+- **Before**: `saveEntries` のエントリー毎ループ内で、エントリーごとに `entryMeta.findUnique`（自身のメタ存在確認）→ `entryMeta.findFirst`（同一linkの既読シブリング検索）→ 該当すれば `entryMeta.create` を都度発行していた。エントリー数 N に対し最大 2N 回のDB往復が発生する構造。
+- **After**: ループ内では `Entry.upsert` の結果（id, link）を配列に蓄積するだけに変更し、ループ終了後に新設のヘルパー関数 `inheritReadStatusByLink(saved)` を1回だけ呼び出す。この関数は次の3クエリで全件を一括処理する。
+  1. `entryMeta.findMany({ entryId: { in: [...] } })` — 保存済みエントリーのうちメタが既にあるものを特定
+  2. メタが無い候補（candidates）に対して `entryMeta.findMany({ isRead: true, entry: { link: { in: [...] } } } })` — 同一link群のうち既読メタを持つものを一括検索
+  3. 既読linkに合致する候補をまとめて `entryMeta.createMany({ data: [...], skipDuplicates: true })` で作成
+
+コメント（L40-42）に「entries.length に比例したDB往復を避けるため」と明記されており、意図は明確にパフォーマンス最適化であり、要件3.2の振る舞い変更を意図したものではない。
+
+## 2. Requirements Feasibility Analysis（要件3.2への影響評価）
+
+**結論: 要件3.2の充足状況に変化はない（実装済みのまま）。ロジック的に旧実装と等価と判断できる。**
+
+- 候補（candidates）は「保存直後でメタを持たないエントリー」に限定してから既読linkを検索するため、旧実装の `NOT: { id: saved.id }`（自分自身を除外する条件）が新実装では明示的に書かれていないが、候補自体がメタを持たない＝`isRead: true` の対象になり得ないため、自己参照によって誤って既読化される余地はない。実質的に旧実装と同じ集合を返す。
+- `createMany` に `skipDuplicates: true` が付与された点は旧実装（`create` を都度呼ぶ）からの機能追加であり、同時実行（例: 複数フィードの並行取得ジョブが同一linkのエントリーを同時に新規作成するケース）で `entryId` のユニーク制約違反が起きても例外にならず安全側に倒れる。これは要件を損なわない改善。
+- Prismaスキーマ側のインデックス（`Entry.@@index([link])`、`EntryMeta.@@index([isRead])`）は新しいクエリパターン（`entryMeta.findMany({ isRead: true, entry: { link: { in: [...] } } })`）にも対応できる構成になっており、新規のインデックス追加は不要と判断できる。ただしSQLite/LibSQL上でPrismaのリレーションフィルタが実際にどうSQLへコンパイルされるか（JOINか2クエリ分割か）は未検証であり、エントリー件数が非常に多いフィード（上限500件/フィード、`MAX_ENTRIES_PER_FEED`）でのレイテンシ実測は行っていない。
+
+**新規に検出した懸念（Gapではないが記録）**:
+
+### 懸念A: 同コミットで `vitest.setup.ts` のDBリセット方針が `beforeEach` → `beforeAll` に変更されており、read-status関連の既存テストが現在の環境で実行不能な状態
+- **分類**: Constraint / Research Needed
+- **詳細**: 同一コミット内で `vitest.setup.ts` が次のように変更されている。
+  ```diff
+  - beforeEach(async() => { // DBをリセットしてからテストを実行
+  + beforeAll(async() => { // テストスイート全体の実行前に一度だけDBをリセットする
+      ... spawn('prisma', ['migrate', 'reset', '--force']) ...
+  ```
+  意図はテスト実行速度の改善（テスト件数分のCLIプロセス起動を1回に削減）だが、本調査環境で `npx vitest run src/lib/__tests__/entry-service-save.test.ts` および `entry-service-query.test.ts`（＝前段のGap分析が要件3.1〜3.3の実装済み根拠として引用したテストファイル）を実行したところ、いずれも `beforeAll` フックの `prisma migrate reset --force` 実行時点で失敗し（`Unknown Error: 1`）、テスト本体は1件も実行されずに全件skip扱いとなった。
+  この失敗がサンドボックス実行環境固有の制約（DB書き込み権限やプロセス起動制限）によるものか、CI環境でも再現する実質的な回帰かは本調査だけでは切り分けられない。ただし前段Gap分析が「実装済み」の根拠として名指ししたテストファイルが、少なくとも本調査時点の環境では検証不能であるという事実は重要であり、次フェーズで確認すべき。
+  また `.kiro/steering/tech.md` L38 は依然として「Database reset before each test（`beforeEach` in `vitest.setup.ts`）」と記載しており、実装（`beforeAll`）と乖離している（steering未更新のドリフト）。
+- **影響範囲**: 要件3.1〜3.3自体の実装コードは目視レビューで妥当と判断できるが、「テストで担保されている」という前段Gap分析の主張は現時点で再検証できていない。CI（GitHub Actions等、未確認）で実際に通っているかどうかは別途確認が必要。
+- **Research Needed**: (1) CI環境で `entry-service-save.test.ts` / `entry-service-query.test.ts` が実際にグリーンかどうかの確認。(2) `beforeAll` 化がテスト間のDB状態リーク（あるテストが書き込んだデータを後続テストが誤って参照する）を引き起こしていないかの確認。(3) `.kiro/steering/tech.md` L38 の記述更新（`beforeEach` → `beforeAll`）。
+
+### 懸念B: `saveEntries` の既読連動ロジック自体（新規エントリーが既読シブリングを持つ場合に既読化される、という3.2のコア挙動）を直接検証する単体テストが、最適化の前後を通じて一貫して存在しない
+- **分類**: Missing（テストカバレッジ）/ Research Needed
+- **詳細**: `git show 93f0a6f^:src/lib/__tests__/entry-service-save.test.ts` を確認したところ、最適化前の時点でも「既読シブリングがいる場合に新規エントリーが既読化される」ケースを検証するテストは存在せず、`beforeEach` で `mockEntryMeta.findUnique/findFirst` を常に `null` を返すようにモックし、「メタなし・既読な兄弟なし」というデフォルトパスのみが暗黙にテストされていた。最適化後も同様に `mockEntryMeta.findMany.mockResolvedValue([])` で空配列固定であり、既読連動が実際に発火するケース（`toCreate` が非空になるケース）を検証するテストケースは追加も削除もされていない。
+  つまりこれは新規のGapではなく、最適化コミットの前後を通じて存在し続けている既存の穴だが、ロジックが単純な逐次処理から集合演算（`Set`操作を含む2段階フィルタリング）に変わったことで、テストなしでのロジック複雑度は相対的に上がっている。前段Gap分析には言及がなかったため、本追補で新たに明記する。
+- **影響範囲**: 要件3.2のコアロジックが将来のリファクタで壊れても、既存テストスイートでは検知できない。
+
+## 3. Implementation Approach Options
+
+### 懸念A（テスト実行不能）への対応
+
+#### Option A: 現状の `beforeAll` 方針を維持しつつ、CI環境での実行結果を確認して steering (`tech.md`) を実態に合わせて更新するのみ
+- ✅ コード変更不要、ドキュメントの正確性のみ回復
+- ❌ 本調査環境での「Unknown Error: 1」の根本原因（サンドボックス制約か実質的な回帰か）は未解決のまま
+
+#### Option B: `beforeAll` によるDB状態共有がテスト間で問題を起こしていないか、各 `describe` ブロック内で明示的なクリーンアップ（`afterEach` でのテーブルクリア等）を追加する
+- ✅ テスト分離性を担保しつつパフォーマンス改善の効果も維持できる
+- ❌ 追加の実装コストが発生し、対象は read-status 固有ではなく全テストスイート共通のインフラ変更になるため、本specのスコープを超える可能性が高い
+
+#### Option C: CI設定（未確認）を確認し、ローカルサンドボックスの `prisma migrate reset` 失敗がサンドボックス固有の問題（DB書き込み権限等）と判明すれば、read-status spec としては静観する
+- ✅ 低コスト
+- ❌ 「テストが実装済み要件の根拠になっているか」の疑義が残ったままdesignフェーズに進むことになる
+
+**推奨**: Option A + Option C（まずCI実行結果を確認し、steeringのドリフトのみ修正する）。Option Bはテストインフラ全体に関わるため、read-status specの範囲を超えると考えられる。
+
+### 懸念B（既読連動ロジックの単体テスト欠如）への対応
+
+#### Option A: `entry-service-save.test.ts` に「既読シブリングが存在する場合、新規エントリーが `isRead: true` で作成される」ケースと「同一バッチ内の複数エントリーが同一linkを共有し、外部に既読シブリングがいる場合に全件既読化される」ケースを追加する
+- ✅ 要件3.2のコア回帰防止になる。`mockEntryMeta.findMany` の返り値を変えるだけで実装できゲート
+- ✅ 最適化後の集合演算ロジック（`idsWithMeta` / `readLinks` のSet構築）の妥当性を直接検証できる
+- ❌ モックのセットアップがやや複雑（`findMany` が2回呼ばれる＝メタ存在確認用と既読link検索用の2種の返り値を呼び出し順で出し分ける必要がある）
+
+#### Option B: 現状維持（Gapとして記録のみ）
+- ✅ 低コスト
+- ❌ コアロジックが無防備なまま残る
+
+**推奨**: Option A。Effort Sで対応可能かつ要件3.2の実装済み判定の信頼性を大きく引き上げる。
+
+## 4. Effort & Risk
+
+- **懸念A（テスト実行可否の確認・steering更新）**: Effort S（1日未満）／Risk Low — 調査とドキュメント修正が中心。ただしCI実行結果次第でRiskがMediumに上がる可能性あり（実質的な回帰だった場合）
+- **懸念B（既読連動の単体テスト追加）**: Effort S（1日未満）／Risk Low — 既存のモックベーステストパターンを踏襲するのみ
+
+## 5. Recommendations（設計フェーズへの申し送り）
+
+- 要件3.1〜3.3（リンクベースシブリング同期）は `93f0a6f` の最適化後も**機能的には**満たされていると判断できる。ロジックのレビューベースでは旧実装と等価であり、新たな実装Gapは検出されなかった。
+- ただし、その根拠として前段Gap分析が引用した既存テスト（`entry-service-save.test.ts`, `entry-service-query.test.ts`）が、本調査環境では `vitest.setup.ts` の `beforeAll` 化に起因すると見られる `prisma migrate reset` 失敗で**実行不能**であることが判明した。design/tasksフェーズに進む前に、CI環境での実際のテスト結果を確認することを強く推奨する（Research Needed）。
+- 要件3.2のコア挙動（既読シブリングがいる場合の新規既読連動）を直接検証する単体テストが、最適化の前後を通じて存在しないことも新たに判明した。design/tasksフェーズで本specのスコープに含めるか、既存コードへの独立したテスト追加タスクとして切り出すかを検討されたい。
+- `src/components/article-modal.tsx` の legacy re-export shim が同コミットで完全削除されていることを確認した（`src/features/entry-viewing/components/article-modal.tsx` への参照は全てfeatureパス経由であり、壊れたimportは検出されなかった）。read-status固有の影響はないが、feature-by-folder移行がshim維持からshim撤去のフェーズに移りつつあることの傍証として記録する。
+- `.kiro/steering/tech.md` のテスト方針記述（L38: `beforeEach` in `vitest.setup.ts`）は実装（`beforeAll`）と乖離しており、read-status spec固有ではないが次回のsteering同期（`/kiro-steering`）で更新すべき。

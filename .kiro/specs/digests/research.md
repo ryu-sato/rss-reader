@@ -79,3 +79,56 @@ Gap 3（DeleteDigestButtonのエラーUI欠如）については、`DigestForm`�
 - Gap 2（title空文字列の扱い）は要件文自体が`''`という中間状態を想定していないため、次にDigestForm/APIを触るタイミングでのついで対応で十分。
 - Gap 3（DeleteDigestButtonのエラーUI欠如）はdesign.mdの方針と実装の乖離のため、記録した上でチームに要修正か許容かを確認する。
 - Gap 4（テスト不在）はrequirements.mdの範囲外だが、tasks.md 8.1/8.2が未完了である事実は今後の実装作業のTODOとして引き続き有効。
+
+---
+
+# Gap分析: 実装 vs Requirements（2026-07-26 再検証）
+
+## 目的
+
+2026-07-25付けの上記Gap分析から1日が経過した時点で、`digests`フィーチャーの実装状況に変化（ドリフト）が生じていないか、また新たに再利用可能なコンポーネント/サービスが追加されていないかを再検証する。本フィーチャーは`requirements.md`/`design.md`/`tasks.md`すべて承認済み（`ready_for_implementation: true`）であるため、本分析は実装方針の決定ではなく、設計フェーズ着手前の前提再確認（Current State Investigation）を目的とする。
+
+## 1. Current State Investigation（現状調査）
+
+### ディレクトリ構成とfolder-by-feature移行状況
+- `git log --oneline -- '*digest*'` で全コミット履歴を確認した結果、digest関連ファイルへの直近の変更は `c763d3e`（2026-07-20、"add motion library and implement reduced motion preferences"）であり、内容は`src/app/digests/page.tsx`・`src/app/digests/[id]/page.tsx`の1行差分（リンクの軽微な調整）のみ。**前回分析（2026-07-25付、コミット`a5bc288`）以降、digest関連ファイルへのコード変更は一切ない**ことを確認した。
+- `find src/features -iname '*digest*'` はヒットなし。`ls src/features/` は `entry-viewing`, `feed-management`, `preference-recommendations`, `read-status`, `tag-management` の5フィーチャーのみで、`digests`は含まれない。`.kiro/steering/structure.md`（44行目）の「`digests`は未移行」という記述は**現時点でも正確**であり、ドリフトは無い。
+- 実装ファイルの所在は前回分析と同一: `src/lib/digest-service.ts`, `src/types/digest.ts`, `src/components/digest-form.tsx`, `src/components/delete-digest-button.tsx`, `src/app/digests/**`, `src/app/api/digests/**`。
+
+### 再利用可能アセットの再確認
+- `src/middleware.ts` を新規に確認した結果、`/api/digests`を含む全パス（`/login`, `/api/auth`を除く）がセッション認証・許可メールアドレス（`ALLOWED_EMAILS`）チェックの対象になっている（グローバル適用、matcher設定で静的アセット等を除外）。digest APIルート自身には認証コードが存在しないが、これは`src/app/api/feeds/route.ts`など他フィーチャーのAPIルートも同様であり、本アプリ全体の設計パターン（認証はmiddleware層に一元化）と整合している。認証欠如は本フィーチャー固有のGapではない。
+- `prisma/schema.prisma`の`Digest`モデル（93-101行目）は前回確認時と同一: `id, title?, content, createdAt`のみで`userId`等のオーナーシップ列は無い。他モデル（`User`等）との関連も無く、シングルテナント（許可ユーザー全員が全ダイジェストを共有閲覧）を前提とした設計のまま変化なし。
+- AI関連ライブラリ（`openai`, `anthropic`, `@ai-sdk/*`等）を`package.json`から検索したが該当なし。`generate.*digest`等のキーワードでのコード内検索もヒットなし。project descriptionにある「AIが生成した...ダイジェスト」という文言は、現行のEARS要件（1〜6章）には一切反映されておらず、**AI生成トリガー機能はrequirements.mdのスコープ外**であることを再確認した（前回分析では明示的に言及されていなかった点）。
+
+### tasks.mdとの整合性（新規確認事項）
+- `tasks.md`の全21タスク行（`- [ ]`表記）を確認したところ、**チェック済み（`- [x]`）が0件、未チェックが21件**であった。前回分析（Gap 4）はテストタスク8.1/8.2の未完了にのみ言及していたが、実際にはFoundation（1.x）・Core実装（2.x〜7.x）を含む**タスクリスト全体が未着手のマーキングのまま**である一方、対応する実装コード自体はすべて存在し前回分析で機能済みと確認されている。これは実装漏れではなく、逆引きspec生成時（2026-05-15）にtasks.mdのチェックボックスが実装状況と同期されなかった**進捗トラッキング上のドリフト**であり、設計フェーズでの技術判断には影響しないが、次回`/kiro-spec-status`や`/kiro-impl`実行時に誤って「未着手」と判断されるリスクがあるため記録する。
+
+## 2. Requirements Feasibility Analysis（再確認）
+
+前回分析のRequirement-to-Asset Map（要件1〜6すべて実装済み）は、コード差分が無いため**そのまま有効**。再検証で追加確認した事実:
+- `src/app/api/digests/route.ts:34`（POST content検証）と`src/app/api/digests/[id]/route.ts:22`（PATCH content検証）の非対称性（前回Gap 1）は、該当行を再読し**現在も同一のコードのまま**であることを確認した。
+- `src/lib/digest-service.ts`のtitle正規化（`title ?? null`のみで空文字列は素通り、前回Gap 2）も変更なし。
+- `src/components/delete-digest-button.tsx`のエラーUI欠如（前回Gap 3）も変更なし。
+
+新たなMissing（未実装のEARS要件）は検出されなかった。新たなUnknownとしては、上記「AI生成トリガーの要件スコープ」を「Research Needed」として計上する（下記参照）。
+
+## 3. Implementation Approach Options（変更なし、再提示）
+
+前回分析のOption A/B/Cは、対象コードが変化していないため**そのまま有効**。要約:
+- **Option A（サービス層でバリデーション/正規化を一元化）**: POST/PATCHの基準を自動的に一致させられるが、design.mdの「バリデーションはAPIルート層」責任分担（243行目）と矛盾するため設計文書の改訂を伴う。
+- **Option B（APIルート層のみ修正）**: design.mdの既存責任分担を維持したまま`route.ts`（POST）の空文字列チェックをPATCHと同一基準に揃える最小差分。重複ロジックが2箇所に残るリスクはある。
+- **Option C（現状維持）**: 通常のUIフロー（DigestForm経由）では到達しないエッジケースのため見送り、記録のみ残す。
+
+Gap 3（DeleteDigestButtonのエラーUI欠如）への対応は、Option A/Bいずれとも独立して`error`状態の追加のみで対応可能な点も変更なし。
+
+## 4. Effort & Risk（再評価）
+
+- **Effort**: S（1〜3日）— 前回評価から変更なし。対象ファイルが1日経過後も変化しておらず、修正範囲の見積り根拠（1〜2ファイルの局所修正）は引き続き妥当。
+- **Risk**: Low — 変更なし。既存の正常系フロー（DigestForm経由のUI操作）に影響しない、既知パターンの延長線上の修正であることを再確認した。
+
+## 5. Recommendations（設計フェーズ向け）
+
+- **コードドリフトは検出されなかった**。2026-07-25時点の分析内容（Requirement-to-Asset Map、Gap 1〜4、Option A/B/C、Effort/Risk）はすべて現時点でも有効であり、設計フェーズはこの前提の上に進めてよい。
+- **新規推奨事項**: `tasks.md`の全21項目が未チェックのまま実装が完了している状態は、今後`/kiro-impl digests`を誤って実行し重複実装を招くリスクがあるため、設計/タスクフェーズを再訪する際に`tasks.md`のチェックボックスを実装状況に合わせて更新することを推奨する（本Gap分析のスコープでは変更を加えず、記録のみ）。
+- **Research Needed**: project description記載の「AIが生成した」ダイジェストという文言について、AI生成トリガー機能（例: 記事群からのダイジェスト自動生成API）が将来的に別スペックとして計画されているか、あるいは本スペックのスコープから意図的に除外されたのかをプロダクトオーナーに確認する。現行のrequirements.mdはこの点を明示的に扱っておらず、EARS要件からは判断できない。
+- 優先順位は前回分析を踏襲: Gap 1（POST content空白バリデーション）を最優先、Gap 2（title空文字列正規化）は次回改修時のついで対応、Gap 3（削除失敗時UI）はチーム確認、Gap 4（テスト不在）はtasks.md 8.1/8.2として引き続き有効なTODO。
