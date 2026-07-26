@@ -1,30 +1,23 @@
-# Loop Configuration — Minimal Triage (Claude Code)
+# Loop Configuration — Minimal Triage
 
 ## Active Loops
 
 | Pattern | Cadence | Status | Command |
 |---------|---------|--------|---------|
-| Daily Triage | 1d | L1 report-only | `/loop 1d Run $loop-triage` |
+| Daily Triage | 1d | L1 report-only | See README |
 
 ## Human Gates
 
 - No auto-fix until L2 checklist complete
-- All high-risk paths: human review required (see docs/safety.md denylist)
-
-## Worktrees
-
-- Use `isolation: worktree` when spawning implementer sub-agents (L2+).
-- One worktree per fix attempt; discard after verifier REJECT.
-
-## Connectors (MCP)
-
-- MCP optional for L1 report-only loops.
-- For L2+: GitHub MCP to read CI/issues; scope connectors to read + comment only until trusted.
+- All high-risk paths: human review required
 
 ## Budget
 
-- Max sub-agent spawns per run: 0 (L1)
-- Review STATE.md daily
+- Max sub-agent spawns per run: 0 (L1) / 2 (L2)
+- Max tokens/day: 100k (see `loop-budget.md`)
+- Append each run to `loop-run-log.md`; use `loop-budget` skill at start/end
+- Kill switch: `loop-pause-all` — pause schedulers and notify human
+- Estimate: `npx @cobusgreyling/loop-cost --pattern daily-triage`
 
 ## Links
 

@@ -1,0 +1,43 @@
+{
+  "stackName": "rss-reader",
+  "stackVersion": "1.0.0",
+  "lockedAt": "2026-07-26T10:44:27.166Z",
+  "entries": [
+    {
+      "primitive": "model/mock",
+      "digest": "5d5586a469ac07c5",
+      "layer": "interface",
+      "resolvedAt": "2026-07-26T10:44:27.167Z"
+    },
+    {
+      "primitive": "context/state-file",
+      "digest": "37ecef10645be824",
+      "layer": "composition",
+      "resolvedAt": "2026-07-26T10:44:27.167Z"
+    },
+    {
+      "primitive": "control/token-budget-100k",
+      "digest": "1db36db7dbbbfe92",
+      "layer": "execution",
+      "resolvedAt": "2026-07-26T10:44:27.167Z"
+    },
+    {
+      "primitive": "sandbox/worktree-isolated",
+      "digest": "a5e48fc05053cac1",
+      "layer": "execution",
+      "resolvedAt": "2026-07-26T10:44:27.167Z"
+    },
+    {
+      "primitive": "observability/span-per-turn",
+      "digest": "b7df42a9b40d5e44",
+      "layer": "reliability",
+      "resolvedAt": "2026-07-26T10:44:27.167Z"
+    },
+    {
+      "primitive": "emit/outerloop-evidence",
+      "digest": "729e58a87789db04",
+      "layer": "reliability",
+      "resolvedAt": "2026-07-26T10:44:27.167Z"
+    }
+  ]
+}
