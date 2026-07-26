@@ -13,9 +13,8 @@ vi.mock('@/lib/db', () => ({
       deleteMany: vi.fn(),
     },
     entryMeta: {
-      findUnique: vi.fn(),
-      findFirst: vi.fn(),
-      create: vi.fn(),
+      findMany: vi.fn(),
+      createMany: vi.fn(),
     },
   },
 }))
@@ -75,8 +74,7 @@ const sampleFeed = {
 beforeEach(() => {
   vi.clearAllMocks()
   // 同一 link の既読連動チェック用。デフォルトでは「メタなし・既読な兄弟なし」を返す
-  mockEntryMeta.findUnique.mockResolvedValue(null)
-  mockEntryMeta.findFirst.mockResolvedValue(null)
+  mockEntryMeta.findMany.mockResolvedValue([])
 })
 
 describe('saveEntries', () => {

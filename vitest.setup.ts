@@ -1,10 +1,12 @@
 import '@testing-library/jest-dom'
-import { beforeEach } from 'vitest';
+import { beforeAll } from 'vitest';
 import { spawn } from 'child_process';
 import path from 'path';
 
-beforeEach(async() => {
-  // DBをリセットしてからテストを実行
+beforeAll(async() => {
+  // テストスイート全体の実行前に一度だけDBをリセットする
+  // (以前は beforeEach で毎テストごとに実行しており、テスト件数分の
+  //  CLIプロセス起動 + マイグレーション再適用が発生し非常に重かった)
   const prismaBin = path.join(process.cwd(), 'node_modules', '.bin', 'prisma');
   await new Promise((res, rej) => {
     const process = spawn(
