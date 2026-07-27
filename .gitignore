@@ -62,3 +62,6 @@ public/workbox-*.js.map
 
 # Claude Code
 settings.local.json
+
+# Foundry harness session worktrees
+.foundry/
