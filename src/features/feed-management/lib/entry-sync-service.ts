@@ -61,7 +61,6 @@ async function inheritReadStatusByLink(saved: { id: string; link: string }[]): P
 
   await prisma.entryMeta.createMany({
     data: toCreate.map((e) => ({ entryId: e.id, isRead: true, isReadLater: false })),
-    skipDuplicates: true,
   })
 }
 
