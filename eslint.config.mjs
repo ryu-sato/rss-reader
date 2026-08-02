@@ -12,6 +12,15 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // .claude/worktrees/ や .foundry/sessions/ にはリポジトリの複製が git worktree
+    // として置かれるため、除外しないと同じソースが二重に lint 対象になる
+    // (vitest.config.ts の exclude と同じ理由)
+    ".claude/**",
+    ".foundry/**",
+    // serwist が `next build`/`next dev` 時に生成する Service Worker バンドル
+    // (.gitignore 対象、ソースではないので lint 不要)
+    "public/sw.js",
+    "public/sw.js.map",
   ]),
   {
     // Dockerコンテナ内で `node entrypoint.js` として直接実行されるCommonJSブートストラップ
