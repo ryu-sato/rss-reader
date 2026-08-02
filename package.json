@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
-    "@dotenvx/dotenvx": "^1.75.1",
+    "@dotenvx/dotenvx": "^2.19.1",
     "@libsql/client": "^0.17.4",
     "@prisma/adapter-libsql": "^7.9.1",
     "@prisma/client": "^7.9.1",
