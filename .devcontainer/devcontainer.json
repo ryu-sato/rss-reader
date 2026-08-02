@@ -32,18 +32,6 @@
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
 
-	// コンテナにメモリ上限を課す。上限が無いと暴走したプロセスが WSL2 の全メモリ (9.5GB) を
-	// 奪い、スワップ 0 の環境ではホストごと応答不能になる (OS 再起動が必要になる)。
-	// 上限を設ければ、暴走してもコンテナ内のプロセスが OOM kill されるだけで済む。
-	// 上限値の根拠: next build (--max-old-space-size=3072 で約 3.5GB) と
-	// tsserver (上限 2048 で約 2.3GB)、VS Code サーバー (約 0.5GB) が同時に動く
-	// ケースを想定して 7g。ホスト側 (WSL2 全体 9.5GB) には 2.5GB 残る。
-	"runArgs": [
-		"--memory=7g",
-		// スワップを許すと上限超過時に激しいスワップで固まるため、swap 込みで同値に固定する
-		"--memory-swap=7g"
-	],
-
 	"containerEnv": {
 		// IPv6 による接続の問題を回避するため、Node.js の DNS 結果の順序を IPv4 優先にする
 		// 参考: https://github.com/anthropics/claude-code/issues/9376#issuecomment-3773860151
