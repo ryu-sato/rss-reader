@@ -56,6 +56,7 @@ Full-stack Next.js application using the App Router pattern. Server Components h
 - **SSRF protection mandatory**: All feed URL fetches pass through `ssrf-guard.ts` before making HTTP requests
 - **Content sanitization**: All external HTML/Markdown rendered through rehype-sanitize — never use `dangerouslySetInnerHTML` with unsanitized content
 - **File-based module cache**: Next.js memory cache disabled; file-based cache only (configured in `next.config.ts`)
+- **`@types/node` tracks the devcontainer's Node major**: `.devcontainer/devcontainer.json`'s image tag pins the Node major (e.g. `typescript-node:4-24-trixie` → Node 24); `@types/node`'s major in `package.json` must match, per DefinitelyTyped's own guidance. Bumping the devcontainer image's Node major requires bumping `@types/node` too — it won't happen automatically.
 
 ---
 _Document standards and patterns, not every dependency_

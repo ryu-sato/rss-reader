@@ -3,6 +3,10 @@
 {
 	"name": "Node.js & TypeScript",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	// このイメージタグの Node メジャーバージョン (末尾の "-24-") を変更したら、
+	// package.json の devDependencies["@types/node"] のメジャーも必ず追随させる。
+	// @types/node はメジャーバージョンを Node 本体に合わせるのが公式推奨のため
+	// (https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/54465)。
 	"image": "mcr.microsoft.com/devcontainers/typescript-node:4-24-trixie",
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
