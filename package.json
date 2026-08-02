@@ -7,6 +7,7 @@
     "build": "prisma generate && next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "prisma generate && NODE_OPTIONS=\"$NODE_OPTIONS --max-old-space-size=2048\" tsc --noEmit",
     "test": "npm run dotenvx:test -- vitest",
     "test:run": "npm test -- run",
     "test:coverage": "npm test -- run --coverage",

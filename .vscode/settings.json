@@ -1,0 +1,28 @@
+{
+  // TypeScript 言語サーバー (tsserver) は VS Code 起動中ずっと常駐し、上限を指定しないと
+  // Node のデフォルト (このマシンでは 2240MB) まで膨張する。スワップ 0 の WSL2 では
+  // 常駐プロセスの肥大がホストのフリーズに直結するため、明示的に上限を設ける。
+  // 型チェック全体でも実測 807MB なので 2048MB あれば十分。
+  "typescript.tsserver.maxTsServerMemory": 2048,
+
+  // ワークスペース同梱の TypeScript を使い、VS Code 同梱版との二重ロードを避ける
+  "typescript.tsdk": "node_modules/typescript/lib",
+
+  // 自動インポート候補の収集は未使用ファイルまで解析対象を広げるため無効化する
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+
+  // ファイル監視の対象を絞る (.next/cache は 300MB 超あり監視する意味がない)
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.next/cache/**": true,
+    "**/.foundry/**": true,
+    "**/.git/objects/**": true,
+    "**/.pnpm-store/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next/cache": true,
+    "**/.foundry": true,
+    "**/.pnpm-store": true
+  }
+}
