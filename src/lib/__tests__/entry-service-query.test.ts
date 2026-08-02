@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
 vi.mock('@/lib/db', () => ({
   prisma: {
@@ -19,8 +19,8 @@ vi.mock('@/lib/db', () => ({
 import { prisma } from '@/lib/db'
 import { findManyEntries, getEntryById, updateEntryMeta } from '../entry-service'
 
-const mockEntry = vi.mocked(prisma.entry)
-const mockEntryMeta = vi.mocked(prisma.entryMeta)
+const mockEntry = prisma.entry as unknown as Record<'aggregate' | 'count' | 'findMany' | 'findUnique', Mock>
+const mockEntryMeta = prisma.entryMeta as unknown as Record<'findUnique' | 'upsert', Mock>
 
 const sampleEntry = {
   id: 'entry-1',

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
 vi.mock('@/lib/db', () => ({
   prisma: {
@@ -33,9 +33,9 @@ import { fetchEntries } from '@/features/feed-management/lib/entry-fetcher'
 import { saveEntries, enforceEntryLimit, fetchAllFeedsEntries } from '../entry-service'
 import type { FetchedEntryData } from '@/features/entry-viewing/types/entry'
 
-const mockEntry = vi.mocked(prisma.entry)
-const mockFeed = vi.mocked(prisma.feed)
-const mockEntryMeta = vi.mocked(prisma.entryMeta)
+const mockEntry = prisma.entry as unknown as Record<'count' | 'deleteMany' | 'findMany' | 'upsert', Mock>
+const mockFeed = prisma.feed as unknown as Record<'findMany' | 'update', Mock>
+const mockEntryMeta = prisma.entryMeta as unknown as Record<'findMany', Mock>
 const mockValidateUrl = vi.mocked(validateUrl)
 const mockFetchEntries = vi.mocked(fetchEntries)
 

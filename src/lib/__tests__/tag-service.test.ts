@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
 vi.mock('@/lib/db', () => ({
   prisma: {
@@ -16,8 +16,8 @@ vi.mock('@/lib/db', () => ({
 import { prisma } from '@/lib/db'
 import { upsertTagAndAssign, removeTagFromEntry, getAllTags } from '../tag-service'
 
-const mockTag = vi.mocked(prisma.tag)
-const mockEntryTag = vi.mocked(prisma.entryTag)
+const mockTag = prisma.tag as unknown as Record<'findMany' | 'upsert', Mock>
+const mockEntryTag = prisma.entryTag as unknown as Record<'delete' | 'upsert', Mock>
 
 const sampleTag = {
   id: 'tag-1',
