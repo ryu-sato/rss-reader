@@ -2,7 +2,7 @@
  * TASK-0018: Integration tests for scheduled fetch, error handling, dedup, and entry limits.
  * Tests fetchAllFeedsEntries, saveEntries, enforceEntryLimit with mocked dependencies.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
 vi.mock('@/lib/db', () => ({
   prisma: {
@@ -40,9 +40,9 @@ import { fetchEntries } from '@/features/feed-management/lib/entry-fetcher'
 import { fetchAllFeedsEntries, saveEntries, enforceEntryLimit } from '@/lib/entry-service'
 import type { FetchedEntryData } from '@/features/entry-viewing/types/entry'
 
-const mockFeed = vi.mocked(prisma.feed)
-const mockEntry = vi.mocked(prisma.entry)
-const mockEntryMeta = vi.mocked(prisma.entryMeta)
+const mockFeed = prisma.feed as unknown as Record<'findMany' | 'update', Mock>
+const mockEntry = prisma.entry as unknown as Record<'count' | 'deleteMany' | 'findMany' | 'upsert', Mock>
+const mockEntryMeta = prisma.entryMeta as unknown as Record<'findFirst' | 'findMany' | 'findUnique', Mock>
 const mockValidateUrl = vi.mocked(validateUrl)
 const mockFetchEntries = vi.mocked(fetchEntries)
 

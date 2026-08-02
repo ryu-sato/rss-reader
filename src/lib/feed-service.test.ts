@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
 vi.mock('@/lib/db', () => ({
   prisma: {
@@ -27,8 +27,8 @@ import { fetchFeed } from '@/features/feed-management/lib/rss-fetcher'
 import { createFeed, getAllFeeds, getFeedById, updateFeed, deleteFeed } from './feed-service'
 import { ConflictError, NotFoundError, SSRFError } from './errors'
 
-const mockFeed = vi.mocked(prisma.feed)
-const mockQueryRaw = vi.mocked(prisma.$queryRaw)
+const mockFeed = prisma.feed as unknown as Record<'findUnique' | 'findMany' | 'create' | 'update' | 'delete', Mock>
+const mockQueryRaw = prisma.$queryRaw as unknown as Mock
 const mockValidateUrl = vi.mocked(validateUrl)
 const mockFetchFeed = vi.mocked(fetchFeed)
 
