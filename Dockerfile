@@ -8,6 +8,8 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
+# lockfileが解決した実際のlibsqlバージョンを記録（後続ステージのハードコード防止）
+RUN node -p "require('./node_modules/libsql/package.json').version" > .libsql-version
 
 # ---- Builder ----
 FROM base AS builder
@@ -25,7 +27,8 @@ RUN pnpm build
 # pnpmのGHAキャッシュはプラットフォームを区別しないため、arm64ビルド時にamd64キャッシュが再利用される問題を回避
 FROM node:24-slim AS native-deps
 WORKDIR /native
-RUN npm install libsql@0.5.22
+COPY --from=deps /app/.libsql-version .
+RUN npm install libsql@$(cat .libsql-version)
 
 # ---- Prisma CLI (pnpmの仮想ストア問題を回避するためnpmでフラットインストール) ----
 FROM node:24 AS prisma-cli
@@ -67,8 +70,9 @@ COPY --chown=node:node --from=prisma-cli /prisma-cli/prisma.config.mjs ./prisma-
 # プラットフォームの正しいlibsqlネイティブバイナリで上書き（arm64/amd64キャッシュ混在問題を修正）
 # pnpm仮想ストア内のシンボリックリンクを回避するため、/tmpにコピー後にrm+cpで置き換える
 COPY --from=native-deps /native/node_modules/@libsql/ /tmp/libsql-native/
+COPY --from=deps /app/.libsql-version /tmp/.libsql-version
 RUN ARCH=$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/') && \
-    PNPM_LIBSQL="/app/node_modules/.pnpm/libsql@0.5.22/node_modules/@libsql" && \
+    PNPM_LIBSQL="/app/node_modules/.pnpm/libsql@$(cat /tmp/.libsql-version)/node_modules/@libsql" && \
     rm -rf "${PNPM_LIBSQL}" && \
     mkdir -p "${PNPM_LIBSQL}" && \
     cp -r "/tmp/libsql-native/linux-${ARCH}-gnu" "${PNPM_LIBSQL}/linux-${ARCH}-gnu" && \
