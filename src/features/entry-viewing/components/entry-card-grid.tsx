@@ -54,7 +54,7 @@ interface EntryCardGridProps {
   sortOrder?: 'asc' | 'desc'
   scoreThreshold?: number
   basePath?: string
-  allTags: Array<{ id: string; name: string; createdAt: Date }>
+  allTags: Array<{ id: string; name: string; createdAt: Date; entryCount: number }>
 }
 
 export function EntryCardGrid({

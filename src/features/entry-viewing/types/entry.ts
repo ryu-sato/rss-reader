@@ -34,6 +34,9 @@ export type EntryMeta = EntryMetaModel;
 
 export type Tag = TagModel;
 
+/** タグとその使用回数（付与されているエントリー数） */
+export type TagWithCount = Tag & { entryCount: number }
+
 /** エントリーとタグの関連（中間テーブル） */
 export type TagOnEntry = EntryTagModel & {
   tag: Tag
@@ -99,7 +102,7 @@ export interface CreateTagResponse {
 
 export interface GetTagsResponse {
   success: true
-  data: Tag[]
+  data: TagWithCount[]
 }
 
 // ========================================

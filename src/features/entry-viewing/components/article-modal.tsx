@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
 interface ArticleModalProps {
   entryId: string
   prefetchedEntry?: EntryDetail | null
-  allTags: Array<{ id: string; name: string; createdAt: Date }>
+  allTags: Array<{ id: string; name: string; createdAt: Date; entryCount: number }>
   hasPrev: boolean
   hasNext: boolean
   onClose: () => void

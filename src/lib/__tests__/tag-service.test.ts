@@ -106,17 +106,23 @@ describe('removeTagFromEntry', () => {
 })
 
 describe('getAllTags', () => {
-  it('returns all tags ordered by name asc', async () => {
+  it('returns all tags ordered by name asc, with entry usage counts', async () => {
     const tags = [
-      { id: 'tag-1', name: 'apple', createdAt: new Date() },
-      { id: 'tag-2', name: 'banana', createdAt: new Date() },
+      { id: 'tag-1', name: 'apple', createdAt: new Date(), _count: { entries: 3 } },
+      { id: 'tag-2', name: 'banana', createdAt: new Date(), _count: { entries: 0 } },
     ]
     mockTag.findMany.mockResolvedValue(tags as never)
 
     const result = await getAllTags()
 
-    expect(result).toEqual(tags)
-    expect(mockTag.findMany).toHaveBeenCalledWith({ orderBy: { name: 'asc' } })
+    expect(result).toEqual([
+      { id: 'tag-1', name: 'apple', createdAt: tags[0].createdAt, entryCount: 3 },
+      { id: 'tag-2', name: 'banana', createdAt: tags[1].createdAt, entryCount: 0 },
+    ])
+    expect(mockTag.findMany).toHaveBeenCalledWith({
+      orderBy: { name: 'asc' },
+      include: { _count: { select: { entries: true } } },
+    })
   })
 
   it('returns empty array when no tags exist', async () => {

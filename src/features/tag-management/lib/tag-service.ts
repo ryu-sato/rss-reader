@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { prisma } from '@/lib/db'
-import type { Tag } from '@/features/entry-viewing/types/entry'
+import type { Tag, TagWithCount } from '@/features/entry-viewing/types/entry'
 
 export async function upsertTagAndAssign(name: string, entryId: string): Promise<Tag> {
   const normalizedName = name.toLowerCase().trim()
@@ -26,8 +26,12 @@ export async function removeTagFromEntry(tagId: string, entryId: string): Promis
   })
 }
 
-export const getAllTags = cache(async function getAllTags(): Promise<Tag[]> {
-  return prisma.tag.findMany({ orderBy: { name: 'asc' } })
+export const getAllTags = cache(async function getAllTags(): Promise<TagWithCount[]> {
+  const tags = await prisma.tag.findMany({
+    orderBy: { name: 'asc' },
+    include: { _count: { select: { entries: true } } },
+  })
+  return tags.map(({ _count, ...tag }) => ({ ...tag, entryCount: _count.entries }))
 })
 
 export async function renameTag(tagId: string, newName: string): Promise<Tag> {

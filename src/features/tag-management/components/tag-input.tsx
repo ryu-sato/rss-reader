@@ -1,14 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import type { Tag } from '@/features/entry-viewing/types/entry'
+import type { Tag, TagWithCount } from '@/features/entry-viewing/types/entry'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+
+const FREQUENT_TAGS_LIMIT = 5
 
 interface TagInputProps {
   entryId: string
   initialTags: Tag[]
-  allTags: Tag[]
+  allTags: TagWithCount[]
 }
 
 export function TagInput({ entryId, initialTags, allTags }: TagInputProps) {
@@ -20,6 +22,10 @@ export function TagInput({ entryId, initialTags, allTags }: TagInputProps) {
   const suggestions = allTags.filter(
     (t) => !assignedTagIds.has(t.id) && t.name.includes(inputValue.toLowerCase().trim())
   )
+  const frequentTags = allTags
+    .filter((t) => !assignedTagIds.has(t.id) && t.entryCount > 0)
+    .sort((a, b) => b.entryCount - a.entryCount)
+    .slice(0, FREQUENT_TAGS_LIMIT)
 
   const addTag = async (name: string) => {
     const trimmed = name.trim()
@@ -117,6 +123,21 @@ export function TagInput({ entryId, initialTags, allTags }: TagInputProps) {
         <Button size="sm" variant="outline" onClick={() => addTag(inputValue)} disabled={isLoading}>
           Add &ldquo;{inputValue}&rdquo;
         </Button>
+      )}
+      {!inputValue && frequentTags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground/70">よく使うタグ:</span>
+          {frequentTags.map((tag) => (
+            <button
+              key={tag.id}
+              onClick={() => addTag(tag.name)}
+              disabled={isLoading}
+              className="px-2 py-1 text-sm rounded-md border border-border hover:bg-accent disabled:opacity-50 transition-colors"
+            >
+              {tag.name}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   )
