@@ -22,57 +22,57 @@ notify() {
     echo "Warning: failed to send notification." >&2
 }
 
-(
-  cd ${SCRIPT_DIR}
-
-  # Record image IDs before pull (used both for the "anything changed" check
-  # and, for the app image specifically, as the rollback target)
-  BEFORE=$(docker compose config --images | sort | xargs -I{} docker image inspect --format='{{.Id}}' {} 2>/dev/null | sort | md5sum)
-  APP_IMAGE_REF=$(docker compose config --images app)
-  PREVIOUS_APP_IMAGE_ID=$(docker image inspect --format='{{.Id}}' "${APP_IMAGE_REF}" 2>/dev/null || true)
-
-  if ! docker compose --progress plain pull; then
-    echo "Error: docker compose pull failed. Aborting update." >&2
-    notify "rss-reader: docker compose pull failed, update aborted."
-    exit 1
-  fi
-
-  # Record image IDs after pull
-  AFTER=$(docker compose config --images | sort | xargs -I{} docker image inspect --format='{{.Id}}' {} 2>/dev/null | sort | md5sum)
-
-  if [ "$BEFORE" = "$AFTER" ]; then
-    echo "Images are up to date. Skipping restart."
-    exit 0
-  fi
-
-  echo "New image(s) detected. Restarting and verifying health..."
-
+# app を止めて新しいイメージで起動し、ヘルシーになるまで待つ。
+# 初回のアップデートとロールバックの両方で使う。
+restart_app() {
   docker compose --progress plain down app
+  docker compose --progress plain up -d --wait --wait-timeout "${WAIT_TIMEOUT}"
+}
 
-  if docker compose --progress plain up -d --wait --wait-timeout "${WAIT_TIMEOUT}"; then
-    echo "Update complete: app is healthy."
-    exit 0
-  fi
+cd "${SCRIPT_DIR}"
 
-  echo "Error: app failed to become healthy within ${WAIT_TIMEOUT}s." >&2
+APP_IMAGE_REF=$(docker compose config --images app)
+PREVIOUS_APP_IMAGE_ID=$(docker image inspect --format='{{.Id}}' "${APP_IMAGE_REF}" 2>/dev/null || true)
 
-  if [ -z "${PREVIOUS_APP_IMAGE_ID}" ]; then
-    echo "Error: no previous app image recorded, cannot roll back automatically. Manual intervention required." >&2
-    notify "rss-reader: new image is unhealthy and there is no previous image to roll back to. Manual intervention required."
-    exit 1
-  fi
-
-  echo "Rolling back app to previous image ${PREVIOUS_APP_IMAGE_ID}." >&2
-  docker tag "${PREVIOUS_APP_IMAGE_ID}" "${APP_IMAGE_REF}"
-  docker compose --progress plain down app
-
-  if docker compose --progress plain up -d --wait --wait-timeout "${WAIT_TIMEOUT}"; then
-    echo "Rollback successful: app restored on previous image." >&2
-    notify "rss-reader: new image failed its health check and was rolled back to the previous image. Investigate the latest push."
-  else
-    echo "Error: rollback also failed to become healthy. Manual intervention required." >&2
-    notify "rss-reader: CRITICAL - new image failed health check AND rollback also failed to become healthy. App may be down. Manual intervention required now."
-  fi
-
+if ! docker compose --progress plain pull; then
+  echo "Error: docker compose pull failed. Aborting update." >&2
+  notify "rss-reader: docker compose pull failed, update aborted."
   exit 1
-)
+fi
+
+# app イメージだけで判定する (tunnel 側だけが更新された場合に無駄な再起動・通知をしないため)
+NEW_APP_IMAGE_ID=$(docker image inspect --format='{{.Id}}' "${APP_IMAGE_REF}" 2>/dev/null || true)
+
+if [ "${PREVIOUS_APP_IMAGE_ID}" = "${NEW_APP_IMAGE_ID}" ]; then
+  echo "App image is up to date. Skipping restart."
+  exit 0
+fi
+
+echo "New app image detected (${NEW_APP_IMAGE_ID}). Restarting and verifying health..."
+
+if restart_app; then
+  echo "Update complete: app is healthy."
+  notify "rss-reader: updated to ${NEW_APP_IMAGE_ID} and healthy."
+  exit 0
+fi
+
+echo "Error: app failed to become healthy within ${WAIT_TIMEOUT}s." >&2
+
+if [ -z "${PREVIOUS_APP_IMAGE_ID}" ]; then
+  echo "Error: no previous app image recorded, cannot roll back automatically. Manual intervention required." >&2
+  notify "rss-reader: new image is unhealthy and there is no previous image to roll back to. Manual intervention required."
+  exit 1
+fi
+
+echo "Rolling back app to previous image ${PREVIOUS_APP_IMAGE_ID}." >&2
+docker tag "${PREVIOUS_APP_IMAGE_ID}" "${APP_IMAGE_REF}"
+
+if restart_app; then
+  echo "Rollback successful: app restored on previous image." >&2
+  notify "rss-reader: new image (${NEW_APP_IMAGE_ID}) failed its health check and was rolled back to ${PREVIOUS_APP_IMAGE_ID}. Investigate the latest push."
+else
+  echo "Error: rollback also failed to become healthy. Manual intervention required." >&2
+  notify "rss-reader: CRITICAL - new image failed health check AND rollback also failed to become healthy. App may be down. Manual intervention required now."
+fi
+
+exit 1
