@@ -287,3 +287,117 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     expect(result.entries[0].id).toEqual('entry-1');
   })
 })
+
+describe('findManyEntries (feedId 指定モード) のカーソルページング', () => {
+  beforeEach(async () => {
+    await prisma.entryPreferenceScore.deleteMany()
+    await prisma.entryTag.deleteMany()
+    await prisma.entryMeta.deleteMany()
+    await prisma.entry.deleteMany()
+    await prisma.feed.deleteMany()
+  })
+
+  // 無限スクロールと同じ手順で、末尾エントリを afterId にして hasNext が false になるまで辿る
+  async function scrollThrough(sortOrder: 'asc' | 'desc', limit: number) {
+    const seen: string[] = []
+    let afterId: string | undefined
+    let hasNext = true
+    let guard = 0
+    while (hasNext && guard++ < 20) {
+      const result = await findManyEntries({ feedId: 'feed-1', limit, afterId, sortOrder })
+      if (result.entries.length === 0) break
+      seen.push(...result.entries.map((e) => e.id))
+      afterId = result.entries[result.entries.length - 1].id
+      hasNext = result.pagination.hasNext
+    }
+    return seen
+  }
+
+  it('publishedAt が全件同値でも、追加読み込みで全件を辿れる', async () => {
+    // Arrange: 同一 publishedAt は RSS では珍しくない。カーソルが日時の厳密比較だけだと
+    // 同値のエントリ群がまとめて読み飛ばされ、2件目以降の追加読み込みが空になっていた。
+    await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } })
+    const sameDate = new Date('2026-01-01T00:00:00Z')
+    await prisma.entry.createMany({
+      data: Array.from({ length: 6 }, (_, i) => ({
+        id: `entry-${i}`,
+        guid: `guid-${i}`,
+        feedId: 'feed-1',
+        title: `Entry ${i}`,
+        link: `http://example.com/${i}`,
+        publishedAt: sameDate,
+        effectedDate: sameDate,
+      })),
+    })
+
+    // Act & Assert: 古い順・新しい順どちらでも6件すべてに一度ずつ到達する
+    const asc = await scrollThrough('asc', 2)
+    expect(asc).toHaveLength(6)
+    expect(new Set(asc).size).toBe(6)
+
+    const desc = await scrollThrough('desc', 2)
+    expect(desc).toHaveLength(6)
+    expect(new Set(desc).size).toBe(6)
+  })
+
+  it('publishedAt が null のエントリが混在しても、古い順の追加読み込みで全件を辿れる', async () => {
+    // Arrange: publishedAt が null のエントリは古い順では先頭に来る。カーソルが
+    // publishedAt 基準だと、そこから先へ進めず追加読み込みが止まっていた。
+    await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } })
+    const base = new Date('2026-01-01T00:00:00Z').getTime()
+    const importedAt = new Date('2025-01-01T00:00:00Z') // publishedAt なし = 取り込み日時が並び順の基準
+    await prisma.entry.createMany({
+      data: [
+        ...Array.from({ length: 3 }, (_, i) => ({
+          id: `null-${i}`,
+          guid: `null-guid-${i}`,
+          feedId: 'feed-1',
+          title: `No pubDate ${i}`,
+          link: `http://example.com/null/${i}`,
+          effectedDate: importedAt,
+        })),
+        ...Array.from({ length: 3 }, (_, i) => ({
+          id: `dated-${i}`,
+          guid: `dated-guid-${i}`,
+          feedId: 'feed-1',
+          title: `Dated ${i}`,
+          link: `http://example.com/dated/${i}`,
+          publishedAt: new Date(base + i * 1000),
+          effectedDate: new Date(base + i * 1000),
+        })),
+      ],
+    })
+
+    // Act & Assert
+    const asc = await scrollThrough('asc', 2)
+    expect(asc).toHaveLength(6)
+    expect(new Set(asc).size).toBe(6)
+    // effectedDate 順 = publishedAt なしの3件が先、その後に日時付きの3件
+    expect(asc.slice(0, 3).every((id) => id.startsWith('null-'))).toBe(true)
+    expect(asc.slice(3)).toEqual(['dated-0', 'dated-1', 'dated-2'])
+  })
+
+  it('古い順の追加読み込みでは pivot より新しいエントリだけを昇順で返す', async () => {
+    // Arrange
+    await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } })
+    const base = new Date('2026-01-01T00:00:00Z').getTime()
+    await prisma.entry.createMany({
+      data: Array.from({ length: 4 }, (_, i) => ({
+        id: `entry-${i}`,
+        guid: `guid-${i}`,
+        feedId: 'feed-1',
+        title: `Entry ${i}`,
+        link: `http://example.com/${i}`,
+        publishedAt: new Date(base + i * 1000),
+        effectedDate: new Date(base + i * 1000),
+      })),
+    })
+
+    // Act
+    const result = await findManyEntries({ feedId: 'feed-1', limit: 2, sortOrder: 'asc', afterId: 'entry-1' })
+
+    // Assert
+    expect(result.entries.map((e) => e.id)).toEqual(['entry-2', 'entry-3'])
+    expect(result.pagination.hasNext).toBe(false)
+  })
+})

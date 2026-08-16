@@ -128,7 +128,9 @@ describe('findManyEntries', () => {
   })
 
   it('feedId 指定 + sortOrder=asc + afterId 指定時は pivot より新しい記事を昇順で取得する(追加読み込みの回帰防止)', async () => {
-    const pivot = { id: 'entry-1', publishedAt: new Date('2026-03-10'), createdAt: new Date('2026-03-10') }
+    // 並び替えキーと同じ (effectedDate, id) でカーソル条件を組み立てること。
+    // 実データでの追加読み込みの網羅性は entry-service.test.ts で担保している。
+    const pivot = { id: 'entry-1', effectedDate: new Date('2026-03-10') }
     mockEntry.findUnique.mockResolvedValue(pivot as never)
     mockEntry.findMany.mockResolvedValue([] as never)
     mockEntry.count.mockResolvedValue(0)
@@ -142,13 +144,13 @@ describe('findManyEntries', () => {
             expect.objectContaining({ feedId: 'feed-1' }),
             expect.objectContaining({
               OR: [
-                { publishedAt: { gt: pivot.publishedAt } },
-                { publishedAt: null, createdAt: { gt: pivot.createdAt } },
+                { effectedDate: { gt: pivot.effectedDate } },
+                { effectedDate: pivot.effectedDate, id: { gt: pivot.id } },
               ],
             }),
           ],
         }),
-        orderBy: [{ publishedAt: 'asc' }, { createdAt: 'asc' }],
+        orderBy: [{ effectedDate: 'asc' }, { id: 'asc' }],
       })
     )
   })

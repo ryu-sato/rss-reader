@@ -51,6 +51,7 @@ model Entry {
   @@index([effectedDate(sort: Desc)])
   @@index([link])
   @@index([feedId, publishedAt(sort: Desc)])
+  @@index([feedId, effectedDate(sort: Desc)])
   @@map("entries")
 }
 
