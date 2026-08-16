@@ -52,3 +52,34 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Notify success via ntfy
+        if: success()
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          if [ -z "${NTFY_TOPIC:-}" ]; then
+            exit 0
+          fi
+          curl -fsS \
+            -H "Title: rss-reader: Docker build and push succeeded" \
+            -H "Tags: white_check_mark" \
+            -d "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            "https://ntfy.sh/${NTFY_TOPIC}" >/dev/null 2>&1 || \
+            echo "Warning: failed to send notification." >&2
+
+      - name: Notify failure via ntfy
+        if: failure()
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          if [ -z "${NTFY_TOPIC:-}" ]; then
+            exit 0
+          fi
+          curl -fsS \
+            -H "Title: rss-reader: Docker build and push FAILED" \
+            -H "Tags: x,rotating_light" \
+            -H "Priority: high" \
+            -d "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            "https://ntfy.sh/${NTFY_TOPIC}" >/dev/null 2>&1 || \
+            echo "Warning: failed to send notification." >&2
