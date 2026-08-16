@@ -220,6 +220,8 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
+  // URL に entryId を積むテストがあるため、次のテストへ持ち越さないよう戻す
+  window.history.replaceState({}, '', '/')
 })
 
 // ------------------------------------------------------------
@@ -441,6 +443,70 @@ describe('EntryCardGrid — モーダル表示中の追加読み込みと次へ�
     fireEvent.click(screen.getByRole('button', { name: '次の記事' }))
     await waitFor(() => {
       expect(screen.getByTestId('article-modal').dataset.entryId).toBe('entry-2')
+    })
+  })
+
+  it('【重複ページ】loadMore が取得済みの記事だけを返してもカーソルが進み、次のページに到達する', async () => {
+    // Arrange: モーダル表示中の追加読み込みは一覧に即反映されずバッファに溜まるため、
+    // 次の loadMore も同じ afterId（一覧の末尾）を送り、同じページを取り続けて
+    // 追加読み込みが進まなくなる。カーソルが前進することを検証する。
+    const entry1 = makeEntry('entry-1')
+    const entry2 = makeEntry('entry-2')
+    const entry3 = makeEntry('entry-3')
+    const pagesByAfterId: Record<string, { entries: EntryListItem[]; hasNext: boolean }> = {
+      'entry-1': { entries: [entry2], hasNext: true },
+      'entry-2': { entries: [entry3], hasNext: false },
+    }
+    const fetchSpy = vi.fn().mockImplementation(async (url: string) => {
+      if (!/\?/.test(url)) {
+        const id = url.split('/').pop()!
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: { id, title: `Article ${id}`, feed: { id: 'feed-1', title: 'Test Blog' }, tags: [], meta: null },
+          }),
+        }
+      }
+      // 実際の通信と同じくマクロタスクで解決させる。マイクロタスク内で解決すると
+      // isLoading の true/false が 1 回のレンダーにまとめられ、実ブラウザでは起きる
+      // IntersectionObserver の再生成が再現されない。
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      const afterId = new URLSearchParams(url.split('?')[1]).get('afterId') ?? ''
+      const page = pagesByAfterId[afterId] ?? { entries: [], hasNext: false }
+      return {
+        ok: true,
+        json: async () => ({
+          data: page.entries,
+          pagination: { page: 1, limit: 1, total: 3, hasNext: page.hasNext, hasPrev: false },
+        }),
+      }
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+    // マウント時点でモーダルが開いている状態（URL に entryId がある）を再現する
+    window.history.replaceState({}, '', '/?entryId=entry-1')
+
+    render(
+      <EntryCardGrid
+        initialEntries={[entry1]}
+        initialPagination={makePagination(1, 3)}
+        allTags={allTags}
+      />,
+    )
+
+    // Assert: 一覧が更新されない間も afterId=entry-2 まで進み、entry-3 まで到達する
+    await waitFor(() => {
+      const afterIds = fetchSpy.mock.calls
+        .map(([url]: [string]) => new URLSearchParams(url.split('?')[1] ?? '').get('afterId'))
+        .filter(Boolean)
+      expect(afterIds).toContain('entry-2')
+    })
+
+    // モーダルを閉じると、溜めておいた記事がまとめて一覧に反映される
+    fireEvent.click(screen.getByRole('button', { name: '閉じる' }))
+    await waitFor(() => {
+      expect(screen.getByText('Article entry-2')).toBeTruthy()
+      expect(screen.getByText('Article entry-3')).toBeTruthy()
     })
   })
 })

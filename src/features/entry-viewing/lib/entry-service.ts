@@ -37,24 +37,27 @@ export async function findManyEntries(query: GetEntriesQuery) {
   // カーソルベースの前後ナビ。isUnread 等のフィルタは既読化のような副作用で
   // マッチする集合が縮むことがあるため、offset(skip) ではなく直前に見たエントリの
   // 日時を基準にした比較で「まだ見ていない次の1件」を確実に取得する。
+  // 並び替えキーは重複排除パスと同じ effectedDate(= publishedAt ?? 取り込み日時)を使う。
+  // publishedAt は null を取り得るうえ同値が頻出し、orderBy と厳密比較のカーソルが
+  // 噛み合わずに同値の記事群をまとめて読み飛ばして追加読み込みが止まっていた。
+  // effectedDate も一意ではないため、orderBy と同じく id をタイブレーカーに使う。
   if (afterId || beforeId) {
     const pivotId = (afterId ?? beforeId)!
-    const pivot = await prisma.entry.findUnique({ where: { id: pivotId } })
+    const pivot = await prisma.entry.findUnique({ where: { id: pivotId }, select: { effectedDate: true, id: true } })
     if (pivot) {
-      const pivotDate = pivot.publishedAt ?? pivot.createdAt
       // afterId は一覧の並び順(sortOrder)通りに次へ進み、beforeId はその逆方向に一つ戻る。
-      const goForward = afterId ? sortOrder === 'desc' : sortOrder === 'asc'
-      const cursorCond = goForward
+      const toOlder = afterId ? sortOrder === 'desc' : sortOrder === 'asc'
+      const cursorCond = toOlder
         ? {
             OR: [
-              { publishedAt: { lt: pivotDate } },
-              { publishedAt: null, createdAt: { lt: pivot.createdAt } },
+              { effectedDate: { lt: pivot.effectedDate } },
+              { effectedDate: pivot.effectedDate, id: { lt: pivot.id } },
             ],
           }
         : {
             OR: [
-              { publishedAt: { gt: pivotDate } },
-              { publishedAt: null, createdAt: { gt: pivot.createdAt } },
+              { effectedDate: { gt: pivot.effectedDate } },
+              { effectedDate: pivot.effectedDate, id: { gt: pivot.id } },
             ],
           }
       where = { AND: [baseWhere, cursorCond] }
@@ -64,7 +67,7 @@ export async function findManyEntries(query: GetEntriesQuery) {
   const skip = afterId || beforeId ? 0 : (page - 1) * limit
   // beforeId は直近の候補を取るため sortOrder と逆順に取得し、後段で reverse() して一覧順に戻す。
   const cursorOrder: 'asc' | 'desc' = beforeId ? (sortOrder === 'asc' ? 'desc' : 'asc') : sortOrder
-  const orderBy = [{ publishedAt: cursorOrder }, { createdAt: cursorOrder }]
+  const orderBy = [{ effectedDate: cursorOrder }, { id: cursorOrder }]
 
   const [rawEntries, total] = await Promise.all([
     prisma.entry.findMany({

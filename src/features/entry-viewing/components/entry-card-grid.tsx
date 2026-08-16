@@ -84,6 +84,11 @@ export function EntryCardGrid({
   // 作り直されてしまうため、ref 経由で最新値だけを参照する。
   const entriesRef = useRef(entries)
   useEffect(() => { entriesRef.current = entries }, [entries])
+  // 取得した記事が全て一覧に載っている場合、末尾の記事は変わらないので次も同じ afterId を
+  // 送ってしまい追加読み込みが進まなくなる。その時だけ応答の末尾 id をカーソルに引き継ぐ。
+  // ただし応答の末尾が送った afterId と同一（サーバが同じページを返し続ける）場合は
+  // クライアント側では前進できない。
+  const stalledCursorIdRef = useRef<string | null>(null)
 
   const [navEntries, setNavEntries] = useState<EntryListItem[]>([])
   const [navHasMore, setNavHasMore] = useState(false)
@@ -257,7 +262,7 @@ export function EntryCardGrid({
     if (isLoading || !hasMore) return
     setIsLoading(true)
     try {
-      const afterId = entriesRef.current[entriesRef.current.length - 1]?.id
+      const afterId = stalledCursorIdRef.current ?? entriesRef.current[entriesRef.current.length - 1]?.id
       const params = new URLSearchParams()
       if (afterId) params.set('afterId', afterId)
       params.set('limit', String(initialPagination.limit))
@@ -275,14 +280,22 @@ export function EntryCardGrid({
       const res = await fetch(`/api/entries?${params.toString()}`)
       if (!res.ok) return
       const json = await res.json() as {data: EntryListItem[], pagination: Pagination};
+      // モーダル表示中の追加分（pendingAppendEntriesRef）も既知として扱わないと、
+      // 一覧に反映される前の記事を毎回「新着」と見なしてカーソルが進まない。
+      const knownIds = new Set([
+        ...entriesRef.current.map((e) => e.id),
+        ...pendingAppendEntriesRef.current.map((e) => e.id),
+      ])
+      const newEntries = json.data.filter((e) => !knownIds.has(e.id))
+      stalledCursorIdRef.current =
+        newEntries.length === 0 && json.data.length > 0 ? json.data[json.data.length - 1].id : null
       if (isModalOpenRef.current) {
-        const existingIds = new Set(entriesRef.current.map((e) => e.id))
-        pendingAppendEntriesRef.current.push(...json.data.filter((e) => !existingIds.has(e.id)))
-      } else {
+        pendingAppendEntriesRef.current.push(...newEntries)
+      } else if (newEntries.length > 0) {
         setEntries((prev) => {
           const existingIds = new Set(prev.map((e) => e.id))
-          const newEntries = json.data.filter((e) => !existingIds.has(e.id))
-          return newEntries.length > 0 ? [...prev, ...newEntries] : prev
+          const toAppend = newEntries.filter((e) => !existingIds.has(e.id))
+          return toAppend.length > 0 ? [...prev, ...toAppend] : prev
         })
       }
       setHasMore(json.pagination.hasNext)
