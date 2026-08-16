@@ -45,7 +45,10 @@ RUN apt-get update -y && apt-get install -y openssl python3 python3-pip && rm -r
 
 COPY scripts/scoring/requirements.txt /app/scripts/scoring/requirements.txt
 # CPU-only torch を先にインストールし、不要なCUDAパッケージ(~2GB)のダウンロードを防ぐ
-RUN pip3 install --break-system-packages --timeout 300 --retries 10 torch --index-url https://download.pytorch.org/whl/cpu && \
+# --index-url ではなく --extra-index-url を使う: --index-url だと torch の依存パッケージ
+# (typing-extensions 等)まで pytorch のインデックスのみに限定されてしまい、そこで sdist
+# ビルドが必要になった場合に build backend (flit_core 等) が見つからず失敗するため
+RUN pip3 install --break-system-packages --timeout 300 --retries 10 torch --extra-index-url https://download.pytorch.org/whl/cpu && \
     pip3 install --break-system-packages --timeout 300 --retries 10 -r /app/scripts/scoring/requirements.txt
 # モデルをビルド時にキャッシュ（実行時のHF Hub ダウンロードを回避）
 RUN mkdir -p /app/hf_cache && \
