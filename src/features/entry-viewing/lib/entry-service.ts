@@ -42,7 +42,9 @@ export async function findManyEntries(query: GetEntriesQuery) {
     const pivot = await prisma.entry.findUnique({ where: { id: pivotId } })
     if (pivot) {
       const pivotDate = pivot.publishedAt ?? pivot.createdAt
-      const cursorCond = afterId
+      // afterId は一覧の並び順(sortOrder)通りに次へ進み、beforeId はその逆方向に一つ戻る。
+      const goForward = afterId ? sortOrder === 'desc' : sortOrder === 'asc'
+      const cursorCond = goForward
         ? {
             OR: [
               { publishedAt: { lt: pivotDate } },
@@ -60,11 +62,9 @@ export async function findManyEntries(query: GetEntriesQuery) {
   }
 
   const skip = afterId || beforeId ? 0 : (page - 1) * limit
-  const orderBy = beforeId
-    ? [{ publishedAt: 'asc' as const }, { createdAt: 'asc' as const }]
-    : afterId
-      ? [{ publishedAt: 'desc' as const }, { createdAt: 'desc' as const }]
-      : [{ publishedAt: sortOrder }, { createdAt: sortOrder }]
+  // beforeId は直近の候補を取るため sortOrder と逆順に取得し、後段で reverse() して一覧順に戻す。
+  const cursorOrder: 'asc' | 'desc' = beforeId ? (sortOrder === 'asc' ? 'desc' : 'asc') : sortOrder
+  const orderBy = [{ publishedAt: cursorOrder }, { createdAt: cursorOrder }]
 
   const [rawEntries, total] = await Promise.all([
     prisma.entry.findMany({
