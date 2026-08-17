@@ -83,7 +83,11 @@ import { helper } from './helper'
   経路が二重になると「一元管理されている」という前提が静かに崩れる
 - **Thin route handlers**: `/app/api/` は即座にサービス関数へ委譲する
 - **No business logic in components**: コンポーネントは DB を直接触らない
-- **Service layer owns DB**: Prisma を import してよいのは `domain/**` と `features/*/lib/*-service.ts` のみ
+- **Service layer owns DB**: Prisma を import するのは `domain/**` と `features/*/lib/` のサービス層。
+  現時点の例外は 4 つあり、いずれも新規追加時に真似しない:
+  - `features/auth/lib/auth.ts` — better-auth の prismaAdapter に渡すため
+  - `app/api/health/route.ts`, `app/api/tags/batch/route.ts`,
+    `app/api/entries/read-later-unread-count/route.ts` — ルートハンドラが直接クエリしている（要整理）
 - **Zod at boundaries**: 外部入力（API リクエストボディ、フォームデータ）はサービスに渡す前に検証する
 
 ---

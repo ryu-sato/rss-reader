@@ -99,6 +99,8 @@ generated/prisma, shared
   - `entry-viewing` → `settings`（キーボードショートカット設定の読み込み）
   機能のサービス層（`lib/*-service.ts`）を他機能から呼ぶのは避け、共有が必要ならコアへ引き上げる。
 - API ルートとページは薄く保ち、処理はドメイン層／機能のサービスに委譲する。
+  現状 `app/api/health`・`app/api/tags/batch`・`app/api/entries/read-later-unread-count` の
+  3 つのルートハンドラだけが Prisma を直接触っており、この原則から外れている（今回の再編では未着手）。
 - 同じ実装へ 2 つ以上の import 経路を作らない（再エクスポートのシムを置かない）。
   経路が二重化すると「一元管理されている」という前提が静かに崩れるため。
 
