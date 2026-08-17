@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
-vi.mock('@/lib/db', () => ({
+vi.mock('@/domain/shared/db', () => ({
   prisma: {
     feed: {
       findMany: vi.fn(),
@@ -26,7 +26,7 @@ vi.mock('@/lib/db', () => ({
   },
 }))
 
-vi.mock('@/lib/ssrf-guard', () => ({
+vi.mock('@/domain/shared/ssrf-guard', () => ({
   validateUrl: vi.fn(),
 }))
 
@@ -34,8 +34,8 @@ vi.mock('@/features/feed-management/lib/entry-fetcher', () => ({
   fetchEntries: vi.fn(),
 }))
 
-import { prisma } from '@/lib/db'
-import { validateUrl } from '@/lib/ssrf-guard'
+import { prisma } from '@/domain/shared/db'
+import { validateUrl } from '@/domain/shared/ssrf-guard'
 import { fetchEntries } from '@/features/feed-management/lib/entry-fetcher'
 import { fetchAllFeedsEntries, saveEntries, enforceEntryLimit } from '@/lib/entry-service'
 import type { FetchedEntryData } from '@/features/entry-viewing/types/entry'

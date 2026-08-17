@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
-vi.mock('@/lib/db', () => ({
+vi.mock('@/domain/shared/db', () => ({
   prisma: {
     entry: {
       findMany: vi.fn(),
@@ -16,7 +16,7 @@ vi.mock('@/lib/db', () => ({
   },
 }))
 
-import { prisma } from '@/lib/db'
+import { prisma } from '@/domain/shared/db'
 import { findManyEntries, getEntryById, updateEntryMeta } from '../entry-service'
 
 const mockEntry = prisma.entry as unknown as Record<'aggregate' | 'count' | 'findMany' | 'findUnique', Mock>

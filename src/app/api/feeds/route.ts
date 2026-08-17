@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllFeeds, createFeed } from '@/lib/feed-service'
-import { AppError } from '@/lib/errors'
+import { AppError } from '@/domain/shared/errors'
 
 export async function GET() {
   try {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { fetchFeed } from './rss-fetcher'
-import { FeedFetchError, InvalidFeedFormatError } from './errors'
+import { FeedFetchError, InvalidFeedFormatError } from '@/domain/shared/errors'
 
 const RSS_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">

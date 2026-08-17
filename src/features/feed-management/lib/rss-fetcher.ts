@@ -1,5 +1,5 @@
 import Parser from 'rss-parser'
-import { FeedFetchError, InvalidFeedFormatError } from '@/lib/errors'
+import { FeedFetchError, InvalidFeedFormatError } from '@/domain/shared/errors'
 import type { FetchedFeedInfo } from '@/features/feed-management/types/feed'
 
 const FETCH_TIMEOUT_MS = 30_000

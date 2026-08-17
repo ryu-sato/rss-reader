@@ -8,7 +8,7 @@ vi.mock('@/lib/feed-service', () => ({
 
 import { getAllFeeds, createFeed } from '@/lib/feed-service'
 import { GET, POST } from './route'
-import { ConflictError, FeedFetchError } from '@/lib/errors'
+import { ConflictError, FeedFetchError } from '@/domain/shared/errors'
 
 const mockGetAllFeeds = vi.mocked(getAllFeeds)
 const mockCreateFeed = vi.mocked(createFeed)

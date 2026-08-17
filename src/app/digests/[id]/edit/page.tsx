@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { getDigestById } from '@/lib/digest-service'
-import { AppError } from '@/lib/errors'
+import { AppError } from '@/domain/shared/errors'
 import DigestForm from '@/components/digest-form'
 
 export default async function EditDigestPage({ params }: { params: Promise<{ id: string }> }) {

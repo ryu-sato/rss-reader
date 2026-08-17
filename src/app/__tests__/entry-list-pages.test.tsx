@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
-import { prisma } from '@/lib/db'
+import { prisma } from '@/domain/shared/db'
 import { EntryCardGrid } from '@/components/entry-card-grid'
 import {
   buildEntriesSearchParams,

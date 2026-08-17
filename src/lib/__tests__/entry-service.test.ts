@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { prisma } from '@/lib/db';
+import { prisma } from '@/domain/shared/db';
 
 import { findManyEntries } from '../entry-service'
 

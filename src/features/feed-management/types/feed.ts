@@ -2,6 +2,8 @@
  * RSSシードの登録 型定義
  */
 
+import type { ErrorCode } from '@/domain/shared/errors'
+
 // ========================================
 // エンティティ定義
 // ========================================
@@ -74,22 +76,6 @@ export interface ErrorResponse {
     message: string
   }
 }
-
-// ========================================
-// エラーコード
-// ========================================
-
-export type ErrorCode =
-  | 'FEED_ALREADY_EXISTS'
-  | 'FEED_NOT_FOUND'
-  | 'INVALID_URL_FORMAT'
-  | 'URL_NOT_ALLOWED'
-  | 'FEED_FETCH_FAILED'
-  | 'INVALID_FEED_FORMAT'
-  | 'VALIDATION_ERROR'
-  | 'INTERNAL_SERVER_ERROR'
-  | 'ENTRY_NOT_FOUND'
-  | 'DIGEST_NOT_FOUND'
 
 // ========================================
 // フォーム状態

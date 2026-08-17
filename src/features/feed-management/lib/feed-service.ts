@@ -1,8 +1,8 @@
 import { cache } from 'react'
-import { prisma } from '@/lib/db'
-import { validateUrl } from '@/lib/ssrf-guard'
+import { prisma } from '@/domain/shared/db'
+import { validateUrl } from '@/domain/shared/ssrf-guard'
 import { fetchFeed } from '@/features/feed-management/lib/rss-fetcher'
-import { ConflictError, NotFoundError } from '@/lib/errors'
+import { ConflictError, NotFoundError } from '@/domain/shared/errors'
 import type { UpdateFeedInput, FeedListItem } from '@/features/feed-management/types/feed'
 import type { Feed } from '@/generated/prisma/client'
 

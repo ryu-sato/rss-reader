@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
-vi.mock('@/lib/db', () => ({
+vi.mock('@/domain/shared/db', () => ({
   prisma: {
     feed: {
       findUnique: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock('@/lib/db', () => ({
   },
 }))
 
-vi.mock('@/lib/ssrf-guard', () => ({
+vi.mock('@/domain/shared/ssrf-guard', () => ({
   validateUrl: vi.fn(),
 }))
 
@@ -21,11 +21,11 @@ vi.mock('@/features/feed-management/lib/rss-fetcher', () => ({
   fetchFeed: vi.fn(),
 }))
 
-import { prisma } from '@/lib/db'
-import { validateUrl } from '@/lib/ssrf-guard'
+import { prisma } from '@/domain/shared/db'
+import { validateUrl } from '@/domain/shared/ssrf-guard'
 import { fetchFeed } from '@/features/feed-management/lib/rss-fetcher'
 import { createFeed, getAllFeeds, getFeedById, updateFeed, deleteFeed } from './feed-service'
-import { ConflictError, NotFoundError, SSRFError } from './errors'
+import { ConflictError, NotFoundError, SSRFError } from '@/domain/shared/errors'
 
 const mockFeed = prisma.feed as unknown as Record<'findUnique' | 'findMany' | 'create' | 'update' | 'delete', Mock>
 const mockQueryRaw = prisma.$queryRaw as unknown as Mock

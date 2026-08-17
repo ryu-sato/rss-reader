@@ -9,7 +9,7 @@ vi.mock('@/lib/feed-service', () => ({
 
 import { getFeedById, updateFeed, deleteFeed } from '@/lib/feed-service'
 import { GET, PUT, DELETE } from './route'
-import { NotFoundError } from '@/lib/errors'
+import { NotFoundError } from '@/domain/shared/errors'
 
 const mockGetFeedById = vi.mocked(getFeedById)
 const mockUpdateFeed = vi.mocked(updateFeed)

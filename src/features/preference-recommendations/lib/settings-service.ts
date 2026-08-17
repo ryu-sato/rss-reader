@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db'
+import { prisma } from '@/domain/shared/db'
 
 const DEFAULT_SCORE_THRESHOLD = 0.5
 

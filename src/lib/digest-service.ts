@@ -1,6 +1,6 @@
 import { unstable_cache } from 'next/cache'
-import { prisma } from '@/lib/db'
-import { AppError } from '@/lib/errors'
+import { prisma } from '@/domain/shared/db'
+import { AppError } from '@/domain/shared/errors'
 import type { Digest, DigestListItem } from '@/types/digest'
 
 export async function createDigest(data: { content: string; title?: string }): Promise<Digest> {

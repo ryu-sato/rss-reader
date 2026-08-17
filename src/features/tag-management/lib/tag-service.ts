@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import { prisma } from '@/lib/db'
+import { prisma } from '@/domain/shared/db'
 import type { Tag, TagWithCount } from '@/features/entry-viewing/types/entry'
 
 export async function upsertTagAndAssign(name: string, entryId: string): Promise<Tag> {

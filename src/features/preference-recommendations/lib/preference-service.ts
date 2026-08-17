@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db'
+import { prisma } from '@/domain/shared/db'
 
 const NAME_MAX_LENGTH = 20
 

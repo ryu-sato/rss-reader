@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getFeedById, updateFeed, deleteFeed } from '@/lib/feed-service'
-import { AppError } from '@/lib/errors'
+import { AppError } from '@/domain/shared/errors'
 
 type Params = { params: Promise<{ id: string }> }
 

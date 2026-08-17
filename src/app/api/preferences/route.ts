@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllPreferences, createPreference } from '@/lib/preference-service'
-import { AppError } from '@/lib/errors'
+import { AppError } from '@/domain/shared/errors'
 
 export async function GET() {
   try {

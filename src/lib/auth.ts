@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { genericOAuth } from "better-auth/plugins"
-import { prisma } from "@/lib/db"
+import { prisma } from "@/domain/shared/db"
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,

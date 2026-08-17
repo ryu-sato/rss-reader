@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getCachedDigestById } from '@/lib/digest-service'
-import { AppError } from '@/lib/errors'
+import { AppError } from '@/domain/shared/errors'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'

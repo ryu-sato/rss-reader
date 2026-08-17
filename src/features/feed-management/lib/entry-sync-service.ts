@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/db'
-import { validateUrl } from '@/lib/ssrf-guard'
+import { prisma } from '@/domain/shared/db'
+import { validateUrl } from '@/domain/shared/ssrf-guard'
 import { fetchEntries } from '@/features/feed-management/lib/entry-fetcher'
 import type { FetchedEntryData } from '@/features/entry-viewing/types/entry'
 

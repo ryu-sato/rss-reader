@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 
-vi.mock('@/lib/db', () => ({
+vi.mock('@/domain/shared/db', () => ({
   prisma: {
     tag: {
       upsert: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock('@/lib/db', () => ({
   },
 }))
 
-import { prisma } from '@/lib/db'
+import { prisma } from '@/domain/shared/db'
 import { upsertTagAndAssign, removeTagFromEntry, getAllTags } from '../tag-service'
 
 const mockTag = prisma.tag as unknown as Record<'findMany' | 'upsert', Mock>

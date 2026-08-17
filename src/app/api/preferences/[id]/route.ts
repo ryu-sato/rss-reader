@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { updatePreference, deletePreference } from '@/lib/preference-service'
-import { AppError } from '@/lib/errors'
+import { AppError } from '@/domain/shared/errors'
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

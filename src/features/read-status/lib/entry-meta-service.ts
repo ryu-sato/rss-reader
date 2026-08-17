@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db'
+import { prisma } from '@/domain/shared/db'
 import type { UpdateEntryMetaInput } from '@/features/entry-viewing/types/entry'
 
 export async function updateEntryMeta(entryId: string, data: UpdateEntryMetaInput) {
