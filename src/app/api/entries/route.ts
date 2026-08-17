@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { findManyEntries } from '@/lib/entry-service'
-import { parseEntryListQuery, parseEntryPageParams } from '@/features/entry-viewing/lib/entry-list-query'
+import { findManyEntries } from '@/domain/entry/entry-repository'
+import { parseEntryListQuery, parseEntryPageParams } from '@/domain/entry/entry-list-query'
 
 export async function GET(request: NextRequest) {
   try {

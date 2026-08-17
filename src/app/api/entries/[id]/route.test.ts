@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-vi.mock('@/lib/entry-service', () => ({
+vi.mock('@/domain/entry/entry-repository', () => ({
   getEntryById: vi.fn(),
 }))
 
-import { getEntryById } from '@/lib/entry-service'
+import { getEntryById } from '@/domain/entry/entry-repository'
 import { GET } from './route'
 
 const mockGetEntryById = vi.mocked(getEntryById)

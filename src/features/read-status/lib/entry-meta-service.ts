@@ -1,5 +1,5 @@
 import { prisma } from '@/domain/shared/db'
-import type { UpdateEntryMetaInput } from '@/features/entry-viewing/types/entry'
+import type { UpdateEntryMetaInput } from '@/domain/entry/entry'
 
 export async function updateEntryMeta(entryId: string, data: UpdateEntryMetaInput) {
   // isRead が変更される場合、同一 link の全エントリに連動させる

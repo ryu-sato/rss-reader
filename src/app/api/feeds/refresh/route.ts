@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { fetchAllFeedsEntries } from '@/lib/entry-service'
+import { fetchAllFeedsEntries } from '@/domain/entry/entry-sync'
 
 export async function POST() {
   try {

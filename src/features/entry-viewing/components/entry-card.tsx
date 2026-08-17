@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { memo, useEffect, useState } from 'react'
 import { Eye, EyeOff, CheckCircle2, Circle } from 'lucide-react'
-import type { EntryListItem } from '@/features/entry-viewing/types/entry'
+import type { EntryListItem } from '@/domain/entry/entry'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'

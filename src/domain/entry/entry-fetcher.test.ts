@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { fetchEntries } from '../entry-fetcher'
+import { fetchEntries } from './entry-fetcher'
 
 // RSS with items including content:encoded
 const RSS_WITH_ITEMS = `<?xml version="1.0" encoding="UTF-8"?>

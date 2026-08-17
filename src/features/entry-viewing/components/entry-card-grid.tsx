@@ -4,13 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Rss, Tags, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import type {
-  EntryDetail,
-  EntryListItem,
-  EntryListQuery,
-  EntryMeta,
-  UpdateEntryMetaInput,
-} from '@/features/entry-viewing/types/entry'
+import type { EntryDetail, EntryListItem, EntryListQuery, EntryMeta, UpdateEntryMetaInput } from '@/domain/entry/entry'
 import { useEntryPagination } from '@/features/entry-viewing/lib/use-entry-pagination'
 import dynamic from 'next/dynamic'
 import { EntryCard } from '@/features/entry-viewing/components/entry-card'

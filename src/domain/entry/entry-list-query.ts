@@ -1,4 +1,4 @@
-import type { EntryListQuery, EntryPageParams, SortOrder } from '@/features/entry-viewing/types/entry'
+import type { EntryListQuery, EntryPageParams, SortOrder } from '@/domain/entry/entry'
 
 /**
  * 記事一覧クエリのシリアライズ／パース（UI コアロジック層）。

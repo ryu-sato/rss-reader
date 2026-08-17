@@ -1,8 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { EntryListItem, EntryListQuery } from '@/features/entry-viewing/types/entry'
-import { buildEntriesRequestUrl } from '@/features/entry-viewing/lib/entry-list-query'
+import type { EntryListItem, EntryListQuery } from '@/domain/entry/entry'
+import { buildEntriesRequestUrl } from '@/domain/entry/entry-list-query'
 
 /**
  * 記事一覧の追加読み込み（UI コアロジック層）。

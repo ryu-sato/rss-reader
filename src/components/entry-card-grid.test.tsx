@@ -2,7 +2,7 @@ import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { EntryCardGrid } from './entry-card-grid'
-import type { EntryListItem } from '@/types/entry'
+import type { EntryListItem } from '@/domain/entry/entry'
 
 // ------------------------------------------------------------
 // モック設定

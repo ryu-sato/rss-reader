@@ -5,19 +5,19 @@ import { EntryCardGrid } from '@/components/entry-card-grid'
 import {
   buildEntriesSearchParams,
   parseEntryListQuery,
-} from '@/features/entry-viewing/lib/entry-list-query'
-import type { EntryListQuery } from '@/features/entry-viewing/types/entry'
+} from '@/domain/entry/entry-list-query'
+import type { EntryListQuery } from '@/domain/entry/entry'
 
 // 記事一覧ページの初回取得だけを差し替える（タグ・好み・設定は実 DB のまま）
-vi.mock('@/lib/entry-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/entry-service')>()),
+vi.mock('@/domain/entry/entry-repository', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/domain/entry/entry-repository')>()),
   findManyEntries: vi.fn(async () => ({
     entries: [],
     pagination: { page: 1, limit: 20, total: 0, hasNext: false, hasPrev: false },
   })),
 }))
 
-import { findManyEntries } from '@/lib/entry-service'
+import { findManyEntries } from '@/domain/entry/entry-repository'
 import Home from '@/app/page'
 import ReadLaterPage from '@/app/read-later/page'
 import PreferredAllPage from '@/app/preferred/all/page'

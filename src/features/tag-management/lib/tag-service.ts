@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { prisma } from '@/domain/shared/db'
-import type { Tag, TagWithCount } from '@/features/entry-viewing/types/entry'
+import type { Tag, TagWithCount } from '@/features/tag-management/types/tag'
 
 export async function upsertTagAndAssign(name: string, entryId: string): Promise<Tag> {
   const normalizedName = name.toLowerCase().trim()

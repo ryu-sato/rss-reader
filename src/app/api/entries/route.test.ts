@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-vi.mock('@/lib/entry-service', () => ({
+vi.mock('@/domain/entry/entry-repository', () => ({
   findManyEntries: vi.fn(),
 }))
 
-import { findManyEntries } from '@/lib/entry-service'
+import { findManyEntries } from '@/domain/entry/entry-repository'
 import { GET } from './route'
 
 const mockFindManyEntries = vi.mocked(findManyEntries)

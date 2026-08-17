@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-vi.mock('@/lib/tag-service', () => ({
+vi.mock('@/features/tag-management/lib/tag-service', () => ({
   removeTagFromEntry: vi.fn(),
 }))
 
-import { removeTagFromEntry } from '@/lib/tag-service'
+import { removeTagFromEntry } from '@/features/tag-management/lib/tag-service'
 import { DELETE } from './route'
 
 const mockRemoveTagFromEntry = vi.mocked(removeTagFromEntry)

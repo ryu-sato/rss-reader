@@ -6,7 +6,7 @@ import {
   parseEntryPageParams,
   parseSortOrder,
 } from './entry-list-query'
-import type { EntryListQuery } from '@/features/entry-viewing/types/entry'
+import type { EntryListQuery } from '@/domain/entry/entry'
 
 describe('buildEntriesSearchParams / parseEntryListQuery', () => {
   it('全ての絞り込み条件が URL を往復しても失われない', () => {

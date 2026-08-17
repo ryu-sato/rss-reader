@@ -1,7 +1,7 @@
 import { prisma } from '@/domain/shared/db'
 import { validateUrl } from '@/domain/shared/ssrf-guard'
-import { fetchEntries } from '@/features/feed-management/lib/entry-fetcher'
-import type { FetchedEntryData } from '@/features/entry-viewing/types/entry'
+import { fetchEntries } from '@/domain/entry/entry-fetcher'
+import type { FetchedEntryData } from '@/domain/entry/entry'
 
 const MAX_ENTRIES_PER_FEED = 500
 

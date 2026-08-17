@@ -1,5 +1,5 @@
 import Parser from 'rss-parser'
-import type { FetchedEntryData } from '@/features/entry-viewing/types/entry'
+import type { FetchedEntryData } from '@/domain/entry/entry'
 
 const FETCH_TIMEOUT_MS = 30_000
 

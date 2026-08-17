@@ -5,20 +5,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-vi.mock('@/lib/entry-service', () => ({
+vi.mock('@/domain/entry/entry-repository', () => ({
   findManyEntries: vi.fn(),
   getEntryById: vi.fn(),
+}))
+
+vi.mock('@/features/read-status/lib/entry-meta-service', () => ({
   updateEntryMeta: vi.fn(),
 }))
 
-vi.mock('@/lib/tag-service', () => ({
+vi.mock('@/features/tag-management/lib/tag-service', () => ({
   getAllTags: vi.fn(),
   upsertTagAndAssign: vi.fn(),
   removeTagFromEntry: vi.fn(),
 }))
 
-import { findManyEntries, getEntryById, updateEntryMeta } from '@/lib/entry-service'
-import { getAllTags, upsertTagAndAssign, removeTagFromEntry } from '@/lib/tag-service'
+import { findManyEntries, getEntryById } from '@/domain/entry/entry-repository'
+import { updateEntryMeta } from '@/features/read-status/lib/entry-meta-service'
+import { getAllTags, upsertTagAndAssign, removeTagFromEntry } from '@/features/tag-management/lib/tag-service'
 import { GET as getEntries } from '@/app/api/entries/route'
 import { GET as getEntry } from '@/app/api/entries/[id]/route'
 import { PUT as putMeta } from '@/app/api/entries/[id]/meta/route'

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getEntryById, updateEntryMeta } from '@/lib/entry-service'
+import { getEntryById } from '@/domain/entry/entry-repository'
+import { updateEntryMeta } from '@/features/read-status/lib/entry-meta-service'
 
 type Params = { params: Promise<{ id: string }> }
 

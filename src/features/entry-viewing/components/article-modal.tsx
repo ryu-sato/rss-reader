@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'motion/react'
 import { X, ChevronLeft, ChevronRight, Bookmark, ExternalLink, Eye, EyeOff } from 'lucide-react'
-import type { EntryDetail } from '@/features/entry-viewing/types/entry'
+import type { EntryDetail } from '@/domain/entry/entry'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { TagInput } from '@/features/tag-management/components/tag-input'

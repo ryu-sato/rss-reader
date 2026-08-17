@@ -1,12 +1,12 @@
 export const dynamic = 'force-dynamic'
 
 import { Suspense } from 'react'
-import { getAllTags } from '@/lib/tag-service'
-import { findManyEntries } from '@/lib/entry-service'
+import { getAllTags } from '@/features/tag-management/lib/tag-service'
+import { findManyEntries } from '@/domain/entry/entry-repository'
 import { EntryCardGrid } from '@/components/entry-card-grid'
 import { SortToggle } from '@/components/sort-toggle'
-import { parseSortOrder } from '@/features/entry-viewing/lib/entry-list-query'
-import type { EntryListQuery } from '@/features/entry-viewing/types/entry'
+import { parseSortOrder } from '@/domain/entry/entry-list-query'
+import type { EntryListQuery } from '@/domain/entry/entry'
 
 interface PageProps {
   searchParams: Promise<{

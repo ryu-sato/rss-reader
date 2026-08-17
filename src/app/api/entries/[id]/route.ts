@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getEntryById } from '@/lib/entry-service'
+import { getEntryById } from '@/domain/entry/entry-repository'
 
 type Params = { params: Promise<{ id: string }> }
 

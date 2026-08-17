@@ -14,7 +14,7 @@ vi.mock('@/domain/shared/db', () => ({
 }))
 
 import { prisma } from '@/domain/shared/db'
-import { upsertTagAndAssign, removeTagFromEntry, getAllTags } from '../tag-service'
+import { upsertTagAndAssign, removeTagFromEntry, getAllTags } from './tag-service'
 
 const mockTag = prisma.tag as unknown as Record<'findMany' | 'upsert', Mock>
 const mockEntryTag = prisma.entryTag as unknown as Record<'delete' | 'upsert', Mock>

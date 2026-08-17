@@ -1,5 +1,5 @@
 import { prisma } from '@/domain/shared/db'
-import type { GetEntriesQuery } from '@/features/entry-viewing/types/entry'
+import type { GetEntriesQuery } from '@/domain/entry/entry'
 
 const PREFRRED_SCORE_THRESHOLD = 0.5
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useEntryPagination } from './use-entry-pagination'
-import type { EntryListItem, EntryListQuery } from '@/features/entry-viewing/types/entry'
+import type { EntryListItem, EntryListQuery } from '@/domain/entry/entry'
 
 function makeEntry(id: string): EntryListItem {
   return {

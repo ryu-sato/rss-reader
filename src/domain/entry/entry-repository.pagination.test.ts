@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { prisma } from '@/domain/shared/db';
 
-import { findManyEntries } from '../entry-service'
+import { findManyEntries } from './entry-repository'
 
 describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
   beforeEach(async () => {

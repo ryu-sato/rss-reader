@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllTags, upsertTagAndAssign } from '@/lib/tag-service'
-import { getEntryById } from '@/lib/entry-service'
+import { getAllTags, upsertTagAndAssign } from '@/features/tag-management/lib/tag-service'
+import { getEntryById } from '@/domain/entry/entry-repository'
 
 export async function GET() {
   try {

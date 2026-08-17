@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { Tag, TagWithCount } from '@/features/entry-viewing/types/entry'
+import type { Tag, TagWithCount } from '@/features/tag-management/types/tag'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 

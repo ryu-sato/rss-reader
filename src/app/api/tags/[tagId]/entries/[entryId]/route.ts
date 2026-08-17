@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { removeTagFromEntry } from '@/lib/tag-service'
+import { removeTagFromEntry } from '@/features/tag-management/lib/tag-service'
 
 type Params = { params: Promise<{ tagId: string; entryId: string }> }
 

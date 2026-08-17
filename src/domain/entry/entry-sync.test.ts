@@ -23,15 +23,15 @@ vi.mock('@/domain/shared/ssrf-guard', () => ({
   validateUrl: vi.fn(),
 }))
 
-vi.mock('@/features/feed-management/lib/entry-fetcher', () => ({
+vi.mock('@/domain/entry/entry-fetcher', () => ({
   fetchEntries: vi.fn(),
 }))
 
 import { prisma } from '@/domain/shared/db'
 import { validateUrl } from '@/domain/shared/ssrf-guard'
-import { fetchEntries } from '@/features/feed-management/lib/entry-fetcher'
-import { saveEntries, enforceEntryLimit, fetchAllFeedsEntries } from '../entry-service'
-import type { FetchedEntryData } from '@/features/entry-viewing/types/entry'
+import { fetchEntries } from '@/domain/entry/entry-fetcher'
+import { saveEntries, enforceEntryLimit, fetchAllFeedsEntries } from './entry-sync'
+import type { FetchedEntryData } from '@/domain/entry/entry'
 
 const mockEntry = prisma.entry as unknown as Record<'count' | 'deleteMany' | 'findMany' | 'upsert', Mock>
 const mockFeed = prisma.feed as unknown as Record<'findMany' | 'update', Mock>

@@ -1,7 +1,7 @@
 import cron from 'node-cron'
 import { spawn } from 'child_process'
 import path from 'path'
-import { fetchAllFeedsEntries } from './entry-service'
+import { fetchAllFeedsEntries } from '@/domain/entry/entry-sync'
 
 function runScoreEntries(): Promise<void> {
   return new Promise((resolve, reject) => {

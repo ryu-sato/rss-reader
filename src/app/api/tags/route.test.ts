@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-vi.mock('@/lib/tag-service', () => ({
+vi.mock('@/features/tag-management/lib/tag-service', () => ({
   getAllTags: vi.fn(),
   upsertTagAndAssign: vi.fn(),
 }))
 
-vi.mock('@/lib/entry-service', () => ({
+vi.mock('@/domain/entry/entry-repository', () => ({
   getEntryById: vi.fn(),
 }))
 
-import { getAllTags, upsertTagAndAssign } from '@/lib/tag-service'
-import { getEntryById } from '@/lib/entry-service'
+import { getAllTags, upsertTagAndAssign } from '@/features/tag-management/lib/tag-service'
+import { getEntryById } from '@/domain/entry/entry-repository'
 import { GET, POST } from './route'
 
 const mockGetAllTags = vi.mocked(getAllTags)
