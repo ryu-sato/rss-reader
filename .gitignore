@@ -65,3 +65,7 @@ settings.local.json
 
 # Foundry harness session worktrees
 .foundry/
+
+# ルート直下の開発用 SQLite
+/dev.db
+/dev.db-journal
