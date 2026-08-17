@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-vi.mock('@/lib/feed-service', () => ({
+vi.mock('@/domain/feed/feed-repository', () => ({
   getAllFeeds: vi.fn(),
   createFeed: vi.fn(),
 }))
 
-import { getAllFeeds, createFeed } from '@/lib/feed-service'
+import { getAllFeeds, createFeed } from '@/domain/feed/feed-repository'
 import { GET, POST } from './route'
 import { ConflictError, FeedFetchError } from '@/domain/shared/errors'
 

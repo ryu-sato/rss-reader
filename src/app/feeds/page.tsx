@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Plus, Pencil, Trash2, Rss } from 'lucide-react'
-import type { FeedListItem } from '@/types/feed'
+import type { FeedListItem } from '@/domain/feed/feed'
 
 export default function FeedsPage() {
   const [feeds, setFeeds] = useState<FeedListItem[]>([])

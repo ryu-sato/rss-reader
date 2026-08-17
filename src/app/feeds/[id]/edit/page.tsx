@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
-import { getFeedById } from '@/lib/feed-service'
+import { getFeedById } from '@/domain/feed/feed-repository'
 import EditFeedForm from '@/components/edit-feed-form'
 
 interface Props {

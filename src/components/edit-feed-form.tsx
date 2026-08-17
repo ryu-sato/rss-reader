@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import type { Feed } from '@/types/feed'
+import type { Feed } from '@/domain/feed/feed'
 
 interface EditFeedFormProps {
   feed: Feed

@@ -17,14 +17,14 @@ vi.mock('@/domain/shared/ssrf-guard', () => ({
   validateUrl: vi.fn(),
 }))
 
-vi.mock('@/features/feed-management/lib/rss-fetcher', () => ({
+vi.mock('@/domain/feed/rss-fetcher', () => ({
   fetchFeed: vi.fn(),
 }))
 
 import { prisma } from '@/domain/shared/db'
 import { validateUrl } from '@/domain/shared/ssrf-guard'
-import { fetchFeed } from '@/features/feed-management/lib/rss-fetcher'
-import { createFeed, getAllFeeds, getFeedById, updateFeed, deleteFeed } from './feed-service'
+import { fetchFeed } from '@/domain/feed/rss-fetcher'
+import { createFeed, getAllFeeds, getFeedById, updateFeed, deleteFeed } from './feed-repository'
 import { ConflictError, NotFoundError, SSRFError } from '@/domain/shared/errors'
 
 const mockFeed = prisma.feed as unknown as Record<'findUnique' | 'findMany' | 'create' | 'update' | 'delete', Mock>

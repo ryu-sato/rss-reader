@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import EditFeedForm from './edit-feed-form'
-import type { Feed } from '@/types/feed'
+import type { Feed } from '@/domain/feed/feed'
 
 const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({

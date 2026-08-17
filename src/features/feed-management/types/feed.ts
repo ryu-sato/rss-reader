@@ -1,35 +1,11 @@
 /**
- * RSSシードの登録 型定義
+ * フィード管理機能の API リクエスト/レスポンスとフォーム状態の型定義。
+ *
+ * エンティティそのものはコアドメイン（@/domain/feed/feed）が持つ。
  */
 
 import type { ErrorCode } from '@/domain/shared/errors'
-
-// ========================================
-// エンティティ定義
-// ========================================
-
-export interface Feed {
-  id: string
-  url: string
-  title: string
-  description: string | null
-  faviconUrl: string | null
-  memo: string | null
-  createdAt: Date
-  updatedAt: Date
-  lastFetchedAt: Date | null
-}
-
-export interface FeedListItem {
-  id: string
-  title: string
-  url: string
-  faviconUrl: string | null
-  unreadCount: number
-  createdAt: Date
-  updatedAt: Date
-  lastPublishedAt: Date | null
-}
+import type { Feed, FeedListItem } from '@/domain/feed/feed'
 
 // ========================================
 // APIリクエスト/レスポンス
@@ -86,29 +62,3 @@ export interface FeedFormState {
   error: string | null
   success: boolean
 }
-
-// ========================================
-// RSSフェッチャー内部型
-// ========================================
-
-export interface FetchedFeedInfo {
-  title: string
-  description: string | null
-  faviconUrl: string | null
-  lastFetchedAt: Date
-}
-
-export interface SSRFValidationResult {
-  isAllowed: boolean
-  reason?: string
-}
-
-// ========================================
-// Prisma関連の入力型
-// ========================================
-
-export type CreateFeedInput = Omit<Feed, 'id' | 'createdAt' | 'updatedAt'>
-
-export type UpdateFeedInput = Partial<
-  Pick<Feed, 'title' | 'description' | 'memo' | 'lastFetchedAt'>
->

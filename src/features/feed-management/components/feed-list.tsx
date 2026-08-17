@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Rss, Pencil } from 'lucide-react'
 import { useState } from 'react'
-import type { FeedListItem } from '@/features/feed-management/types/feed'
+import type { FeedListItem } from '@/domain/feed/feed'
 import DeleteConfirmDialog from './delete-confirm-dialog'
 import { Button } from '@/components/ui/button'
 

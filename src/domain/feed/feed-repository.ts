@@ -1,10 +1,9 @@
 import { cache } from 'react'
 import { prisma } from '@/domain/shared/db'
 import { validateUrl } from '@/domain/shared/ssrf-guard'
-import { fetchFeed } from '@/features/feed-management/lib/rss-fetcher'
+import { fetchFeed } from './rss-fetcher'
 import { ConflictError, NotFoundError } from '@/domain/shared/errors'
-import type { UpdateFeedInput, FeedListItem } from '@/features/feed-management/types/feed'
-import type { Feed } from '@/generated/prisma/client'
+import type { Feed, UpdateFeedInput, FeedListItem } from './feed'
 
 export async function createFeed(url: string): Promise<Feed> {
   const existing = await prisma.feed.findUnique({ where: { url } })

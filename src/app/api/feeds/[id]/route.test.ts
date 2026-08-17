@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-vi.mock('@/lib/feed-service', () => ({
+vi.mock('@/domain/feed/feed-repository', () => ({
   getFeedById: vi.fn(),
   updateFeed: vi.fn(),
   deleteFeed: vi.fn(),
 }))
 
-import { getFeedById, updateFeed, deleteFeed } from '@/lib/feed-service'
+import { getFeedById, updateFeed, deleteFeed } from '@/domain/feed/feed-repository'
 import { GET, PUT, DELETE } from './route'
 import { NotFoundError } from '@/domain/shared/errors'
 
