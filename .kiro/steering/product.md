@@ -8,7 +8,8 @@ Self-hosted RSS feed reader web application that aggregates and presents RSS con
 - **Content Aggregation**: Parse and store RSS entries from registered feeds with scheduled updates
 - **Secure Authentication**: OAuth/OIDC-based authentication via better-auth
 - **Rich Reading Experience**: Markdown rendering with sanitization, dark mode, responsive layout
-- **Self-Hosted Deployment**: Docker-based deployment with nginx and automatic feed updates via cron
+- **Organizing**: ユーザー定義タグでの分類、既読 / あとで読むの管理、嗜好テキストとスコアしきい値による「好みの記事」の絞り込み
+- **Self-Hosted Deployment**: Docker Compose（アプリ + cloudflared トンネル）でのデプロイ。フィード取得は毎正時、嗜好スコアリングは毎時 30 分に cron で自動実行
 
 ## Target Use Cases
 

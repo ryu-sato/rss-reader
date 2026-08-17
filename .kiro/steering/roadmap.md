@@ -15,18 +15,19 @@ Next.js 16 App Router + TypeScript strict + Prisma/LibSQL で構築されてお�
 
 - **In**: フィード管理、エントリー閲覧、既読管理、タグ管理、設定、ダイジェスト、嗜好レコメンデーション
 - **Out**: 認証システム（better-auth に委譲）、スコアリングエンジン（外部システム）、デプロイインフラ
+- **Note**: スペック化していない `auth` も実装は `src/features/auth/` に機能モジュールとして置いてある
 
 ## Constraints
 
 - TypeScript strict モード必須
-- すべてのフィードURL取得は `ssrf-guard.ts` を経由すること
+- すべてのフィードURL取得は `@/domain/shared/ssrf-guard` の `validateUrl()` を経由すること
 - コンテンツレンダリングは rehype-sanitize によるサニタイズ必須
 - `@/*` パスエイリアス（`./src/*` へのマッピング）を使用
 
 ## Boundary Strategy
 
-- **Why this split**: ドメインごとの責務が明確に分離されており、各フィーチャーは独立したサービス層・API・UIを持つ
-- **Shared seams to watch**: EntryMeta（read-status と entry-viewing の境界）、AppSettings（settings と preference-recommendations の境界）
+- **Why this split**: 各フィーチャーは独立したサービス層・API・UIを持つ。ただし Feed / Entry は全フィーチャーが参照するコアドメインなので、スペック単位ではなく `src/domain/` に一元化してある（`.kiro/steering/domain-model.md` 参照）
+- **Shared seams to watch**: EntryMeta（read-status と entry-viewing の境界）、AppSettings（settings と preference-recommendations の境界）、Entry の一覧クエリ（entry-viewing の UI とコアの `entry-list-query` の境界）
 
 ## Specs (dependency order)
 

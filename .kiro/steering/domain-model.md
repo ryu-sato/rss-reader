@@ -1,7 +1,10 @@
 # ドメインモデル
 
 本アプリケーション（セルフホスト型 RSS リーダー）のソースコードを網羅的に調査し、要件とドメインを整理したもの。
-ディレクトリ構成の根拠となる文書であり、構成を変える場合はまず本書を更新する。
+
+ドメインの定義（何がコアで何が支援か、どの概念がどこに属するか）はこの文書を単一の情報源とする。
+ディレクトリ構成の規約は `.kiro/steering/structure.md` が持ち、本書はその根拠にあたる。
+ドメインの切り方を変えるときは、まず本書を更新してから structure.md を追随させる。
 
 ## 1. アプリケーションの要件（実装から抽出した要約）
 
@@ -104,32 +107,22 @@ generated/prisma, shared
 - 同じ実装へ 2 つ以上の import 経路を作らない（再エクスポートのシムを置かない）。
   経路が二重化すると「一元管理されている」という前提が静かに崩れるため。
 
-## 5. ディレクトリ構成
+## 4. ドメインと実装の対応
 
-```
-src/
-  domain/                      コアドメイン（RSS コンテンツ）
-    entry/                     entry.ts / entry-repository.ts / entry-list-query.ts
-                               entry-fetcher.ts / entry-sync.ts
-    feed/                      feed.ts / feed-repository.ts / rss-fetcher.ts
-    shared/                    db.ts / errors.ts / ssrf-guard.ts
-  features/<機能>/             支援ドメイン（.kiro/specs/ の 1 スペックに対応）
-    components/                その機能に閉じた React コンポーネント
-    lib/                       その機能のサービス・フック
-    types/                     その機能の API リクエスト/レスポンス型
-  app/                         App Router のページと API ルート（薄く保つ）
-  components/
-    ui/                        shadcn ベースのデザインシステム
-    layout/                    サイドバーなどアプリ全体の骨格
-  lib/                         真に汎用のユーティリティ（cron / motion / utils）
-  hooks/                       汎用フック
-  generated/prisma/            Prisma 生成コード（手で編集しない）
-```
+| ドメイン | 実装の置き場所 |
+| --- | --- |
+| コア: Entry | `src/domain/entry/` — `entry.ts` / `entry-repository.ts` / `entry-list-query.ts` / `entry-fetcher.ts` / `entry-sync.ts` |
+| コア: Feed | `src/domain/feed/` — `feed.ts` / `feed-repository.ts` / `rss-fetcher.ts` |
+| 汎用（コア基盤） | `src/domain/shared/` — `db.ts` / `errors.ts` / `ssrf-guard.ts` |
+| 支援ドメイン各種 | `src/features/<機能>/` — `components/` / `lib/` / `types/` |
+| 画面・API | `src/app/` |
+| 共有 UI | `src/components/ui/`（デザインシステム）、`src/components/layout/`（骨格） |
+| ドメイン知識を持たない部品 | `src/lib/`（cron / motion / utils）、`src/hooks/` |
 
-テストは対象と同じディレクトリに置く（`entry-repository.ts` ↔ `entry-repository.test.ts`）。
-複数ドメインをまたぐ結合テストだけ `src/__tests__/integration/` に置く。
+ディレクトリの命名規約・テストの置き方・import の書き方は `.kiro/steering/structure.md` を参照。
+本書はどの概念がどのドメインに属するかだけを定める。
 
-## 4. 永続化スキーマとの対応
+## 5. 永続化スキーマとの対応
 
 `prisma/schema.prisma` のモデルとドメインの対応:
 

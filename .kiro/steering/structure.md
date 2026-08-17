@@ -6,7 +6,7 @@
 その上に機能モジュール（folder-by-feature）を `/src/features/<機能>/` として重ねる。
 依存は常に上から下へ一方向で、`domain` は `features` / `app` / `components` を参照しない。
 
-ドメインの定義と要件の対応は `docs/domain-model.md` を単一の情報源とする。構成を変えるときは
+ドメインの定義と要件の対応は `.kiro/steering/domain-model.md` を単一の情報源とする。構成を変えるときは
 まずそちらを更新する。
 
 ## Directory Patterns
@@ -24,7 +24,7 @@
 
 ### Feature Modules
 **Location**: `/src/features/<機能>/`
-**Purpose**: コアドメインに意味づけ・見せ方を与える支援ドメイン。`.kiro/specs/` の 1 スペックに 1 フォルダ対応
+**Purpose**: コアドメインに意味づけ・見せ方を与える支援ドメイン。原則 `.kiro/specs/` の 1 スペックに 1 フォルダ対応（`auth` だけはスペックがなく実装のみ）
 **Sub-patterns**: `components/`（その機能に閉じた React コンポーネント）、`lib/`（サービス・フック）、`types/`（API リクエスト/レスポンス型）
 **現在の機能**: `feed-management`, `entry-viewing`, `read-status`, `tag-management`,
 `preference-recommendations`, `digests`, `settings`, `auth`
@@ -46,7 +46,7 @@
 ### Generic Utilities
 **Location**: `/src/lib/`, `/src/hooks/`
 **Purpose**: ドメイン知識を持たない汎用処理のみ（`utils.ts`, `motion.ts`, `cron.ts`, `use-media-preference.ts`）
-**制約**: ここにサービス層を置かない。データアクセスは `domain/*-repository.ts` か `features/*/lib/*-service.ts`
+**制約**: ここにサービス層を置かない。データアクセスは `domain/**` か `features/*/lib/` に置く
 
 ### Generated Code
 **Location**: `/src/generated/`
@@ -88,7 +88,8 @@ import { helper } from './helper'
   - `features/auth/lib/auth.ts` — better-auth の prismaAdapter に渡すため
   - `app/api/health/route.ts`, `app/api/tags/batch/route.ts`,
     `app/api/entries/read-later-unread-count/route.ts` — ルートハンドラが直接クエリしている（要整理）
-- **Zod at boundaries**: 外部入力（API リクエストボディ、フォームデータ）はサービスに渡す前に検証する
+- **境界で検証する**: 外部入力（API リクエストボディ、フォームデータ）はサービスに渡す前に検証し、
+  不正なら `VALIDATION_ERROR` を 400 で返す。検証ライブラリは入れていないので素の `typeof` / 空文字チェックで書く
 
 ---
 _Document patterns, not file trees. New files following patterns shouldn't require updates_
