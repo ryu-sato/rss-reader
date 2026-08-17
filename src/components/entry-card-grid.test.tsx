@@ -239,6 +239,7 @@ describe('EntryCardGrid — モーダル表示中の追加読み込みと次へ�
       <EntryCardGrid
         initialEntries={[entry1]}
         initialPagination={makePagination(1, 1)}
+        query={{}}
         allTags={allTags}
       />,
     )
@@ -271,6 +272,7 @@ describe('EntryCardGrid — モーダル表示中の追加読み込みと次へ�
       <EntryCardGrid
         initialEntries={[entry1]}
         initialPagination={makePagination(1, 2)}
+        query={{}}
         allTags={allTags}
       />,
     )
@@ -308,6 +310,7 @@ describe('EntryCardGrid — モーダル表示中の追加読み込みと次へ�
       <EntryCardGrid
         initialEntries={[entry1]}
         initialPagination={makePagination(1, 3)}
+        query={{}}
         allTags={allTags}
       />,
     )
@@ -351,6 +354,7 @@ describe('EntryCardGrid — モーダル表示中の追加読み込みと次へ�
       <EntryCardGrid
         initialEntries={[entry1]}
         initialPagination={makePagination(1, 2)}
+        query={{}}
         allTags={allTags}
       />,
     )
@@ -384,6 +388,7 @@ describe('EntryCardGrid — モーダル表示中の追加読み込みと次へ�
       <EntryCardGrid
         initialEntries={[entry1]}
         initialPagination={makePagination(1, 3)}
+        query={{}}
         allTags={allTags}
       />,
     )
@@ -426,6 +431,7 @@ describe('EntryCardGrid — モーダル表示中の追加読み込みと次へ�
       <EntryCardGrid
         initialEntries={[entry1]}
         initialPagination={makePagination(1, 2)}
+        query={{}}
         allTags={allTags}
       />,
     )
@@ -490,6 +496,7 @@ describe('EntryCardGrid — モーダル表示中の追加読み込みと次へ�
       <EntryCardGrid
         initialEntries={[entry1]}
         initialPagination={makePagination(1, 3)}
+        query={{}}
         allTags={allTags}
       />,
     )
@@ -524,7 +531,7 @@ describe('EntryCardGrid — モーダル表示中はフィルタを反映せず�
       <EntryCardGrid
         initialEntries={[entry1, entry2]}
         initialPagination={makePagination(1, 2, 2)}
-        isUnread
+        query={{ isUnread: true }}
         allTags={allTags}
       />,
     )
@@ -563,7 +570,7 @@ describe('EntryCardGrid — モーダル表示中はフィルタを反映せず�
       <EntryCardGrid
         initialEntries={[entry1, entry2]}
         initialPagination={makePagination(1, 2, 2)}
-        isReadLater
+        query={{ isReadLater: true }}
         allTags={allTags}
       />,
     )

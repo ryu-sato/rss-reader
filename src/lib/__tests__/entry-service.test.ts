@@ -286,6 +286,44 @@ describe('findManyEntries (Dedup / 全記事一覧モード)', () => {
     expect(result.entries.length).toEqual(1);
     expect(result.entries[0].id).toEqual('entry-1');
   })
+
+  it.each([
+    ['userPreferenceId', { userPreferenceId: 'pref-1' }],
+    ['isAnyPreferred', { isAnyPreferred: true }],
+  ])('%s フィルタでも、古い順の追加読み込みで全件を辿れる', async (_label, filter) => {
+    // Arrange: お好みの記事一覧(feedId 未指定 = dedup パス)を古い順で表示した状態
+    const feed1 = await prisma.feed.create({ data: { id: 'feed-1', url: 'http://example.com/feed1', title: 'Feed 1' } })
+    const now = Date.now()
+    await prisma.entry.createMany({
+      data: Array.from({ length: 7 }, (_, i) => ({
+        id: `entry-${i + 1}`,
+        guid: `guid-${i + 1}`,
+        feedId: feed1.id,
+        title: `Entry ${i + 1}`,
+        link: `http://example.com/${i + 1}`,
+        publishedAt: new Date(now - i * 1000),
+        effectedDate: new Date(now - i * 1000),
+      })),
+    })
+    const userPreference = await prisma.userPreference.create({ data: { id: 'pref-1', text: 'Preference 1' } })
+    await prisma.entryPreferenceScore.createMany({
+      data: Array.from({ length: 7 }, (_, i) => ({ entryId: `entry-${i + 1}`, preferenceId: userPreference.id, score: 0.9 })),
+    })
+
+    // Act: 無限スクロールと同じ手順で、末尾エントリを afterId にして hasNext が false になるまで辿る
+    const seen: string[] = []
+    let result = await findManyEntries({ ...filter, page: 1, limit: 3, sortOrder: 'asc' })
+    seen.push(...result.entries.map((e) => e.id))
+    let guard = 0
+    while (result.pagination.hasNext && guard++ < 10) {
+      const afterId = result.entries[result.entries.length - 1].id
+      result = await findManyEntries({ ...filter, page: 1, limit: 3, sortOrder: 'asc', afterId })
+      seen.push(...result.entries.map((e) => e.id))
+    }
+
+    // Assert: 古い順に、重複も取りこぼしもなく全件辿れる
+    expect(seen).toEqual(['entry-7', 'entry-6', 'entry-5', 'entry-4', 'entry-3', 'entry-2', 'entry-1'])
+  })
 })
 
 describe('findManyEntries (feedId 指定モード) のカーソルページング', () => {

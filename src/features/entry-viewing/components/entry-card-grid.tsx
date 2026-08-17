@@ -4,7 +4,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Rss, Tags, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import type { EntryDetail, EntryListItem, EntryMeta, UpdateEntryMetaInput } from '@/features/entry-viewing/types/entry'
+import type {
+  EntryDetail,
+  EntryListItem,
+  EntryListQuery,
+  EntryMeta,
+  UpdateEntryMetaInput,
+} from '@/features/entry-viewing/types/entry'
+import { useEntryPagination } from '@/features/entry-viewing/lib/use-entry-pagination'
 import dynamic from 'next/dynamic'
 import { EntryCard } from '@/features/entry-viewing/components/entry-card'
 import { BulkTagBar } from '@/features/tag-management/components/bulk-tag-bar'
@@ -43,16 +50,12 @@ interface Pagination {
 interface EntryCardGridProps {
   initialEntries: EntryListItem[]
   initialPagination: Pagination
-  feedId?: string
-  tagId?: string
-  search?: string
-  isReadLater?: boolean
-  isUnread?: boolean
-  isPreferred?: boolean
-  userPreferenceId?: string
-  isAnyPreferred?: boolean
-  sortOrder?: 'asc' | 'desc'
-  scoreThreshold?: number
+  /**
+   * 初回取得（サーバ側）に使ったのとまったく同じ絞り込み条件。
+   * 追加読み込みはこの記述子をそのまま API に送るため、条件をここに集約しておかないと
+   * 「初回は古い順・追加分は新しい順」のような食い違いが起きる。
+   */
+  query: EntryListQuery
   basePath?: string
   allTags: Array<{ id: string; name: string; createdAt: Date; entryCount: number }>
 }
@@ -60,41 +63,25 @@ interface EntryCardGridProps {
 export function EntryCardGrid({
   initialEntries,
   initialPagination,
-  feedId,
-  tagId,
-  search,
-  isReadLater,
-  isUnread,
-  isPreferred,
-  userPreferenceId,
-  isAnyPreferred,
-  sortOrder,
-  scoreThreshold,
+  query,
   basePath = '/',
   allTags,
 }: EntryCardGridProps) {
   const router = useRouter()
+  const { isUnread, isReadLater } = query
+  const isPreferred = Boolean(query.userPreferenceId || query.isAnyPreferred)
 
   const [entries, setEntries] = useState<EntryListItem[]>(initialEntries)
-  const [hasMore, setHasMore] = useState(initialPagination.hasNext)
-  const [isLoading, setIsLoading] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
-  // loadMore の afterId 算出用。entries を直接 useCallback の依存に入れると
+  // 取得済み id の算出用。entries を直接 useCallback の依存に入れると
   // 記事一覧が更新されるたびに loadMore(延いては IntersectionObserver) が
   // 作り直されてしまうため、ref 経由で最新値だけを参照する。
   const entriesRef = useRef(entries)
   useEffect(() => { entriesRef.current = entries }, [entries])
-  // 取得した記事が全て一覧に載っている場合、末尾の記事は変わらないので次も同じ afterId を
-  // 送ってしまい追加読み込みが進まなくなる。その時だけ応答の末尾 id をカーソルに引き継ぐ。
-  // ただし応答の末尾が送った afterId と同一（サーバが同じページを返し続ける）場合は
-  // クライアント側では前進できない。
-  const stalledCursorIdRef = useRef<string | null>(null)
 
   const [navEntries, setNavEntries] = useState<EntryListItem[]>([])
-  const [navHasMore, setNavHasMore] = useState(false)
   const navEntriesRef = useRef(navEntries)
   useEffect(() => { navEntriesRef.current = navEntries }, [navEntries])
-  const [isNavLoading, setIsNavLoading] = useState(false)
   const [pendingNavigateNext, setPendingNavigateNext] = useState(false)
   const hasNavSnapshotRef = useRef(false)
 
@@ -107,6 +94,54 @@ export function EntryCardGrid({
 
   const prefetchCacheRef = useRef<Map<string, EntryDetail>>(new Map())
   const prefetchingRef = useRef<Set<string>>(new Set())
+
+  // 一覧の無限スクロール
+  const { hasMore, isLoading, loadMore } = useEntryPagination({
+    query,
+    limit: initialPagination.limit,
+    initialHasMore: initialPagination.hasNext,
+    initialCursorId: initialEntries[initialEntries.length - 1]?.id,
+    // モーダル表示中の追加分（バッファ）も既知として扱わないと、一覧に反映される前の
+    // 記事を毎回「新着」と見なしてしまいカーソルが進まない。
+    getKnownIds: () =>
+      new Set([
+        ...entriesRef.current.map((e) => e.id),
+        ...pendingAppendEntriesRef.current.map((e) => e.id),
+      ]),
+    onLoaded: (newEntries) => {
+      if (isModalOpenRef.current) {
+        pendingAppendEntriesRef.current.push(...newEntries)
+        return
+      }
+      setEntries((prev) => {
+        const existingIds = new Set(prev.map((e) => e.id))
+        const toAppend = newEntries.filter((e) => !existingIds.has(e.id))
+        return toAppend.length > 0 ? [...prev, ...toAppend] : prev
+      })
+    },
+  })
+
+  // モーダルの「次の記事」送り。一覧とは別のスナップショットを進める
+  const {
+    hasMore: navHasMore,
+    isLoading: isNavLoading,
+    loadMore: loadNavMore,
+    reset: resetNavPagination,
+  } = useEntryPagination({
+    query,
+    limit: initialPagination.limit,
+    initialHasMore: false,
+    getKnownIds: () => new Set(navEntriesRef.current.map((e) => e.id)),
+    onLoaded: (newEntries) => {
+      setNavEntries((prev) => {
+        const existingIds = new Set(prev.map((e) => e.id))
+        return [...prev, ...newEntries.filter((e) => !existingIds.has(e.id))]
+      })
+      // モーダル表示中は背後の一覧を直接更新せず、閉じた時にまとめて反映できるよう退避する。
+      const existingIds = new Set(entriesRef.current.map((e) => e.id))
+      pendingAppendEntriesRef.current.push(...newEntries.filter((e) => !existingIds.has(e.id)))
+    },
+  })
 
   const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -135,11 +170,11 @@ export function EntryCardGrid({
       hasNavSnapshotRef.current = true
       isModalOpenRef.current = true
       setNavEntries([...entries])
-      setNavHasMore(hasMore)
+      resetNavPagination({ cursorId: entries[entries.length - 1]?.id, hasMore })
     } else if (!selectedEntryId && hasNavSnapshotRef.current) {
       hasNavSnapshotRef.current = false
       setNavEntries([])
-      setNavHasMore(false)
+      resetNavPagination({ hasMore: false })
       setPendingNavigateNext(false)
       prefetchCacheRef.current.clear()
       prefetchingRef.current.clear()
@@ -258,96 +293,6 @@ export function EntryCardGrid({
     return () => window.removeEventListener('entry:updated', handler)
   }, [isReadLater])
 
-  const loadMore = useCallback(async () => {
-    if (isLoading || !hasMore) return
-    setIsLoading(true)
-    try {
-      const afterId = stalledCursorIdRef.current ?? entriesRef.current[entriesRef.current.length - 1]?.id
-      const params = new URLSearchParams()
-      if (afterId) params.set('afterId', afterId)
-      params.set('limit', String(initialPagination.limit))
-      if (feedId) params.set('feedId', feedId)
-      if (tagId) params.set('tagId', tagId)
-      if (search) params.set('search', search)
-      if (isReadLater) params.set('isReadLater', 'true')
-      if (isUnread) params.set('isUnread', 'true')
-      if (isPreferred) params.set('isPreferred', 'true')
-      if (userPreferenceId) params.set('userPreferenceId', userPreferenceId)
-      if (isAnyPreferred) params.set('isAnyPreferred', 'true')
-      if (sortOrder) params.set('sortOrder', sortOrder)
-      if (scoreThreshold !== undefined) params.set('scoreThreshold', String(scoreThreshold))
-
-      const res = await fetch(`/api/entries?${params.toString()}`)
-      if (!res.ok) return
-      const json = await res.json() as {data: EntryListItem[], pagination: Pagination};
-      // モーダル表示中の追加分（pendingAppendEntriesRef）も既知として扱わないと、
-      // 一覧に反映される前の記事を毎回「新着」と見なしてカーソルが進まない。
-      const knownIds = new Set([
-        ...entriesRef.current.map((e) => e.id),
-        ...pendingAppendEntriesRef.current.map((e) => e.id),
-      ])
-      const newEntries = json.data.filter((e) => !knownIds.has(e.id))
-      stalledCursorIdRef.current =
-        newEntries.length === 0 && json.data.length > 0 ? json.data[json.data.length - 1].id : null
-      if (isModalOpenRef.current) {
-        pendingAppendEntriesRef.current.push(...newEntries)
-      } else if (newEntries.length > 0) {
-        setEntries((prev) => {
-          const existingIds = new Set(prev.map((e) => e.id))
-          const toAppend = newEntries.filter((e) => !existingIds.has(e.id))
-          return toAppend.length > 0 ? [...prev, ...toAppend] : prev
-        })
-      }
-      setHasMore(json.pagination.hasNext)
-    } finally {
-      setIsLoading(false)
-    }
-  // entries.length を依存に含めるのは、ページ読み込み成功後に IntersectionObserver を
-  // 作り直させるため。実ブラウザでも observe() 呼び出しは現在の交差状態を即座に通知するため、
-  // これがビューポート内にセンチネルが留まったまま次ページを連続で読み込むための仕組みになる。
-  // entries を丸ごと依存に入れると既読トグル等の更新でも作り直しが走ってしまうため length のみ見る。
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, hasMore, entries.length, feedId, tagId, search, isReadLater, isUnread, isPreferred, userPreferenceId, isAnyPreferred, sortOrder, scoreThreshold, initialPagination.limit])
-
-  const loadNavMore = useCallback(async () => {
-    if (isNavLoading || !navHasMore) return
-    setIsNavLoading(true)
-    try {
-      const afterId = navEntriesRef.current[navEntriesRef.current.length - 1]?.id
-      const params = new URLSearchParams()
-      if (afterId) params.set('afterId', afterId)
-      params.set('limit', String(initialPagination.limit))
-      if (feedId) params.set('feedId', feedId)
-      if (tagId) params.set('tagId', tagId)
-      if (search) params.set('search', search)
-      if (isReadLater) params.set('isReadLater', 'true')
-      if (isUnread) params.set('isUnread', 'true')
-      if (isPreferred) params.set('isPreferred', 'true')
-      if (userPreferenceId) params.set('userPreferenceId', userPreferenceId)
-      if (isAnyPreferred) params.set('isAnyPreferred', 'true')
-      if (sortOrder) params.set('sortOrder', sortOrder)
-      if (scoreThreshold !== undefined) params.set('scoreThreshold', String(scoreThreshold))
-
-      const res = await fetch(`/api/entries?${params.toString()}`)
-      if (!res.ok) return
-      const json = await res.json()
-      setNavEntries((prev) => {
-        const existingIds = new Set(prev.map((e) => e.id))
-        const newEntries = json.data.filter((e: { id: string }) => !existingIds.has(e.id))
-        return [...prev, ...newEntries]
-      })
-      setNavHasMore(json.pagination.hasNext)
-      // モーダル表示中（prev/next でのページ送り）は背後の一覧を直接更新せず、
-      // モーダルが閉じた時にまとめて反映できるようバッファに退避する。
-      const existingIds = new Set(entriesRef.current.map((e) => e.id))
-      pendingAppendEntriesRef.current.push(
-        ...json.data.filter((e: { id: string }) => !existingIds.has(e.id))
-      )
-    } finally {
-      setIsNavLoading(false)
-    }
-  }, [isNavLoading, navHasMore, feedId, tagId, search, isReadLater, isUnread, isPreferred, userPreferenceId, isAnyPreferred, sortOrder, scoreThreshold, initialPagination.limit])
-
   useEffect(() => {
     const sentinel = sentinelRef.current
     if (!sentinel || typeof IntersectionObserver === 'undefined') return
@@ -357,7 +302,13 @@ export function EntryCardGrid({
     )
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [loadMore])
+  // isLoading / entries.length を依存に含めるのは、読み込みが終わるたびに
+  // IntersectionObserver を作り直させるため。observe() 呼び出しは現在の交差状態を即座に
+  // 通知するので、これがビューポート内にセンチネルが留まったまま次ページを連続で読み込む
+  // 仕組みになる。モーダル表示中は取得分がバッファに入って entries.length が変わらないため、
+  // isLoading の立ち下がりが唯一の再観測トリガーになる。
+  // entries を丸ごと依存に入れると既読トグル等の更新でも作り直しが走るため length のみ見る。
+  }, [loadMore, isLoading, entries.length])
 
   useEffect(() => {
     if (!selectedEntryId || navEntries.length === 0 || navIndex === -1) return
@@ -378,10 +329,9 @@ export function EntryCardGrid({
   useEffect(() => {
     if (!selectedEntryId || !navHasMore || isNavLoading || navEntries.length === 0) return
     // Fetches more entries when nav reaches the end of what's loaded; state updates happen
-    // inside loadNavMore's own async continuation, not synchronously here.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // inside loadMore's own async continuation, not synchronously here.
     if (navIndex === navEntries.length - 1) loadNavMore()
-  }, [navIndex, navEntries.length, navHasMore, isNavLoading, selectedEntryId, loadNavMore])
+  }, [navIndex, navEntries.length, navHasMore, isNavLoading, loadNavMore, selectedEntryId])
 
   useEffect(() => {
     if (!pendingNavigateNext || navEntries.length === 0) return
@@ -453,7 +403,7 @@ export function EntryCardGrid({
       openEntry(navEntries[navIndex + 1].id)
     } else if (navHasMore) {
       setPendingNavigateNext(true)
-      if (!isNavLoading) loadNavMore()
+      loadNavMore()
     }
   }
 
@@ -470,15 +420,15 @@ export function EntryCardGrid({
                 ? '未読の記事はありません'
                 : '記事がありません'}
         </p>
-        {!isReadLater && !isPreferred && !tagId && (
+        {!isReadLater && !isPreferred && !query.tagId && (
           <Link href="/feeds/new" className="text-xs text-primary hover:underline">
             フィードを追加する
           </Link>
         )}
-        {tagId && (
+        {query.tagId && (
           <button
             onClick={async () => {
-              const res = await fetch(`/api/tags/${tagId}`, { method: 'DELETE' })
+              const res = await fetch(`/api/tags/${query.tagId}`, { method: 'DELETE' })
               if (res.ok) {
                 window.dispatchEvent(new Event('tag:deleted'))
                 router.push('/')

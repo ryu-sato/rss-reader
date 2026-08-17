@@ -5,7 +5,8 @@ import { getAllTags } from '@/lib/tag-service'
 import { findManyEntries } from '@/lib/entry-service'
 import { EntryCardGrid } from '@/components/entry-card-grid'
 import { SortToggle } from '@/components/sort-toggle'
-import type { SortOrderValue } from '@/components/sort-toggle'
+import { parseSortOrder } from '@/features/entry-viewing/lib/entry-list-query'
+import type { EntryListQuery } from '@/features/entry-viewing/types/entry'
 
 interface PageProps {
   searchParams: Promise<{
@@ -15,10 +16,12 @@ interface PageProps {
 
 export default async function ReadLaterPage({ searchParams }: PageProps) {
   const params = await searchParams
-  const sortOrder: SortOrderValue = params.sortOrder === 'asc' ? 'asc' : 'desc'
+  const sortOrder = parseSortOrder(params.sortOrder)
+
+  const query: EntryListQuery = { isReadLater: true, sortOrder }
 
   const [{ entries, pagination }, allTags] = await Promise.all([
-    findManyEntries({ isReadLater: true, page: 1, sortOrder }),
+    findManyEntries({ ...query, page: 1 }),
     getAllTags(),
   ])
 
@@ -37,8 +40,7 @@ export default async function ReadLaterPage({ searchParams }: PageProps) {
           key={sortOrder}
           initialEntries={entries}
           initialPagination={pagination}
-          isReadLater
-          sortOrder={sortOrder}
+          query={query}
           basePath="/read-later"
           allTags={allTags}
         />
