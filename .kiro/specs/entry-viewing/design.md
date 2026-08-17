@@ -163,7 +163,7 @@ src/
 ### Modified Files
 
 - `src/app/page.tsx` — `searchParams` を読み取り、`findManyEntries` を呼び出して初期データを Server Component で取得する
-- `src/lib/entry-service.ts` — `findManyEntries` / `findManyEntriesDedup` / `getEntryById` を実装（既存ファイルを拡張）
+- `src/domain/entry/entry-repository.ts` — `findManyEntries` / `findManyEntriesDedup` / `getEntryById` を実装（既存ファイルを拡張）
 
 ---
 

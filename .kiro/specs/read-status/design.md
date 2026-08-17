@@ -145,9 +145,10 @@ src/
 
 - `src/app/api/entries/[id]/meta/route.ts` — PUT ハンドラー（isRead / isReadLater の条件付き更新）
 - `src/app/api/entries/read-later-unread-count/route.ts` — カウントクエリ
-- `src/lib/entry-service.ts` — `updateEntryMeta`: シブリング同期ロジック、`saveEntries`: 新規エントリー既読連動
-- `src/components/article-modal.tsx` — 既読/あとで読むボタン UI・楽観的更新・イベント dispatch
-- `src/components/sidebar.tsx` — イベントリスナー・readLaterUnreadCount・PWA バッジ更新
+- `src/features/read-status/lib/entry-meta-service.ts` — `updateEntryMeta`: シブリング同期ロジック
+- `src/domain/entry/entry-sync.ts` — `saveEntries`: 新規エントリー既読連動（コアドメイン側の取り込み処理）
+- `src/features/entry-viewing/components/article-modal.tsx` — 既読/あとで読むボタン UI・楽観的更新・イベント dispatch
+- `src/components/layout/sidebar.tsx` — イベントリスナー・readLaterUnreadCount・PWA バッジ更新
 - `src/app/read-later/page.tsx` — `/read-later` ページ（サーバーサイド初期フェッチ）
 
 ---

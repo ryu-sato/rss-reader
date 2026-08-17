@@ -1,5 +1,15 @@
 # Gap分析: 実装 vs Requirements（2026-07-25）
 
+> **この文書は 2026-07-25 時点のスナップショットです。**
+> 2026-08-17 のドメイン再編（`ab36ef1`〜`394c97a`）でコアドメインを `src/domain/` に一元化し、
+> 残っていた再エクスポートシムを全廃したため、本文中のファイルパスは現在の配置と一致しません。
+> 現在の配置は `.kiro/steering/structure.md`、ドメインの定義は `.kiro/steering/domain-model.md` を参照してください。
+> 調査記録としての正確さを保つため本文は当時のまま残しています。
+>
+> **本書の指摘のうち解消済みのもの**: digests は folder-by-type のまま移行対象外だったが、
+> `src/features/digests/`（`lib/` `types/` `components/`）へ移行済み。`ErrorCode` は
+> feed の型ファイル経由の共有をやめ、`src/domain/shared/errors.ts` が持つようになった。
+
 ## 目的
 
 `requirements.md`（EARS形式、2026-05-15作成の逆引きspec）に対して現行実装（`src/lib/digest-service.ts`, `src/components/digest-form.tsx`, `src/components/delete-digest-button.tsx`, `src/app/digests/*`, `src/app/api/digests/*`）がどこまで一致しているかを検証する。digestsフィーチャーは `structure.md` により folder-by-feature 移行の対象外と明記されており（`src/features/digests/` は存在しない）、`src/lib/` / `src/components/` 直下に実体があることは想定どおりの状態である。

@@ -1,5 +1,16 @@
 # Gap分析: 実装 vs Requirements（2026-07-25）
 
+> **この文書は 2026-07-25 時点のスナップショットです。**
+> 2026-08-17 のドメイン再編（`ab36ef1`〜`394c97a`）でコアドメインを `src/domain/` に一元化し、
+> 残っていた再エクスポートシムを全廃したため、本文中のファイルパスは現在の配置と一致しません。
+> 現在の配置は `.kiro/steering/structure.md`、ドメインの定義は `.kiro/steering/domain-model.md` を参照してください。
+> 調査記録としての正確さを保つため本文は当時のまま残しています。
+>
+> **本書の指摘のうち解消済みのもの**: Gap 2（`edit-feed-form.tsx` 未移行）は
+> `src/features/feed-management/components/` へ移動して解消。Gap 3（`ssrf-guard.ts` 未移行）は
+> Option B の方針を採り、feature 配下ではなくドメイン共有層 `src/domain/shared/ssrf-guard.ts` に
+> 横断ユーティリティとして置くことで決着した。
+
 ## 目的
 
 `requirements.md` に対して現行実装（`src/features/feed-management/`, `src/app/feeds/`, `src/app/api/feeds/`）がどこまで一致しているかを検証する。本specは既存実装からの逆引きスペック生成（2026-05-15作成）のため、作成後にコードが変化していないかの確認が主眼。

@@ -575,7 +575,7 @@ erDiagram
 
 ### Data Contracts & Integration
 
-**API Request/Response Types** (`/src/types/feed.ts`):
+**API Request/Response Types** (`/src/features/feed-management/types/feed.ts`。エンティティ型は `/src/domain/feed/feed.ts`、`ErrorCode` は `/src/domain/shared/errors.ts`):
 ```typescript
 interface Feed {
   id: string; url: string; title: string; description: string | null;

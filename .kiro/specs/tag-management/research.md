@@ -1,5 +1,14 @@
 # Gap分析: 実装 vs Requirements（2026-07-25）
 
+> **この文書は 2026-07-25 時点のスナップショットです。**
+> 2026-08-17 のドメイン再編（`ab36ef1`〜`394c97a`）でコアドメインを `src/domain/` に一元化し、
+> 残っていた再エクスポートシムを全廃したため、本文中のファイルパスは現在の配置と一致しません。
+> 現在の配置は `.kiro/steering/structure.md`、ドメインの定義は `.kiro/steering/domain-model.md` を参照してください。
+> 調査記録としての正確さを保つため本文は当時のまま残しています。
+>
+> **本書の指摘のうち解消済みのもの**: Gap 4 の死コード `entry-modal.tsx` と
+> レガシーシム `src/components/tag-input.tsx` はいずれも削除済みで、シム撤去の不揃いは解消した。
+
 ## 目的
 
 `requirements.md` に対して現行実装（`src/features/tag-management/`, `src/app/api/tags/`, および連携先の `src/components/sidebar.tsx`・`src/features/entry-viewing/components/entry-card-grid.tsx`・`src/features/entry-viewing/components/article-modal.tsx`）がどこまで一致しているかを検証する。本specは既存実装からの逆引きスペック生成（2026-05-15作成、`spec.json` の phase は `tasks-generated`）のため、生成時点でのコード読み取り漏れや、生成後の実装ドリフトがないかの確認が主眼。新規実装の計画ではなく監査結果である。

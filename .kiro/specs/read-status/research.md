@@ -1,5 +1,15 @@
 # Gap分析: 実装 vs Requirements（2026-07-25）
 
+> **この文書は 2026-07-25 時点のスナップショットです。**
+> 2026-08-17 のドメイン再編（`ab36ef1`〜`394c97a`）でコアドメインを `src/domain/` に一元化し、
+> 残っていた再エクスポートシムを全廃したため、本文中のファイルパスは現在の配置と一致しません。
+> 現在の配置は `.kiro/steering/structure.md`、ドメインの定義は `.kiro/steering/domain-model.md` を参照してください。
+> 調査記録としての正確さを保つため本文は当時のまま残しています。
+>
+> **本書の指摘のうち解消済みのもの**: `updateEntryMeta` と `saveEntries` が単一ファイルにある前提で
+> 書かれていた design.md の記述は、現在の配置（`src/features/read-status/lib/entry-meta-service.ts` と
+> `src/domain/entry/entry-sync.ts`）に更新済み。
+
 ## 目的
 
 `requirements.md`（2026-05-15、既存実装からの逆引き生成）に対して現行実装（`src/features/read-status/`, `src/features/entry-viewing/components/article-modal.tsx`, `src/components/sidebar.tsx`, `src/app/read-later/`, `src/app/api/entries/` 配下）がどこまで一致しているかを検証する。

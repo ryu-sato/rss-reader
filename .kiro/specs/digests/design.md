@@ -30,11 +30,11 @@
 
 ### This Spec Owns
 
-- `DigestService`（`/src/lib/digest-service.ts`）のすべてのDB操作とキャッシュ制御
+- `DigestService`（`/src/features/digests/lib/digest-service.ts`）のすべてのDB操作とキャッシュ制御
 - `/src/app/digests/*` 配下のすべてのページコンポーネント
 - `/src/app/api/digests/*` 配下のすべてのAPIルートハンドラー
 - `DigestForm` / `DeleteDigestButton` クライアントコンポーネント
-- `/src/types/digest.ts` の型定義
+- `/src/features/digests/types/digest.ts` の型定義
 
 ### Out of Boundary
 
@@ -149,7 +149,7 @@ src/
 ### Modified Files
 
 - `prisma/schema.prisma` — `Digest` モデル定義を含む（既存）
-- `src/types/feed.ts` — `ErrorCode` に `DIGEST_NOT_FOUND` を含む（既存）
+- `src/domain/shared/errors.ts` — `ErrorCode` に `DIGEST_NOT_FOUND` を含む（既存。エラーコードは feed の型ファイルではなくドメイン共有層が持つ）
 
 ## Requirements Traceability
 
@@ -205,7 +205,7 @@ src/
 ##### Service Interface
 
 ```typescript
-// src/lib/digest-service.ts
+// src/features/digests/lib/digest-service.ts
 
 export async function createDigest(data: {
   content: string

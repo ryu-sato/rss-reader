@@ -9,15 +9,15 @@
   - _Boundary: DigestService_
 
 - [ ] 1.2 Digest TypeScript型定義の確認
-  - `src/types/digest.ts` に `Digest`（id, title, content, createdAt）と `DigestListItem`（id, title, createdAt）が定義されていること
+  - `src/features/digests/types/digest.ts` に `Digest`（id, title, content, createdAt）と `DigestListItem`（id, title, createdAt）が定義されていること
   - `GetDigestsResponse`, `GetDigestResponse`, `CreateDigestResponse` 型が定義されていること
-  - `src/types/feed.ts` の `ErrorCode` に `DIGEST_NOT_FOUND` が含まれていること
+  - `src/domain/shared/errors.ts` の `ErrorCode` に `DIGEST_NOT_FOUND` が含まれていること
   - _Requirements: 6.1, 6.2, 6.3_
   - _Boundary: DigestService_
 
 - [ ] 2. Core: DigestServiceの実装
 - [ ] 2.1 ダイジェストCRUD操作の実装
-  - `src/lib/digest-service.ts` に `createDigest`, `getDigests`, `getDigestById`, `updateDigest`, `deleteDigest` が実装されていること
+  - `src/features/digests/lib/digest-service.ts` に `createDigest`, `getDigests`, `getDigestById`, `updateDigest`, `deleteDigest` が実装されていること
   - `getDigests` は `page`（デフォルト1）と `limit`（デフォルト20）を受け取り `{ data, total }` を返すこと
   - `getDigestById` は存在しないIDで `AppError('DIGEST_NOT_FOUND', 'Digest not found', 404)` をスローすること
   - `updateDigest` / `deleteDigest` は操作前に `getDigestById` で存在確認を行うこと
@@ -71,7 +71,7 @@
 
 - [ ] 6. Core: 作成・編集フォームの実装
 - [ ] 6.1 (P) DigestFormコンポーネントの実装
-  - `src/components/digest-form.tsx` が `mode: 'create' | 'edit'` で動作を切り替えること
+  - `src/features/digests/components/digest-form.tsx` が `mode: 'create' | 'edit'` で動作を切り替えること
   - `content` が空の場合にクライアントサイドでエラーメッセージを表示し送信を中止すること
   - 作成時: `POST /api/digests`、編集時: `PATCH /api/digests/:id` を呼び出すこと
   - 成功後に `/digests/${data.data.id}` へのリダイレクトと `router.refresh()` を実行すること
@@ -90,7 +90,7 @@
 
 - [ ] 7. Core: 削除機能の実装
 - [ ] 7.1 DeleteDigestButtonコンポーネントの実装
-  - `src/components/delete-digest-button.tsx` がクリック時に `window.confirm` ダイアログを表示すること
+  - `src/features/digests/components/delete-digest-button.tsx` がクリック時に `window.confirm` ダイアログを表示すること
   - 確認後に `DELETE /api/digests/:id` を呼び出すこと
   - 成功時に `/digests` へのリダイレクトと `router.refresh()` を実行すること
   - 削除中は `isDeleting` 状態でボタンをdisabledにすること
@@ -99,7 +99,7 @@
 
 - [ ] 8. Validation: テスト実装
 - [ ] 8.1 DigestServiceのユニットテスト
-  - `src/lib/digest-service.test.ts` に以下のテストケースが実装されること
+  - `src/features/digests/lib/digest-service.test.ts` に以下のテストケースが実装されること
   - `createDigest`: 正常作成でDigestオブジェクトが返ること
   - `getDigests`: ページネーション（page, limit）が正しく動作すること
   - `getDigestById`: 存在しないIDで `AppError(DIGEST_NOT_FOUND, 404)` がスローされること

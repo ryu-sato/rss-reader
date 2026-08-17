@@ -125,7 +125,7 @@ src/
 
 ### Modified Files
 
-- `src/components/article-modal.tsx` — `useHotkeyConfig` をインポートして `config` でキーイベントハンドラーを構成（既実装。entry-viewing spec が担当するが、本フィーチャーの `useHotkeyConfig` に依存）
+- `src/features/entry-viewing/components/article-modal.tsx` — `useHotkeyConfig` をインポートして `config` でキーイベントハンドラーを構成（既実装。entry-viewing spec が担当するが、本フィーチャーの `useHotkeyConfig` に依存）
 
 ---
 

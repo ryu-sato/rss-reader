@@ -29,11 +29,11 @@
 
 ### This Spec Owns
 
-- `TagService`（`/src/lib/tag-service.ts`）: upsertTagAndAssign・removeTagFromEntry・getAllTags・renameTag・deleteTag
+- `TagService`（`/src/features/tag-management/lib/tag-service.ts`）: upsertTagAndAssign・removeTagFromEntry・getAllTags・renameTag・deleteTag
 - API ルート: `GET/POST /api/tags`, `PATCH/DELETE /api/tags/:tagId`, `DELETE /api/tags/:tagId/entries/:entryId`, `POST /api/tags/batch`
-- `TagInput` コンポーネント（`/src/components/tag-input.tsx`）: ArticleModal 内のタグ付与・除去・サジェスト UI
-- `BulkTagBar` コンポーネント（`/src/components/bulk-tag-bar.tsx`）: 一括タグ付けツールバー UI
-- Sidebar のタグセクション（`/src/components/sidebar.tsx` 内タグ管理ロジック）: リネーム・削除・フィルタリングリンク
+- `TagInput` コンポーネント（`/src/features/tag-management/components/tag-input.tsx`）: ArticleModal 内のタグ付与・除去・サジェスト UI
+- `BulkTagBar` コンポーネント（`/src/features/tag-management/components/bulk-tag-bar.tsx`）: 一括タグ付けツールバー UI
+- Sidebar のタグセクション（`/src/components/layout/sidebar.tsx` 内タグ管理ロジック）: リネーム・削除・フィルタリングリンク
 - `Tag` / `EntryTag` データモデル（Prisma スキーマの `tags` / `entry_tags` テーブル）
 - `entry:tags-updated` カスタムイベントの発火責任（TagInput・BulkTagBar・EntryCardGrid の `applyBatchTag`）
 
@@ -168,10 +168,10 @@ src/
 
 ### Modified Files
 
-- `src/components/sidebar.tsx` — タグリスト表示・リネーム・削除・フィルタリングリンクを追加（既存実装済み）
-- `src/components/article-modal.tsx` — TagInput を描画するタグセクションを追加（既存実装済み）
-- `src/components/entry-card-grid.tsx` — BulkTagBar の描画・applyBatchTag・選択モードのロジックを追加（既存実装済み）
-- `src/types/entry.ts` — `CreateTagRequest`・`CreateTagResponse`・`GetTagsResponse` 型を追加（既存実装済み）
+- `src/components/layout/sidebar.tsx` — タグリスト表示・リネーム・削除・フィルタリングリンクを追加（既存実装済み）
+- `src/features/entry-viewing/components/article-modal.tsx` — TagInput を描画するタグセクションを追加（既存実装済み）
+- `src/features/entry-viewing/components/entry-card-grid.tsx` — BulkTagBar の描画・applyBatchTag・選択モードのロジックを追加（既存実装済み）
+- `src/features/tag-management/types/tag.ts` — `Tag`・`TagWithCount`・`CreateTagRequest`・`CreateTagResponse`・`GetTagsResponse` 型を定義（既存実装済み）
 
 ---
 
@@ -304,7 +304,7 @@ sequenceDiagram
 ##### Service Interface
 
 ```typescript
-// src/lib/tag-service.ts
+// src/features/tag-management/lib/tag-service.ts
 
 export async function upsertTagAndAssign(name: string, entryId: string): Promise<Tag>
 // Preconditions: name は非空文字列、entryId は存在する Entry の ID
@@ -462,7 +462,7 @@ export async function deleteTag(tagId: string): Promise<void>
 ##### State Management
 
 ```typescript
-// src/components/tag-input.tsx
+// src/features/tag-management/components/tag-input.tsx
 interface TagInputProps {
   entryId: string
   initialTags: Tag[]
@@ -499,7 +499,7 @@ const [isLoading, setIsLoading] = useState(false)        // API 呼び出し中�
 ##### State Management
 
 ```typescript
-// src/components/bulk-tag-bar.tsx
+// src/features/tag-management/components/bulk-tag-bar.tsx
 interface BulkTagBarProps {
   selectedCount: number
   totalCount: number
@@ -534,7 +534,7 @@ const [appliedCount, setAppliedCount] = useState<number | null>(null)
 ##### State Management
 
 ```typescript
-// src/components/sidebar.tsx（タグ管理部分のみ）
+// src/components/layout/sidebar.tsx（タグ管理部分のみ）
 const [tags, setTags] = useState<TagItem[]>([])
 const [tagsOpen, setTagsOpen] = useState(true)
 const [editingTagId, setEditingTagId] = useState<string | null>(null)

@@ -1,5 +1,16 @@
 # Gap分析: 実装 vs Requirements（2026-07-25）
 
+> **この文書は 2026-07-25 時点のスナップショットです。**
+> 2026-08-17 のドメイン再編（`ab36ef1`〜`394c97a`）でコアドメインを `src/domain/` に一元化し、
+> 残っていた再エクスポートシムを全廃したため、本文中のファイルパスは現在の配置と一致しません。
+> 現在の配置は `.kiro/steering/structure.md`、ドメインの定義は `.kiro/steering/domain-model.md` を参照してください。
+> 調査記録としての正確さを保つため本文は当時のまま残しています。
+>
+> **本書の指摘のうち解消済みのもの**: `src/lib/entry-service.ts` の集約シムをはじめとする
+> 再エクスポートシムはすべて削除済み。Entry の実装は entry-viewing / feed-management に
+> 分散していたものを `src/domain/entry/`（`entry-repository` / `entry-sync` / `entry-fetcher` /
+> `entry-list-query`）へ一元化した。参照されない旧コンポーネント群も残っていない。
+
 ## 目的
 
 `requirements.md`（2026-05-15作成、既存実装からの逆引き生成）に対して現行実装（`src/features/entry-viewing/`, `src/app/page.tsx`, `src/app/api/entries/`, `src/app/preferred/`）がどこまで一致しているかを検証する。直近のgit履歴で `feat(preferred-page): ... SortToggle ... sortOrder` 系のコミットが多いため、ソート順機能（4.4）を重点確認した。

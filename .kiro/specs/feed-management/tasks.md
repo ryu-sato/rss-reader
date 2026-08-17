@@ -2,15 +2,17 @@
 
 - [ ] 1. データ基盤とエラー型の確立
 - [ ] 1.1 Feedエンティティ型・APIリクエスト/レスポンス型・エラーコード型を定義する
-  - `src/types/feed.ts` に Feed・FeedListItem・CreateFeedRequest・UpdateFeedRequest・ErrorCode等の型を定義する
+  - エンティティ型（Feed・FeedListItem・CreateFeedInput・UpdateFeedInput）を `src/domain/feed/feed.ts` に、
+    API リクエスト/レスポンス型（CreateFeedRequest・UpdateFeedRequest 等）を `src/features/feed-management/types/feed.ts` に、
+    `ErrorCode` を `src/domain/shared/errors.ts` に定義する
   - `FetchedFeedInfo`・`UpdateFeedInput`・フォーム状態型を含める
   - TypeScript strict モードで `any` を使用しない
-  - `src/types/feed.ts` が型エラーなしにコンパイルされることを確認する
+  - 上記 3 ファイルが型エラーなしにコンパイルされることを確認する
   - _Requirements: 1.1, 1.2, 4.1, 5.1, 6.1_
   - _Boundary: Types_
 
 - [ ] 1.2 AppError基底クラスと各ドメインエラークラスを実装する
-  - `src/lib/errors.ts` に AppError・ConflictError・NotFoundError・FeedFetchError・InvalidFeedFormatError・SSRFError を実装する
+  - `src/domain/shared/errors.ts` に AppError・ConflictError・NotFoundError・FeedFetchError・InvalidFeedFormatError・SSRFError を実装する
   - 各エラーが正しい `code` と `statusCode` を持つことを確認する
   - エラークラスをインスタンス化して `instanceof AppError` でキャッチできることを確認する
   - _Requirements: 1.3, 1.4, 1.5, 1.6, 1.7, 5.2, 6.2, 6.4, 7.2_
@@ -26,7 +28,7 @@
 
 - [ ] 2. SSRF Guard実装
 - [ ] 2.1 プライベートIPレンジ定義とisPrivateIP関数を実装する
-  - `src/lib/ssrf-guard.ts` に IPv4・IPv6プライベートアドレスのレンジ定数を定義する
+  - `src/domain/shared/ssrf-guard.ts` に IPv4・IPv6プライベートアドレスのレンジ定数を定義する
   - 対象: RFC1918（10.x/172.16-31.x/192.168.x）・ループバック（127.x/::1）・リンクローカル（169.254.x/fe80:）・CGNAT（100.64-127.x）・IPv6ユニークローカル（fc00:/fd）
   - `isPrivateIP(ip: string): boolean` 関数を実装する
   - 各レンジの代表値と境界値でテストを実行し全件パスすることを確認する
@@ -44,7 +46,7 @@
 
 - [ ] 3. RSSフェッチャーとエントリーフェッチャーの実装
 - [ ] 3.1 (P) RssFetcherでフィードメタデータ取得を実装する
-  - `src/lib/rss-fetcher.ts` に `fetchFeed(url: string): Promise<FetchedFeedInfo>` を実装する
+  - `src/domain/feed/rss-fetcher.ts` に `fetchFeed(url: string): Promise<FetchedFeedInfo>` を実装する
   - 30秒タイムアウト（AbortController）でHTTPフェッチする
   - rss-parserでパースし title・description・faviconUrl（RSS 2.0 image.url / Atom icon）を抽出する
   - タイトル不在時はURLをフォールバックとして使用する
@@ -54,7 +56,7 @@
   - _Boundary: RssFetcher_
 
 - [ ] 3.2 (P) EntryFetcherでエントリー取得と画像URL抽出を実装する
-  - `src/lib/entry-fetcher.ts` に `fetchEntries(feedUrl: string): Promise<FetchedEntryData[]>` を実装する
+  - `src/domain/entry/entry-fetcher.ts` に `fetchEntries(feedUrl: string): Promise<FetchedEntryData[]>` を実装する
   - rss-parserのカスタムフィールド（content:encoded・media:content・media:thumbnail・itunes:image）を設定する
   - 画像URL抽出優先順位: RSS enclosure → media:content → media:thumbnail → itunes:image → コンテンツ内imgタグ を実装する
   - 画像なしエントリーに対してバッチ5件でOGP取得（og:image/twitter:image、5秒タイムアウト）を実行する
@@ -64,7 +66,7 @@
 
 - [ ] 4. FeedServiceの実装
 - [ ] 4.1 createFeed関数を実装する
-  - `src/lib/feed-service.ts` に `createFeed(url: string): Promise<Feed>` を実装する
+  - `src/domain/feed/feed-repository.ts` に `createFeed(url: string): Promise<Feed>` を実装する
   - 重複チェック（url UNIQUE）→ `validateUrl` → `fetchFeed` → `prisma.feed.create` のシーケンスを実装する
   - 重複時 `ConflictError`、SSRF違反時・フェッチ失敗時・パース失敗時は各エラーをそのまま再スローする
   - 正常登録後に Feed レコードがDBに存在することを確認する
@@ -139,7 +141,7 @@
 
 - [ ] 7. フィード管理UIの実装
 - [ ] 7.1 (P) FeedFormコンポーネント（フィード追加フォーム）を実装する
-  - `src/components/feed-form.tsx` にURL入力フォームのClient Componentを実装する
+  - `src/features/feed-management/components/feed-form.tsx` にURL入力フォームのClient Componentを実装する
   - クライアントサイドURLプレフィックス検証（http/httpsで始まるか）を実装する
   - 送信中は `Loader2` ローディング状態、エラー時は `role="alert"` のエラーメッセージを表示する
   - `redirectTo` プロップ指定時に成功後リダイレクトを実装する
@@ -148,7 +150,7 @@
   - _Boundary: FeedForm_
 
 - [ ] 7.2 (P) EditFeedFormコンポーネント（フィード編集フォーム）を実装する
-  - `src/components/edit-feed-form.tsx` にタイトル・説明・メモ編集フォームのClient Componentを実装する
+  - `src/features/feed-management/components/edit-feed-form.tsx` にタイトル・説明・メモ編集フォームのClient Componentを実装する
   - `feed` プロップで初期値を受け取り、URLは読み取り専用で表示する
   - description・memoは最大1000文字、文字数カウンターを表示する
   - 保存成功時に `/feeds` へリダイレクト、キャンセル時も `/feeds` へリダイレクトする
@@ -177,7 +179,7 @@
 
 - [ ] 8. テストの実装
 - [ ] 8.1 (P) SSRF Guard ユニットテストを実装する
-  - `src/lib/ssrf-guard.test.ts` を作成する
+  - `src/domain/shared/ssrf-guard.test.ts` を作成する
   - `isPrivateIP` の全プライベートレンジ（IPv4/IPv6各種）と境界値をテストする
   - `validateUrl` の正常URL・プロトコル不正・長さ超過・プライベートIP・DNS解決失敗の各ケースをテストする
   - `npm test` で全テストがパスすることを確認する
@@ -185,7 +187,7 @@
   - _Boundary: SSRF Guard_
 
 - [ ] 8.2 (P) FeedService ユニットテストを実装する
-  - `src/lib/feed-service.test.ts` を作成する
+  - `src/domain/feed/feed-repository.test.ts` を作成する
   - `createFeed` の正常・重複URL・SSRFエラー・フェッチエラーのケースをテストする
   - `getAllFeeds` の未読数・lastPublishedAtソート順をテストする
   - `updateFeed`・`deleteFeed` の正常・NotFoundのケースをテストする
@@ -194,7 +196,7 @@
   - _Boundary: FeedService_
 
 - [ ] 8.3 (P) EntryService ユニットテストを実装する
-  - `src/lib/entry-service.test.ts` を作成する（既存テストが存在する場合はマージ）
+  - `src/domain/entry/entry-sync.test.ts` を作成する（既存テストが存在する場合はマージ）
   - `saveEntries` の重複排除・既読連動のケースをテストする
   - `enforceEntryLimit` の500件境界値テストを実装する
   - `fetchAllFeedsEntries` の個別フィードエラースキップをテストする

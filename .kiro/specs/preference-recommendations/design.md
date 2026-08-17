@@ -176,8 +176,8 @@ src/
 ### Modified Files
 
 - `src/app/api/entries/route.ts` — `userPreferenceId`・`isAnyPreferred`・`scoreThreshold` クエリパラメータのパース追加
-- `src/lib/entry-service.ts` — `findManyEntries` / `findManyEntriesDedup` への嗜好フィルタークエリ組み込み
-- `src/components/sidebar.tsx` — 「お好みの記事」セクションおよび `/api/preferences` フェッチ追加
+- `src/domain/entry/entry-repository.ts` — `findManyEntries` / `findManyEntriesDedup` への嗜好フィルタークエリ組み込み
+- `src/components/layout/sidebar.tsx` — 「お好みの記事」セクションおよび `/api/preferences` フェッチ追加
 
 ---
 

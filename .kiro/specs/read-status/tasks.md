@@ -8,7 +8,7 @@
   - `isRead: false` を更新した場合も同様にシブリング全件に伝播することを確認する
   - `isReadLater` のみ更新した場合、対象エントリーのみが更新されシブリングは変化しないことを確認する
   - `isRead + isReadLater` を同時に更新した場合、シブリングには `isRead` のみが伝播し、`isReadLater` は対象エントリーのみに適用されることを確認する
-  - テスト: `src/lib/entry-service.test.ts` で上記4ケースがすべてグリーンになること
+  - テスト: `src/features/read-status/lib/entry-meta-service.test.ts` で上記4ケースがすべてグリーンになること
   - _Requirements: 3.1, 3.3_
   - _Boundary: EntryService_
 
@@ -16,7 +16,7 @@
   - 既読シブリングが存在する場合、新規エントリーが `isRead: true` で作成されることを確認する
   - 既読シブリングが存在しない場合、EntryMeta が作成されないことを確認する
   - EntryMeta がすでに存在する場合（既存エントリーの更新）、連動ロジックがスキップされることを確認する
-  - テスト: `src/lib/entry-service.test.ts` で上記3ケースがすべてグリーンになること
+  - テスト: `src/domain/entry/entry-sync.test.ts` で上記3ケースがすべてグリーンになること
   - _Requirements: 3.2_
   - _Boundary: EntryService_
 
@@ -42,7 +42,7 @@
   - ArticleModal を既読でないエントリーで開いた場合、`PUT /api/entries/:id/meta { isRead: true }` が呼ばれること
   - ArticleModal を既に既読のエントリーで開いた場合、PUT リクエストが呼ばれないこと
   - PUT 成功後に `entry:read` カスタムイベントが window に dispatch されること
-  - テスト: `src/components/article-modal.test.tsx` で上記3ケースがグリーンになること
+  - テスト: `src/features/entry-viewing/components/article-modal.test.tsx` で上記3ケースがグリーンになること
   - _Requirements: 1.1, 5.1_
   - _Boundary: ArticleModal_
 
@@ -51,7 +51,7 @@
   - 「未読に戻す」ボタンを押した場合、PUT 成功後に `entry:unread` が dispatch されること
   - PUT が失敗した場合、isRead 状態が元の値に戻ること
   - `isUpdatingRead: true` の間はボタンが無効化されること
-  - テスト: `src/components/article-modal.test.tsx` で上記4ケースがグリーンになること
+  - テスト: `src/features/entry-viewing/components/article-modal.test.tsx` で上記4ケースがグリーンになること
   - _Requirements: 1.2, 1.3, 1.5, 5.1_
   - _Boundary: ArticleModal_
 
@@ -60,7 +60,7 @@
   - 「保存済み」ボタンを押した場合（isReadLater: false への切り替え）、PUT 成功後に `entry:updated` が dispatch されること
   - PUT が失敗した場合、isReadLater 状態が元の値に戻ること
   - `isUpdating: true` の間はボタンが無効化されること
-  - テスト: `src/components/article-modal.test.tsx` で上記4ケースがグリーンになること
+  - テスト: `src/features/entry-viewing/components/article-modal.test.tsx` で上記4ケースがグリーンになること
   - _Requirements: 2.1, 2.2, 2.4, 2.5, 5.2_
   - _Boundary: ArticleModal_
 
@@ -69,7 +69,7 @@
   - `entry:read` イベントが window に dispatch された場合、`GET /api/feeds` が再取得されること
   - `entry:updated` イベントが window に dispatch された場合、`GET /api/entries/read-later-unread-count` が再取得されること
   - 初期ロード時に `readLaterUnreadCount` が取得されること
-  - テスト: `src/components/sidebar.test.tsx` で上記3ケースがグリーンになること
+  - テスト: `src/components/layout/sidebar.test.tsx` で上記3ケースがグリーンになること
   - _Requirements: 5.3, 5.4, 7.1, 7.2_
   - _Boundary: Sidebar_
 
@@ -77,7 +77,7 @@
   - `totalUnread > 0` の場合、`navigator.setAppBadge(totalUnread)` が呼ばれること
   - `totalUnread === 0` の場合、`navigator.clearAppBadge()` が呼ばれること
   - `setAppBadge` が存在しない環境（`'setAppBadge' in navigator` が false）では呼び出しがスキップされること
-  - テスト: `src/components/sidebar.test.tsx` で上記3ケースがグリーンになること
+  - テスト: `src/components/layout/sidebar.test.tsx` で上記3ケースがグリーンになること
   - _Requirements: 8.1, 8.2, 8.3_
   - _Boundary: Sidebar_
 
@@ -93,7 +93,7 @@
 
 - [ ] 6.2 read-later ページでのエントリー除去動作確認
   - `entry:updated` イベントで `isReadLater: false` になった場合、EntryCardGrid がエントリーを一覧から除去すること（`isReadLater` prop が true の場合の既存 EntryCardGrid ロジックが正しく機能することを確認）
-  - テスト: `src/components/entry-card-grid.test.tsx` の既存テストで `isReadLater` prop の除去ロジックがカバーされていること
+  - テスト: `src/features/entry-viewing/components/entry-card-grid.test.tsx` の既存テストで `isReadLater` prop の除去ロジックがカバーされていること
   - _Requirements: 6.4_
   - _Boundary: EntryCardGrid_
 
@@ -103,6 +103,6 @@
   - `config.readLater` キーが押された場合、`toggleReadLater` が呼び出されること
   - `isUpdatingRead: true` の間は `toggleRead` が呼び出されないこと
   - `isUpdating: true` の間は `toggleReadLater` が呼び出されないこと
-  - テスト: `src/components/article-modal.test.tsx` で上記4ケースがグリーンになること
+  - テスト: `src/features/entry-viewing/components/article-modal.test.tsx` で上記4ケースがグリーンになること
   - _Requirements: 1.4, 2.3_
   - _Boundary: ArticleModal_

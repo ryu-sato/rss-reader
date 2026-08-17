@@ -4,7 +4,7 @@
 
 - [ ] 1. TagService の実装
 - [ ] 1.1 タグの upsert・一覧・リネーム・削除サービス関数を実装する
-  - `src/lib/tag-service.ts` に `upsertTagAndAssign`・`removeTagFromEntry`・`getAllTags`・`renameTag`・`deleteTag` を実装する
+  - `src/features/tag-management/lib/tag-service.ts` に `upsertTagAndAssign`・`removeTagFromEntry`・`getAllTags`・`renameTag`・`deleteTag` を実装する
   - `upsertTagAndAssign` はタグ名を `toLowerCase().trim()` で正規化してから `prisma.tag.upsert` と `prisma.entryTag.upsert` を順に呼び出す
   - `getAllTags` は `react.cache` でラップし、名前昇順で全タグを返す
   - `renameTag` はタグ名正規化を適用してから `prisma.tag.update` を呼び出す
@@ -54,7 +54,7 @@
 
 - [ ] 3. TagInput コンポーネントの実装
 - [ ] 3.1 個別エントリーのタグ付与・除去・サジェスト UI を実装する
-  - `src/components/tag-input.tsx` を `'use client'` で実装する
+  - `src/features/tag-management/components/tag-input.tsx` を `'use client'` で実装する
   - props: `entryId: string`・`initialTags: Tag[]`・`allTags: Tag[]`
   - タグチップ一覧（付与済みタグ + ×ボタン）・テキスト入力フィールド・サジェストドロップダウン・「Add」ボタンを描画する
   - `addTag(name)`: `POST /api/tags` を呼び出し、成功後に `setTags` 更新 + `entry:tags-updated` イベント発火 + 入力クリア
@@ -69,7 +69,7 @@
 
 - [ ] 4. BulkTagBar コンポーネントの実装
 - [ ] 4.1 一括タグ付けツールバーを実装する
-  - `src/components/bulk-tag-bar.tsx` を `'use client'` で実装する
+  - `src/features/tag-management/components/bulk-tag-bar.tsx` を `'use client'` で実装する
   - props: `selectedCount`・`totalCount`・`allTags`・`onApplyTag`・`onSelectAll`・`onClearSelection`・`onExitSelectionMode`
   - 選択件数表示・タグ名入力フィールド・サジェストドロップダウン・「タグを付ける」ボタン・全選択・選択解除・終了ボタンを描画する
   - `handleApply`: `inputValue` が空または `selectedCount === 0` なら中断。それ以外は `onApplyTag(inputValue.trim())` を呼び出す
@@ -84,7 +84,7 @@
 
 - [ ] 5. EntryCardGrid への一括タグ付け統合
 - [ ] 5.1 EntryCardGrid に選択モードと applyBatchTag ロジックを追加する
-  - `src/components/entry-card-grid.tsx` に選択モード状態（`isSelectionMode`・`selectedIds`）と操作関数（`enterSelectionMode`・`exitSelectionMode`・`toggleSelectEntry`・`selectAll`・`clearSelection`）を追加する
+  - `src/features/entry-viewing/components/entry-card-grid.tsx` に選択モード状態（`isSelectionMode`・`selectedIds`）と操作関数（`enterSelectionMode`・`exitSelectionMode`・`toggleSelectEntry`・`selectAll`・`clearSelection`）を追加する
   - `applyBatchTag(tagName)`: `POST /api/tags/batch` を呼び出し、成功後に `entry:tags-updated` を発火する
   - `isSelectionMode === true` のとき `BulkTagBar` を描画し、`onApplyTag={applyBatchTag}` を渡す
   - `entry:tags-updated` イベントをリッスンして `prefetchCacheRef` から該当エントリーを削除する
@@ -97,7 +97,7 @@
 
 - [ ] 6. ArticleModal へのタグ UI 統合
 - [ ] 6.1 ArticleModal に TagInput を組み込む
-  - `src/components/article-modal.tsx` の記事コンテンツ末尾にタグセクションを追加する
+  - `src/features/entry-viewing/components/article-modal.tsx` の記事コンテンツ末尾にタグセクションを追加する
   - `allTags` prop を `ArticleModal` に追加し、`TagInput` に `entryId={entry.id}`・`initialTags={entryTags}`・`allTags={allTags}` を渡す
   - `entryTags` は `entry.tags.map((t) => t.tag)` で導出する
   - エントリー読み込み中はタグセクションを表示しない（entry がロードされたときのみ表示）
@@ -110,7 +110,7 @@
 
 - [ ] 7. Sidebar タグセクションの実装
 - [ ] 7.1 Sidebar にタグ一覧・リネーム・削除・フィルタリングリンクを追加する
-  - `src/components/sidebar.tsx` の既存実装にタグセクションを追加する
+  - `src/components/layout/sidebar.tsx` の既存実装にタグセクションを追加する
   - マウント時に `GET /api/tags` を呼び出してタグリストを取得・表示する
   - タグ項目はそれぞれ `/?tagId={id}` へのリンクとして描画し、アクティブ状態（`currentTagId === tag.id`）をハイライト表示する
   - `handleRenameTag(tagId)`: `PATCH /api/tags/:tagId` を呼び出し成功後に `setTags` を更新する
@@ -125,7 +125,7 @@
 
 - [ ] 8. タグフィルタリングの統合確認
 - [ ] 8.1 タグによるエントリーフィルタリングを確認する
-  - `src/components/entry-filter-bar.tsx` で `tagId` URL パラメータが entry-viewing 側で正しく処理されることを確認する（このスペックは `tagId` を URL に設定する Sidebar リンクを所有し、実際のフィルタリングは entry-viewing に委譲する）
+  - `src/features/entry-viewing/components/entry-filter-bar.tsx` で `tagId` URL パラメータが entry-viewing 側で正しく処理されることを確認する（このスペックは `tagId` を URL に設定する Sidebar リンクを所有し、実際のフィルタリングは entry-viewing に委譲する）
   - `/?tagId={id}` へ遷移したとき当該タグのエントリーのみが表示されること（`GET /api/entries?tagId=...` は entry-viewing 担当）を E2E 的に確認する
   - タグフィルタリング中にエントリーが 0 件のとき空状態メッセージが表示されることを確認する
   - サイドバーのタグリンクをクリックするとフィルタリングが適用されることをテストで確認できる状態になること
@@ -137,7 +137,7 @@
 
 - [ ] 9. 統合テストと E2E 検証
 - [ ] 9.1 TagService ユニットテストを実装する
-  - `src/lib/tag-service.test.ts` を作成する
+  - `src/features/tag-management/lib/tag-service.test.ts` を作成する
   - `upsertTagAndAssign`: 新規タグ作成・既存タグ再利用・EntryTag 重複スキップのケースをカバーする
   - `deleteTag`: Tag 削除後に関連 EntryTag が存在しないことを確認する
   - `renameTag`: 大文字入力が小文字で保存されることを確認する
