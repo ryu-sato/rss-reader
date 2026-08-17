@@ -91,11 +91,41 @@ domain/              ← ここから上（features / app）を参照しない
 generated/prisma, shared
 ```
 
-- コアドメインは `src/features/` の何も import しない。タグ関連型のようにコアが必要とする型は、
-  機能側の型ではなく Prisma 生成型から直接導出する。
+- コアドメインは `src/features/`・`src/app/`・`src/components/` の何も import しない。
+  タグ関連型のようにコアが必要とする型は、機能側の型ではなく Prisma 生成型から直接導出する。
+- 機能どうしは、画面の composition のために UI を借りるときだけ相互参照してよい。
+  現状の相互参照は次の 2 つで、いずれも記事モーダル / 一覧が他機能の UI を埋め込むもの:
+  - `entry-viewing` → `tag-management`（記事へのタグ付与 UI）
+  - `entry-viewing` → `settings`（キーボードショートカット設定の読み込み）
+  機能のサービス層（`lib/*-service.ts`）を他機能から呼ぶのは避け、共有が必要ならコアへ引き上げる。
 - API ルートとページは薄く保ち、処理はドメイン層／機能のサービスに委譲する。
 - 同じ実装へ 2 つ以上の import 経路を作らない（再エクスポートのシムを置かない）。
   経路が二重化すると「一元管理されている」という前提が静かに崩れるため。
+
+## 5. ディレクトリ構成
+
+```
+src/
+  domain/                      コアドメイン（RSS コンテンツ）
+    entry/                     entry.ts / entry-repository.ts / entry-list-query.ts
+                               entry-fetcher.ts / entry-sync.ts
+    feed/                      feed.ts / feed-repository.ts / rss-fetcher.ts
+    shared/                    db.ts / errors.ts / ssrf-guard.ts
+  features/<機能>/             支援ドメイン（.kiro/specs/ の 1 スペックに対応）
+    components/                その機能に閉じた React コンポーネント
+    lib/                       その機能のサービス・フック
+    types/                     その機能の API リクエスト/レスポンス型
+  app/                         App Router のページと API ルート（薄く保つ）
+  components/
+    ui/                        shadcn ベースのデザインシステム
+    layout/                    サイドバーなどアプリ全体の骨格
+  lib/                         真に汎用のユーティリティ（cron / motion / utils）
+  hooks/                       汎用フック
+  generated/prisma/            Prisma 生成コード（手で編集しない）
+```
+
+テストは対象と同じディレクトリに置く（`entry-repository.ts` ↔ `entry-repository.test.ts`）。
+複数ドメインをまたぐ結合テストだけ `src/__tests__/integration/` に置く。
 
 ## 4. 永続化スキーマとの対応
 

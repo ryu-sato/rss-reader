@@ -2,78 +2,89 @@
 
 ## Organization Philosophy
 
-Hybrid approach: **folder-by-type** at the top level (`components/`, `lib/`, `types/`), **folder-by-feature** within the App Router (`app/feeds/`, `app/digests/`, `app/preferences/`). Business logic lives exclusively in the service layer; components and route handlers are kept thin.
+**Domain-first**: コアドメイン（RSS コンテンツ = Feed / Entry）を `/src/domain/` に一元化し、
+その上に機能モジュール（folder-by-feature）を `/src/features/<機能>/` として重ねる。
+依存は常に上から下へ一方向で、`domain` は `features` / `app` / `components` を参照しない。
 
-A migration toward **folder-by-feature under `/src/features/`** is in progress (see Feature Modules below); features already migrated keep folder-by-type paths working via re-export shims, while unmigrated features (e.g. `digests`) still live directly under `/src/lib/` and `/src/components/`.
+ドメインの定義と要件の対応は `docs/domain-model.md` を単一の情報源とする。構成を変えるときは
+まずそちらを更新する。
 
 ## Directory Patterns
 
-### App Router Pages & API
-**Location**: `/src/app/`  
-**Purpose**: Route segments, layouts, page components, and API route handlers  
-**Pattern**: Feature folders contain `page.tsx`, `layout.tsx`, and optionally `route.ts`  
-**Example**: `/src/app/feeds/page.tsx` (feed list page), `/src/app/api/feeds/route.ts` (REST endpoint)
-
-### React Components
-**Location**: `/src/components/`  
-**Purpose**: All React components, split into primitives and feature components  
+### Core Domain
+**Location**: `/src/domain/`
+**Purpose**: このアプリの存在理由そのもの（外部の RSS を取り込んで記事として保持する）に属する実装
 **Sub-patterns**:
-- `/components/ui/` — design-system primitives (shadcn-based, no business logic)
-- `/components/` root — feature components that may use services or context
-
-### Service & Business Logic Layer
-**Location**: `/src/lib/`  
-**Purpose**: All data access, external API calls, and complex business logic  
-**Pattern**: Files use `kebab-case` with `-service` suffix for data services, plain names for utilities  
-**Example**: `feed-service.ts`, `entry-service.ts`, `ssrf-guard.ts`, `rss-fetcher.ts`
-
-### Shared Types
-**Location**: `/src/types/`  
-**Purpose**: TypeScript interfaces and types shared across layers  
-**Example**: `feed.ts`, `entry.ts` — define domain entities used by both service layer and components
-
-### Generated Code
-**Location**: `/src/generated/`  
-**Purpose**: Auto-generated files (Prisma client) — never edit manually
+- `/domain/entry/` — Entry のエンティティ型・永続化・一覧クエリ記述子・RSS 取り込み・同期
+- `/domain/feed/` — Feed のエンティティ型・永続化・フィードメタ取得
+- `/domain/shared/` — Prisma クライアント（`db.ts`）、`AppError` と `ErrorCode`（`errors.ts`）、SSRF ガード
+**Pattern**: エンティティ型はドメイン名のファイル（`entry.ts`, `feed.ts`）、永続化は `*-repository.ts`
+**制約**: `@/features/`, `@/app/`, `@/components/`, `@/hooks/` を import しない。
+コアが必要とする他ドメインの型は Prisma 生成型から直接導出する
 
 ### Feature Modules
-**Location**: `/src/features/<feature>/`  
-**Purpose**: Self-contained feature code (`components/`, `lib/`, `types/` as applicable), one folder per spec in `.kiro/specs/`  
-**Pattern**: A feature migrated to this layout owns its real implementation here; the legacy path it replaces (`/src/lib/<name>.ts`, `/src/components/<name>.tsx`, `/src/types/<name>.ts`) becomes a one-line re-export shim (`export * from '@/features/<feature>/lib/<name>'`) so existing imports keep working during the transition  
-**Migrated so far**: `feed-management`, `entry-viewing`, `read-status`, `tag-management`, `preference-recommendations`  
-**Not yet migrated**: `digests` — still implemented directly under `/src/lib/` and `/src/components/`  
-**Example**: `src/features/preference-recommendations/lib/preference-service.ts` (real code); `src/lib/preference-service.ts` (shim: `export * from '@/features/preference-recommendations/lib/preference-service'`)  
-**When adding code to a migrated feature**: put new files under the feature folder, not the legacy path. When adding code to `digests` (or any unmigrated feature), follow the existing folder-by-type convention unless explicitly migrating it.
+**Location**: `/src/features/<機能>/`
+**Purpose**: コアドメインに意味づけ・見せ方を与える支援ドメイン。`.kiro/specs/` の 1 スペックに 1 フォルダ対応
+**Sub-patterns**: `components/`（その機能に閉じた React コンポーネント）、`lib/`（サービス・フック）、`types/`（API リクエスト/レスポンス型）
+**現在の機能**: `feed-management`, `entry-viewing`, `read-status`, `tag-management`,
+`preference-recommendations`, `digests`, `settings`, `auth`
+**制約**: 機能どうしの相互参照は、画面の composition のために UI を借りる場合に限る。
+他機能のサービス層を呼びたくなったら、その処理はコアドメインへ引き上げる
+
+### App Router Pages & API
+**Location**: `/src/app/`
+**Purpose**: ルートセグメント、レイアウト、ページ、API ルートハンドラ
+**Pattern**: 薄く保ち、処理はドメイン層 / 機能のサービスへ即座に委譲する
+
+### Shared UI
+**Location**: `/src/components/`
+**Sub-patterns**:
+- `/components/ui/` — shadcn ベースのデザインシステムのプリミティブ（ビジネスロジックを持たない）
+- `/components/layout/` — サイドバーなどアプリ全体の骨格
+**制約**: 特定機能のコンポーネントをここに置かない（`features/<機能>/components/` に置く）
+
+### Generic Utilities
+**Location**: `/src/lib/`, `/src/hooks/`
+**Purpose**: ドメイン知識を持たない汎用処理のみ（`utils.ts`, `motion.ts`, `cron.ts`, `use-media-preference.ts`）
+**制約**: ここにサービス層を置かない。データアクセスは `domain/*-repository.ts` か `features/*/lib/*-service.ts`
+
+### Generated Code
+**Location**: `/src/generated/`
+**Purpose**: Prisma クライアントなどの自動生成物 — 手で編集しない
 
 ## Naming Conventions
 
-- **Component files**: PascalCase (`EntryCardGrid.tsx`, `SidebarProvider.tsx`)
-- **Service/utility files**: kebab-case (`feed-service.ts`, `ssrf-guard.ts`)
-- **API route files**: always `route.ts` within feature folder
-- **Type files**: kebab-case matching domain noun (`feed.ts`, `entry.ts`)
-- **Test files**: same name as source + `.test.tsx` / `.test.ts` suffix, co-located
+- **Component files**: kebab-case (`entry-card-grid.tsx`, `sidebar-provider.tsx`)
+- **Service / repository files**: kebab-case。コアの永続化は `-repository` 、機能のサービスは `-service` 接尾辞
+- **API route files**: 機能フォルダ内の `route.ts`
+- **Type files**: ドメイン名の kebab-case (`entry.ts`, `feed.ts`, `tag.ts`, `digest.ts`)
+- **Test files**: 対象と同名 + `.test.ts` / `.test.tsx` を同じディレクトリに co-locate。
+  同じ対象に複数の観点のテストを分ける場合は `<対象>.<観点>.test.tsx`（例: `tag-input.frequent-tags.test.tsx`）
+- **Integration tests**: 複数ドメインをまたぐものだけ `/src/__tests__/integration/`
 
 ## Import Organization
 
 ```typescript
-// Always use path alias for cross-directory imports
-import { FeedService } from '@/lib/feed-service'
+// パスエイリアスを使う（ディレクトリをまたぐ場合）
+import { findManyEntries } from '@/domain/entry/entry-repository'
 import { Button } from '@/components/ui/button'
-import type { Feed } from '@/types/feed'
+import type { EntryListItem } from '@/domain/entry/entry'
 
-// Relative imports only within the same directory
+// 同じディレクトリ内のみ相対 import
 import { helper } from './helper'
 ```
 
-**Path Aliases**:
-- `@/` → `./src/` (configured in `tsconfig.json`)
+**Path Aliases**: `@/` → `./src/` (`tsconfig.json`)
 
 ## Code Organization Principles
 
-- **Thin route handlers**: API routes in `/app/api/` delegate immediately to service functions
-- **No business logic in components**: Components call services or server actions, never query DB directly
-- **Service layer owns DB**: Only `/lib/*-service.ts` files import from Prisma client
-- **Zod at boundaries**: Validate external input (API request bodies, form data) with Zod schemas before passing to services
+- **一方向の依存**: `app` → `features` → `domain` → `generated/prisma`。逆流させない
+- **import 経路を二重化しない**: 同じ実装への再エクスポートシムを置かない。
+  経路が二重になると「一元管理されている」という前提が静かに崩れる
+- **Thin route handlers**: `/app/api/` は即座にサービス関数へ委譲する
+- **No business logic in components**: コンポーネントは DB を直接触らない
+- **Service layer owns DB**: Prisma を import してよいのは `domain/**` と `features/*/lib/*-service.ts` のみ
+- **Zod at boundaries**: 外部入力（API リクエストボディ、フォームデータ）はサービスに渡す前に検証する
 
 ---
 _Document patterns, not file trees. New files following patterns shouldn't require updates_

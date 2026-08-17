@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Full-stack Next.js application using the App Router pattern. Server Components handle data fetching; Client Components handle interactivity. A service layer in `/src/lib/` encapsulates all database and business logic, keeping route handlers and components thin.
+Full-stack Next.js application using the App Router pattern. Server Components handle data fetching; Client Components handle interactivity. コアドメイン層 `/src/domain/` と機能モジュール `/src/features/<機能>/lib/` がデータベースアクセスとビジネスロジックを担い、ルートハンドラとコンポーネントは薄く保つ（構成の詳細は steering の structure.md と `docs/domain-model.md`）。
 
 ## Core Technologies
 
