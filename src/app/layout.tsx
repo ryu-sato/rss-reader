@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Syne, Crimson_Pro, JetBrains_Mono } from "next/font/google";
-import { SidebarProvider } from "@/components/sidebar-provider";
+import { SidebarProvider } from "@/components/layout/sidebar-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 

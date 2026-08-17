@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import FeedForm from '@/components/feed-form'
+import FeedForm from '@/features/feed-management/components/feed-form'
 
 export default function NewFeedPage() {
   return (

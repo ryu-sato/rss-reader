@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { getFeedById } from '@/domain/feed/feed-repository'
-import EditFeedForm from '@/components/edit-feed-form'
+import EditFeedForm from '@/features/feed-management/components/edit-feed-form'
 
 interface Props {
   params: Promise<{ id: string }>

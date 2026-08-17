@@ -6,13 +6,13 @@ import { getAllTags } from '@/features/tag-management/lib/tag-service'
 import { findManyEntries } from '@/domain/entry/entry-repository'
 import { getAllPreferences } from '@/features/preference-recommendations/lib/preference-service'
 import { getAppSettings } from '@/features/preference-recommendations/lib/settings-service'
-import { EntryCardGrid } from '@/components/entry-card-grid'
-import { ReadFilter } from '@/components/read-filter'
+import { EntryCardGrid } from '@/features/entry-viewing/components/entry-card-grid'
+import { ReadFilter } from '@/features/read-status/components/read-filter'
 import { ScoreThresholdSlider } from '@/features/preference-recommendations/components/score-threshold-slider'
-import { SortToggle } from '@/components/sort-toggle'
+import { SortToggle } from '@/features/entry-viewing/components/sort-toggle'
 import { parseSortOrder } from '@/domain/entry/entry-list-query'
 import type { EntryListQuery } from '@/domain/entry/entry'
-import type { ReadFilterValue } from '@/components/read-filter'
+import type { ReadFilterValue } from '@/features/read-status/components/read-filter'
 
 interface PageProps {
   params: Promise<{ preferenceId: string }>

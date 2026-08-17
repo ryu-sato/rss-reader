@@ -4,13 +4,13 @@ import { Suspense } from 'react'
 import { findManyEntries } from '@/domain/entry/entry-repository'
 import { getAllTags } from '@/features/tag-management/lib/tag-service'
 import { getAllFeeds } from '@/domain/feed/feed-repository'
-import { EntryCardGrid } from '@/components/entry-card-grid'
-import { ReadFilter } from '@/components/read-filter'
-import { SortToggle } from '@/components/sort-toggle'
-import { EntryFilterBar } from '@/components/entry-filter-bar'
+import { EntryCardGrid } from '@/features/entry-viewing/components/entry-card-grid'
+import { ReadFilter } from '@/features/read-status/components/read-filter'
+import { SortToggle } from '@/features/entry-viewing/components/sort-toggle'
+import { EntryFilterBar } from '@/features/entry-viewing/components/entry-filter-bar'
 import { parseSortOrder } from '@/domain/entry/entry-list-query'
 import type { EntryListQuery } from '@/domain/entry/entry'
-import type { ReadFilterValue } from '@/components/read-filter'
+import type { ReadFilterValue } from '@/features/read-status/components/read-filter'
 
 interface PageProps {
   searchParams: Promise<{
