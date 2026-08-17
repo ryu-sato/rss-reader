@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createDigest, getDigests } from '@/lib/digest-service'
+import { createDigest, getDigests } from '@/features/digests/lib/digest-service'
 import { AppError } from '@/domain/shared/errors'
 
 export async function GET(request: NextRequest) {

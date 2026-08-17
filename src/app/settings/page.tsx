@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { Keyboard, RotateCcw } from 'lucide-react'
-import { useHotkeyConfig } from '@/hooks/use-hotkey-config'
+import { useHotkeyConfig } from '@/features/settings/lib/use-hotkey-config'
 import {
   HOTKEY_LABELS,
   HOTKEY_ACTIONS,
   formatKeyDisplay,
   type HotkeyAction,
-} from '@/lib/hotkey-config'
+} from '@/features/settings/lib/hotkey-config'
 
 export default function SettingsPage() {
   const { config, updateHotkey, resetHotkeys } = useHotkeyConfig()

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
-import { getDigestById, updateDigest, deleteDigest } from '@/lib/digest-service'
+import { getDigestById, updateDigest, deleteDigest } from '@/features/digests/lib/digest-service'
 import { AppError } from '@/domain/shared/errors'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -1,13 +1,13 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getCachedDigestById } from '@/lib/digest-service'
+import { getCachedDigestById } from '@/features/digests/lib/digest-service'
 import { AppError } from '@/domain/shared/errors'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import rehypeSanitize from 'rehype-sanitize'
 import { ChevronLeft, Pencil } from 'lucide-react'
-import DeleteDigestButton from '@/components/delete-digest-button'
+import DeleteDigestButton from '@/features/digests/components/delete-digest-button'
 
 function formatDate(date: Date): string {
   return new Date(date).toLocaleDateString('ja-JP', {

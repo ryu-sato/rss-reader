@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import DigestForm from '@/components/digest-form'
+import DigestForm from '@/features/digests/components/digest-form'
 
 export default function NewDigestPage() {
   return (

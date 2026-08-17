@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { getDigests } from '@/lib/digest-service'
+import { getDigests } from '@/features/digests/lib/digest-service'
 import { BookOpen, Plus } from 'lucide-react'
 
 function formatDate(date: Date): string {

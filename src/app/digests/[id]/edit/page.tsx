@@ -3,9 +3,9 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
-import { getDigestById } from '@/lib/digest-service'
+import { getDigestById } from '@/features/digests/lib/digest-service'
 import { AppError } from '@/domain/shared/errors'
-import DigestForm from '@/components/digest-form'
+import DigestForm from '@/features/digests/components/digest-form'
 
 export default async function EditDigestPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

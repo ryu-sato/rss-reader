@@ -1,7 +1,7 @@
 import { unstable_cache } from 'next/cache'
 import { prisma } from '@/domain/shared/db'
 import { AppError } from '@/domain/shared/errors'
-import type { Digest, DigestListItem } from '@/types/digest'
+import type { Digest, DigestListItem } from '@/features/digests/types/digest'
 
 export async function createDigest(data: { content: string; title?: string }): Promise<Digest> {
   const digest = await prisma.digest.create({

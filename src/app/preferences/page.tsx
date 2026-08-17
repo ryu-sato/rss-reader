@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
-import { getAllPreferences } from '@/lib/preference-service'
-import { getAppSettings } from '@/lib/settings-service'
+import { getAllPreferences } from '@/features/preference-recommendations/lib/preference-service'
+import { getAppSettings } from '@/features/preference-recommendations/lib/settings-service'
 import PreferencesClient from './preferences-client'
 
 export default async function PreferencesPage() {

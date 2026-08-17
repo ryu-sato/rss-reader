@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAppSettings, updatePreferredScoreThreshold } from '@/lib/settings-service'
+import { getAppSettings, updatePreferredScoreThreshold } from '@/features/preference-recommendations/lib/settings-service'
 
 export async function GET() {
   try {

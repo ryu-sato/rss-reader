@@ -6,7 +6,7 @@ import {
   loadHotkeyConfig,
   saveHotkeyConfig,
   DEFAULT_HOTKEYS,
-} from '@/lib/hotkey-config'
+} from '@/features/settings/lib/hotkey-config'
 
 export function useHotkeyConfig() {
   const [config, setConfig] = useState<Record<HotkeyAction, string>>({ ...DEFAULT_HOTKEYS })

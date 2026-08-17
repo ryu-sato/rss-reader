@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { ThumbsUp, Layers } from 'lucide-react'
-import { getAllPreferences } from '@/lib/preference-service'
+import { getAllPreferences } from '@/features/preference-recommendations/lib/preference-service'
 
 export default async function PreferredPage() {
   const preferences = await getAllPreferences()

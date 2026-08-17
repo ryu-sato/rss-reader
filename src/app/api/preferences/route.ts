@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllPreferences, createPreference } from '@/lib/preference-service'
+import { getAllPreferences, createPreference } from '@/features/preference-recommendations/lib/preference-service'
 import { AppError } from '@/domain/shared/errors'
 
 export async function GET() {
