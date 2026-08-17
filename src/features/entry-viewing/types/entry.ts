@@ -46,22 +46,38 @@ export type TagOnEntry = EntryTagModel & {
 // APIリクエスト/レスポンス
 // ========================================
 
-/** エントリー一覧取得リクエスト（クエリパラメータ） */
-export interface GetEntriesQuery {
+export type SortOrder = 'asc' | 'desc'
+
+/**
+ * 記事一覧の絞り込み条件。
+ *
+ * 初回取得（サーバコンポーネント）・追加読み込み（EntryCardGrid）・`/api/entries` の
+ * 3 者がこの 1 つの記述子だけを受け渡す。条件を個別の prop に分解して渡すと、
+ * 渡し忘れた条件だけが追加読み込みで欠落する（例: sortOrder の渡し忘れで、
+ * 古い順の一覧なのに追加分だけ新しい順で取得され、既出の記事しか返らず停止する）。
+ */
+export interface EntryListQuery {
   feedId?: string
   tagId?: string
   search?: string
-  page?: number
-  limit?: number
-  afterId?: string
-  beforeId?: string
   isReadLater?: boolean
   isUnread?: boolean
   userPreferenceId?: string
   isAnyPreferred?: boolean
-  sortOrder?: 'asc' | 'desc'
+  sortOrder?: SortOrder
   scoreThreshold?: number
 }
+
+/** 記事一覧のどの位置を取るか（オフセット指定 or カーソル指定） */
+export interface EntryPageParams {
+  page?: number
+  limit?: number
+  afterId?: string
+  beforeId?: string
+}
+
+/** エントリー一覧取得リクエスト（クエリパラメータ） */
+export type GetEntriesQuery = EntryListQuery & EntryPageParams
 
 export interface GetEntriesResponse {
   success: true

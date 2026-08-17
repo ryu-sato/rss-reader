@@ -8,8 +8,9 @@ import { EntryCardGrid } from '@/components/entry-card-grid'
 import { ReadFilter } from '@/components/read-filter'
 import { SortToggle } from '@/components/sort-toggle'
 import { EntryFilterBar } from '@/components/entry-filter-bar'
+import { parseSortOrder } from '@/features/entry-viewing/lib/entry-list-query'
+import type { EntryListQuery } from '@/features/entry-viewing/types/entry'
 import type { ReadFilterValue } from '@/components/read-filter'
-import type { SortOrderValue } from '@/components/sort-toggle'
 
 interface PageProps {
   searchParams: Promise<{
@@ -25,17 +26,19 @@ export default async function Home({ searchParams }: PageProps) {
   const params = await searchParams
   const filter: ReadFilterValue = params.filter === 'all' ? 'all' : 'unread'
   const isUnread = filter === 'unread'
-  const sortOrder: SortOrderValue = params.sortOrder === 'asc' ? 'asc' : 'desc'
+  const sortOrder = parseSortOrder(params.sortOrder)
+
+  // 初回取得と追加読み込みで同じ条件を使うため、クエリは 1 か所で組み立てて共有する
+  const query: EntryListQuery = {
+    feedId: params.feedId,
+    tagId: params.tagId,
+    search: params.search,
+    isUnread,
+    sortOrder,
+  }
 
   const [{ entries, pagination }, allTags, allFeeds] = await Promise.all([
-    findManyEntries({
-      feedId: params.feedId,
-      tagId: params.tagId,
-      search: params.search,
-      page: 1,
-      isUnread,
-      sortOrder,
-    }),
+    findManyEntries({ ...query, page: 1 }),
     getAllTags(),
     getAllFeeds(),
   ])
@@ -72,11 +75,7 @@ export default async function Home({ searchParams }: PageProps) {
           key={`${params.feedId ?? ''}-${params.tagId ?? ''}-${params.search ?? ''}-${filter}-${sortOrder}`}
           initialEntries={entries}
           initialPagination={pagination}
-          feedId={params.feedId}
-          tagId={params.tagId}
-          search={params.search}
-          isUnread={isUnread}
-          sortOrder={sortOrder}
+          query={query}
           allTags={allTags}
         />
       </Suspense>

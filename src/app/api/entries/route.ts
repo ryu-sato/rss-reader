@@ -1,33 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { findManyEntries } from '@/lib/entry-service'
+import { parseEntryListQuery, parseEntryPageParams } from '@/features/entry-viewing/lib/entry-list-query'
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = request.nextUrl
-    const feedId = searchParams.get('feedId') ?? undefined
-    const tagId = searchParams.get('tagId') ?? undefined
-    const search = searchParams.get('search') ?? undefined
-    const page = Number(searchParams.get('page') ?? '1')
-    const limit = Number(searchParams.get('limit') ?? '20')
-    const afterId = searchParams.get('afterId') ?? undefined
-    const beforeId = searchParams.get('beforeId') ?? undefined
-    const isReadLater = searchParams.get('isReadLater') === 'true' ? true : undefined
-    const isUnread = searchParams.get('isUnread') === 'true' ? true : undefined
-    const userPreferenceId = searchParams.get('userPreferenceId') ?? undefined
-    const isAnyPreferred = searchParams.get('isAnyPreferred') === 'true' ? true : undefined
-    const sortOrderParam = searchParams.get('sortOrder')
-    const sortOrder = sortOrderParam === 'asc' ? 'asc' : sortOrderParam === 'desc' ? 'desc' : undefined
-    const scoreThresholdParam = searchParams.get('scoreThreshold')
-    const scoreThreshold = scoreThresholdParam !== null ? Number(scoreThresholdParam) : undefined
+    // クエリの解釈はコアロジック層に一本化する（クライアント側のシリアライザと対になる）
+    const searchParams = request.nextUrl.searchParams
+    const query = parseEntryListQuery(searchParams)
+    const pageParams = parseEntryPageParams(searchParams)
+    const { limit = 20, afterId, beforeId } = pageParams
+    const page = pageParams.page ?? 1
 
-    if (isNaN(page) || page < 1) {
+    // 数値として読めない page は parse 時に undefined になるので、指定の有無で不正を切り分ける
+    if ((searchParams.has('page') && pageParams.page === undefined) || page < 1) {
       return NextResponse.json(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid page parameter' } },
         { status: 400 }
       )
     }
 
-    const result = await findManyEntries({ feedId, tagId, search, page, limit, afterId, beforeId, isReadLater, isUnread, userPreferenceId, isAnyPreferred, sortOrder, scoreThreshold })
+    const result = await findManyEntries({ ...query, page, limit, afterId, beforeId })
     return NextResponse.json({ success: true, data: result.entries, pagination: result.pagination })
   } catch (error) {
     console.error('GET /api/entries error:', error)

@@ -10,8 +10,9 @@ import { EntryCardGrid } from '@/components/entry-card-grid'
 import { ReadFilter } from '@/components/read-filter'
 import { ScoreThresholdSlider } from '@/components/score-threshold-slider'
 import { SortToggle } from '@/components/sort-toggle'
+import { parseSortOrder } from '@/features/entry-viewing/lib/entry-list-query'
+import type { EntryListQuery } from '@/features/entry-viewing/types/entry'
 import type { ReadFilterValue } from '@/components/read-filter'
-import type { SortOrderValue } from '@/components/sort-toggle'
 
 interface PageProps {
   params: Promise<{ preferenceId: string }>
@@ -23,7 +24,7 @@ export default async function PreferredByPreferencePage({ params, searchParams }
   const resolvedSearchParams = await searchParams
   const filter: ReadFilterValue = resolvedSearchParams.filter === 'all' ? 'all' : 'unread'
   const isUnread = filter === 'unread'
-  const sortOrder: SortOrderValue = resolvedSearchParams.sortOrder === 'asc' ? 'asc' : 'desc'
+  const sortOrder = parseSortOrder(resolvedSearchParams.sortOrder)
 
   const settings = await getAppSettings()
   const scoreThreshold =
@@ -31,8 +32,10 @@ export default async function PreferredByPreferencePage({ params, searchParams }
       ? Number(resolvedSearchParams.score)
       : settings.preferredScoreThreshold
 
+  const query: EntryListQuery = { userPreferenceId: preferenceId, isUnread, scoreThreshold, sortOrder }
+
   const [{ entries, pagination }, allTags, preferences] = await Promise.all([
-    findManyEntries({ userPreferenceId: preferenceId, isUnread, page: 1, scoreThreshold, sortOrder }),
+    findManyEntries({ ...query, page: 1 }),
     getAllTags(),
     getAllPreferences(),
   ])
@@ -65,10 +68,7 @@ export default async function PreferredByPreferencePage({ params, searchParams }
           key={`${filter}-${scoreThreshold}-${sortOrder}`}
           initialEntries={entries}
           initialPagination={pagination}
-          userPreferenceId={preferenceId}
-          isUnread={isUnread}
-          scoreThreshold={scoreThreshold}
-          sortOrder={sortOrder}
+          query={query}
           basePath={`/preferred/${preferenceId}`}
           allTags={allTags}
         />

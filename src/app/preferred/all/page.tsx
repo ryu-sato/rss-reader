@@ -8,8 +8,9 @@ import { EntryCardGrid } from '@/components/entry-card-grid'
 import { ReadFilter } from '@/components/read-filter'
 import { ScoreThresholdSlider } from '@/components/score-threshold-slider'
 import { SortToggle } from '@/components/sort-toggle'
+import { parseSortOrder } from '@/features/entry-viewing/lib/entry-list-query'
+import type { EntryListQuery } from '@/features/entry-viewing/types/entry'
 import type { ReadFilterValue } from '@/components/read-filter'
-import type { SortOrderValue } from '@/components/sort-toggle'
 
 interface PageProps {
   searchParams: Promise<{ filter?: string; score?: string; sortOrder?: string }>
@@ -17,17 +18,18 @@ interface PageProps {
 
 export default async function PreferredAllPage({ searchParams }: PageProps) {
   const params = await searchParams
-  const resolvedSearchParams = await searchParams
   const filter: ReadFilterValue = params.filter === 'all' ? 'all' : 'unread'
   const isUnread = filter === 'unread'
-  const sortOrder: SortOrderValue = resolvedSearchParams.sortOrder === 'asc' ? 'asc' : 'desc'
+  const sortOrder = parseSortOrder(params.sortOrder)
 
   const settings = await getAppSettings()
   const scoreThreshold =
     params.score !== undefined ? Number(params.score) : settings.preferredScoreThreshold
 
+  const query: EntryListQuery = { isAnyPreferred: true, isUnread, scoreThreshold, sortOrder }
+
   const [{ entries, pagination }, allTags] = await Promise.all([
-    findManyEntries({ isAnyPreferred: true, isUnread, page: 1, scoreThreshold, sortOrder }),
+    findManyEntries({ ...query, page: 1 }),
     getAllTags(),
   ])
 
@@ -56,9 +58,7 @@ export default async function PreferredAllPage({ searchParams }: PageProps) {
           key={`${filter}-${scoreThreshold}-${sortOrder}`}
           initialEntries={entries}
           initialPagination={pagination}
-          isAnyPreferred
-          isUnread={isUnread}
-          scoreThreshold={scoreThreshold}
+          query={query}
           basePath="/preferred/all"
           allTags={allTags}
         />
