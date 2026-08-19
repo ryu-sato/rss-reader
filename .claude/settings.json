@@ -22,8 +22,7 @@
       "Edit(skills-lock.json)"
     ],
     "ask": [
-      "Edit(.agents/*)",
-      "Bash(rm*)"
+      "Edit(.agents/*)"
     ],
     "defaultMode": "acceptEdits"
   },
