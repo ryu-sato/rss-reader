@@ -22,7 +22,7 @@
 ### 1. 依存関係のインストール
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### 2. 環境変数の設定
@@ -44,33 +44,33 @@ OIDC_DISCOVERY_URL="<https://.../.well-known/openid-configuration>"
 ### 3. データベースのセットアップ
 
 ```bash
-npx prisma migrate dev
-npx prisma generate
+pnpm exec prisma migrate dev
+pnpm exec prisma generate
 ```
 
 ## 開発コマンド
 
 ```bash
 # 開発サーバー起動
-npm run dev
+pnpm dev
 
 # テスト実行（ウォッチモード）
-npm run test
+pnpm test
 
 # テスト実行（1回のみ）
-npm run test:run
+pnpm test:run
 
 # カバレッジ付きテスト
-npm run test:coverage
+pnpm test:coverage
 
 # ビルド
-npm run build
+pnpm build
 
 # Lint
-npm run lint
+pnpm lint
 
 # 型チェック
-npm run typecheck
+pnpm typecheck
 ```
 
 ## プロジェクト構造
