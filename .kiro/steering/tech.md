@@ -37,16 +37,16 @@ Full-stack Next.js application using the App Router pattern. Server Components h
 - **Framework**: Vitest 4 with jsdom environment and React Testing Library
 - **Pattern**: テストスイート全体の実行前に一度だけ DB をリセットする（`vitest.setup.ts` の `beforeAll` で `prisma migrate reset`）。テストごとのリセットは CLI プロセス起動が件数分走って重いため行わない
 - Tests co-located with source using `.test.tsx` / `.test.ts` suffix
-- Run: `npm test` / `npm run test:coverage`
+- Run: `pnpm test` / `pnpm test:coverage`
 
 ## Development Environment
 
 ### Common Commands
 ```bash
-# Dev:   npm run dev
-# Build: npm run build
-# Test:  npm test
-# DB:    npx prisma migrate dev
+# Dev:   pnpm dev
+# Build: pnpm build
+# Test:  pnpm test
+# DB:    pnpm exec prisma migrate dev
 ```
 
 ## Key Technical Decisions

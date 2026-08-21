@@ -1,8 +1,8 @@
 # AGENTS.md
 
 ## Test commands
-npm test
-npm run lint
+pnpm test
+pnpm lint
 
 ## Loop conventions
 - Report-only week one (L1) before enabling auto-fix (L2)

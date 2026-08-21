@@ -8,9 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "prisma generate && NODE_OPTIONS=\"$NODE_OPTIONS --max-old-space-size=2048\" tsc --noEmit",
-    "test": "npm run dotenvx:test -- vitest",
-    "test:run": "npm test -- run",
-    "test:coverage": "npm test -- run --coverage",
+    "test": "pnpm dotenvx:test vitest",
+    "test:run": "pnpm test run",
+    "test:coverage": "pnpm test run --coverage",
     "dotenvx:test": "dotenvx run -f .env.test --",
     "dotenvx:dev": "dotenvx run -f .env.development --",
     "dotenvx:prod": "dotenvx run -f .env.production --"
